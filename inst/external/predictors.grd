@@ -1,0 +1,26 @@
+[general] 
+creator=R package 'raster' 
+created= 2014-05-28 17:23:29 
+[georeference] 
+nrows= 89 
+ncols= 105 
+xmin= -20625 
+ymin= 3979936 
+xmax= 1029375 
+ymax= 4869936 
+projection= NA 
+[data] 
+datatype= FLT8S 
+byteorder= little 
+nbands= 2 
+bandorder= BIL 
+minvalue= 11.5:27.5972232818604 
+maxvalue= 77.2857131958008:203.310607910156 
+nodatavalue= -1.7e+308 
+[legend] 
+legendtype=  
+values=  
+color=  
+[description] 
+layername= b15:NDVI 
+history=  
