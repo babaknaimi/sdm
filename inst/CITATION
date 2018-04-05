@@ -1,0 +1,10 @@
+bibentry(
+     bibtype = "Article",
+     title = "sdm: a reproducible and extensible R platform for species distribution modelling",
+     author = as.person("Babak Naimi [aut], Miguel B. Araujo [aut]"),
+     year = "2016",
+     journal = "Ecography",
+     volume = "39",
+     pages = "368-375",
+     doi = "10.1111/ecog.01881"
+   )
