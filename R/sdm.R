@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date (last update):  April 2018
-# Version 3.4
+# Version 3.5
 # Licence GPL v3
 #--------
 
@@ -1828,10 +1828,13 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
   .memo <- NULL
   if (.require("mraster")) {
     .memo <- eval(expression({memory(session=TRUE,echo=FALSE)}))
-    .wf <- eval(parse(text = "mraster:::.change_unit(utils::object.size(woL$data@features)*150,'B','M')[[1]]")) # guessing the size of modelObj
-    .mf <- floor(0.75 * ( .memo[2] /  .wf) )[[1]] # how many modelObj fits into 75% of the available memory!
-    if (nrow(.run.info) > .mf) .ch <- ceiling(nrow(.run.info) / .mf)
-    else .ch <- NULL
+    if (is.numeric(.memo)) {
+      .wf <- eval(parse(text = "mraster:::.change_unit(utils::object.size(woL$data@features)*150,'B','M')[[1]]")) # guessing the size of modelObj
+      .mf <- floor(0.75 * ( .memo[2] /  .wf) )[[1]] # how many modelObj fits into 75% of the available memory!
+      if (nrow(.run.info) > .mf) .ch <- ceiling(nrow(.run.info) / .mf)
+      else .ch <- NULL
+    } else .ch <- NULL 
+    
   } else {
     if (!is.null(filename)) warning('the package mraster is not installed (use installAll() to get it installed); this package helps when the output object size is big!')
     .ch <- NULL
