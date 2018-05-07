@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  March. 2016
-# last update: July 2017
-# Version 1.2
+# last update: April 2018
+# Version 1.3
 # Licence GPL v3
 
 #-------------
@@ -11,7 +11,7 @@ methodInfo <- list(name=c('glmnet','GLMNET','glmelastic','glmlasso'),
                    fitParams = list(formula='standard.formula',data='sdmDataFrame'),
                    fitSettings = list(family='binomial',alpha=1),
                    fitFunction = function(formula,data,family,...) {
-                     x <- .getData.sdmMatrix(formula,data)
+                     x <- .getData.sdmMatrix(formula,data,normalize=TRUE)
                      y <- .getData.sdmY(formula,data)
                      if (family == 'binomial') m <- cv.glmnet(x,y,family="binomial",type.measure = 'auc')
                      else m <- cv.glmnet(x,y,family=family)
@@ -27,7 +27,7 @@ methodInfo <- list(name=c('glmnet','GLMNET','glmelastic','glmlasso'),
                    predictParams=list(object='model',formula='standard.formula',newx='sdmDataFrame'),
                    predictSettings=list(type='response'),
                    predictFunction=function(object,formula,newx,type) {
-                     newx <- .getData.sdmMatrix(formula,newx)
+                     newx <- .getData.sdmMatrix(formula,newx,normalize=TRUE)
                      predict.glmnet(object,newx,type=type)[,1]
                    },
                    #------ metadata (optional):

@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Nov. 2016
-# Version 1.1
+# Date (last update):  April 2018
+# Version 1.2
 # Licence GPL v3
 
 #-------------
@@ -49,15 +49,3 @@ setMethod('predict', signature(object='.bioclimModel'),
           }
 )
 ###############
-# Bioclimatic based on the package dismo:
-
-
-.bioclimDismo <- function(formula,data,...) {
-  nsp <- deparse(formula[[2]])
-  w <- data[,nsp] == 1
-  x <- data[w,colnames(data) != nsp]
-  nFact <- .where(is.factor,x)
-  if (any(nFact)) x <- x[,-which(nFact),drop=FALSE]
-  if (ncol(x) < 2) stop('At least two continous variables are needed to fit the model!')
-  dismo::bioclim(x=x,...)
-}

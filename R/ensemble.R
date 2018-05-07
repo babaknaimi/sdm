@@ -1,6 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  Oct. 2016
-# Version 2.0
+# Last Update :  May 2018
+# Version 2.1
 # Licence GPL v3
 
 if (!isGeneric("ensemble")) {
@@ -114,7 +115,7 @@ setMethod('ensemble', signature(x='sdmModels',newdata='Raster'),
                     w <- which(!mi[,wtest[1]])
                     if (any(mi[w,wtest[2]])) {
                       id2 <- mi$modelID[w][mi[w,wtest[2]]]
-                    }
+                    } else id2 <- NULL
                     if (length(c(id1,id2)) < length(id)) {
                       if (length(wtest) == 3) {
                         w <- id[which(!id %in% c(id1,id2))]
