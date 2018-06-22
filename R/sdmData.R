@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date of last update :  Feb. 2018
-# Version 2.6
+# Date of last update :  June 2018
+# Version 2.7
 # Licence GPL v3
 
 #------
@@ -584,6 +584,11 @@ setReplaceMethod('.addLog','sdmdata',
   
   
   if (!is.null(bg)) {
+    w <- which(nsp %in% colnames(bg))
+    if (length(w) > 0) {
+      for (nnsp in nsp[w]) bg[,nnsp] <- 0
+    }
+    
     w <- which(!nsp %in% colnames(bg))
     if (length(w) > 0) {
       nnsp <- nsp[w]
