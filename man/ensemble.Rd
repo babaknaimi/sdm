@@ -6,6 +6,7 @@
 \alias{ensemble}
 \alias{ensemble,sdmModels-method}
 \alias{ensemble,sdmModels,Raster-method}
+\alias{ensemble,sdmModels,data.frame-method}
 
 \title{Ensemble Forecasting of SDMs}
 

@@ -1,11 +1,11 @@
 import(sp,methods)
-importFrom("graphics", "abline", "legend", "par", "points","lines","boxplot","barplot")
+importFrom("graphics", "abline", "legend", "par", "points","lines","boxplot","barplot","arrows","segments")
 importFrom("stats", "as.formula", "cor", "cov", "formula", "glm",
              "mahalanobis", "predict.glm", "supsmu", "terms",
              "wilcox.test","princomp","plogis","model.frame","model.matrix",
            "terms.formula","poly","quantile","sd","cor.test","coefficients",
            "lm","optim","density","median")
-importFrom("utils", "combn", "data", "read.csv","object.size","install.packages","remove.packages")
+importFrom("utils", "combn", "data", "read.csv","object.size","install.packages","remove.packages","write.csv")
 importFrom("parallel", "makeForkCluster", "makePSOCKcluster", "detectCores","clusterExport","clusterEvalQ","stopCluster","parLapply")
 importFrom("raster",  "raster", "brick","cellFromXY","ncell","trim","extract","extent","as.data.frame","predict",
            "writeRaster","calc","addLayer","setZ","extension","sampleRandom","values","subset","update","getValues")

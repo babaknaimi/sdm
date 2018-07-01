@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  April 2018
-# Version 4.2
+# Date (last update):  June 2018
+# Version 4.3
 # Licence GPL v3
 
 
@@ -1646,5 +1646,14 @@ setClass('.bioclimModel',
            q75='numeric',
            c='numeric',
            weights='numericORnull'
+         )
+)
+#--------
+setClass(".responseCurve",
+         representation(
+           variables='character',
+           categorical='characterORnull',
+           multi='logical',
+           response='list'
          )
 )

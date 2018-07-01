@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  Feb. 2018
-# Version 2.3
+# Date :  June 2018
+# Version 2.4
 # Licence GPL v3
 
 
@@ -184,6 +184,240 @@ setMethod("plot", signature(x='.varImportance'),
 )
 
 #-------
+
+setMethod("plot", signature(x='.responseCurve'),
+          function(x,y,gg=TRUE,mean=TRUE,confidence=TRUE,xlab,ylab,lty,lwd,col,cex.axis,cex.lab,main,...) {
+            if (gg && !.require('ggplot2')) gg <- FALSE
+            
+            if (missing(mean)) mean <- TRUE
+            
+            if (missing(confidence)) confidence <- TRUE
+            
+            if (missing(y) || is.null(y)) n <- x@variables
+            else {
+              n <- y
+              n <- n[n %in% x@variables]
+              if (length(n) == 0) stop('the specified variable(s) in n does not exist in the responseCurve object!')
+            }
+            
+            if (!is.null(x@categorical)) {
+              nF <- x@categorical
+              nF <- nF[nF %in% n]
+              if (length(nF) == 0) nF <- NULL
+              n <- .excludeVector(n,nF)
+            } else nF <- NULL
+            #-------
+            if (missing(xlab)) xlab <- 'Variables'
+            if (missing(ylab)) ylab <- 'Response'
+            if (missing(lty)) lty <- 1
+            if (missing(col)) col <- '#00395F'
+            if (missing(lwd)) lwd <- 1
+            if (missing(cex.axis)) cex.axis <- 1
+            if (missing(cex.lab)) cex.lab <- 1
+            
+            if (missing(main)) main <- 'Response Curve'
+            if (!'ylim' %in% names(list(...))) ylim <- c(0,1)
+            #--------
+            if (gg) {
+              if (x@multi) {
+                if (mean) {
+                  if (confidence) {
+                    drc <- data.frame(Value=0,Response=0,lower=0,upper=0,variable='a')[0,]
+                    for (nn in n) {
+                      .n <- length(x@response[[nn]][,1])
+                      .m <- apply(x@response[[nn]][,2:ncol(x@response[[nn]])],1,mean,na.rm=TRUE)
+                      .ci <- 1.96 * apply(x@response[[nn]][,2:ncol(x@response[[nn]])],1,sd,na.rm=TRUE) / sqrt(.n)
+                      drc <- rbind(drc,data.frame(Value=x@response[[nn]][,1],Response=.m,lower=.m - .ci,upper=.m + .ci,variable=nn))
+                    }
+                    
+                    p1 <- "ggplot(drc,aes(x=Value,y=Response)) + geom_line(colour=col,size=lwd,linetype=lty) + geom_ribbon(aes(ymin=lower, ymax=upper), linetype=1, alpha=0.2) + 
+                      facet_grid(.~variable,scales='free_x') + labs(y = ylab,x = xlab) + ggtitle(main) +
+                      theme(axis.text=element_text(size=rel(cex.axis)),axis.title=element_text(size=rel(cex.lab)),plot.title = element_text(hjust = 0.5))"
+                    p1 <- .eval(p1,env=environment())
+                    if (!is.null(nF)) {
+                      drcc <- data.frame(Value=0,Response=0,variable='a')[0,]
+                      for (nn in nF) {
+                        .n <- length(x@response[[nn]][,1])
+                        .m <- apply(x@response[[nn]][,2:ncol(x@response[[nn]])],1,mean,na.rm=TRUE)
+                        .ci <- 1.96 * apply(x@response[[nn]][,2:ncol(x@response[[nn]])],1,sd,na.rm=TRUE) / sqrt(.n)
+                        drcc <- rbind(drcc,data.frame(Value=x@response[[nn]][,1],Response=.m,lower=.m - .ci,upper=.m + .ci,variable=nn))
+                      }
+                      
+                      p2 <- "ggplot(drcc,aes(x=Value,y=Response)) + geom_bar(stat = 'identity',fill=col) + facet_grid(.~variable,scale='free') + geom_errorbar(aes(ymin=lower, ymax=upper),width=.3,position=position_dodge(.9))"
+                      
+                      p2 <- .eval(p2,env=environment())
+                      if (!.require('gridExtra')) {
+                        warning('you need the package gridExtra to make the plots printed in a single page!')
+                        return(list(p1,p2))
+                      } else {
+                        return(.eval("grid.arrange(p1,p2)",env=environment()))
+                      }
+                    } else return(p1)
+                    
+                  } else {
+                    drc <- data.frame(Value=0,Response=0,variable='a')[0,]
+                    for (nn in n) {
+                      drc <- rbind(drc,data.frame(Value=x@response[[nn]][,1],Response=apply(x@response[[nn]][,2:ncol(x@response[[nn]])],1,mean,na.rm=TRUE),variable=nn))
+                    }
+                    p1 <- "ggplot(drc,aes(x=Value,y=Response)) + geom_line(colour=col,size=lwd,linetype=lty) + 
+                      facet_grid(.~variable,scales='free_x') + scale_y_continuous(name = ylab,limits=ylim) + scale_x_continuous(name = xlab) + ggtitle(main) +
+                      theme(axis.text=element_text(size=rel(cex.axis)),axis.title=element_text(size=rel(cex.lab)),plot.title = element_text(hjust = 0.5))"
+                    
+                    p1 <- .eval(p1,env=environment())
+                    
+                    if (!is.null(nF)) {
+                      drcc <- data.frame(Value=0,Response=0,variable='a')[0,]
+                      for (nn in nF) {
+                        .n <- length(x@response[[nn]][,1])
+                        .m <- apply(x@response[[nn]][,2:ncol(x@response[[nn]])],1,mean,na.rm=TRUE)
+                        .ci <- 1.96 * apply(x@response[[nn]][,2:ncol(x@response[[nn]])],1,sd,na.rm=TRUE) / sqrt(.n)
+                        drcc <- rbind(drcc,data.frame(Value=x@response[[nn]][,1],Response=.m,lower=.m - .ci,upper=.m + .ci,variable=nn))
+                      }
+                      
+                      p2 <- "ggplot(drcc,aes(x=Value,y=Response)) + geom_bar(stat = 'identity',fill=col)+ scale_y_continuous(name = ylab,limits=ylim) + facet_grid(.~variable,scale='free') + geom_errorbar(aes(ymin=lower, ymax=upper),width=.3,position=position_dodge(.9))"
+                      
+                      p2 <- .eval(p2,env=environment())
+                      
+                      if (!.require('gridExtra')) {
+                        warning('you need the package gridExtra to make the plots printed in a single page!')
+                        return(list(p1,p2))
+                      } else {
+                        return(.eval("grid.arrange(p1,p2)",env=environment()))
+                      }
+                    } else return(p1)
+                  }
+                } else {
+                  drc <- data.frame(variable='a',Value=0)[0,]
+                  for (nn in n) {
+                    drc <- rbind(drc,data.frame(variable=nn,Value=x@response[[nn]][,1],x@response[[nn]][,2:ncol(x@response[[nn]])]))
+                  }
+                }
+                
+                p1 <- "p1 <- ggplot(drc,aes(x=Value)) + geom_line(aes_string(y=colnames(drc)[3]),colour=col,size=lwd,linetype=lty) +scale_y_continuous(name = ylab,limits = c(0,1)) + facet_grid(.~variable,scales='free_x')
+                for (nn in colnames(drc)[4:ncol(drc)]) p1 <- p1 + geom_line(aes_string(y=nn),colour=col,size=lwd,linetype=lty)"
+                .eval(p1,env=environment())
+                
+                if (!is.null(nF)) {
+                  drcc <- data.frame(Value=0,Response=0,variable='a')[0,]
+                  for (nn in nF) {
+                    .n <- length(x@response[[nn]][,1])
+                    .m <- apply(x@response[[nn]][,2:ncol(x@response[[nn]])],1,mean,na.rm=TRUE)
+                    .ci <- 1.96 * apply(x@response[[nn]][,2:ncol(x@response[[nn]])],1,sd,na.rm=TRUE) / sqrt(.n)
+                    drcc <- rbind(drcc,data.frame(Value=x@response[[nn]][,1],Response=.m,lower=.m - .ci,upper=.m + .ci,variable=nn))
+                  }
+                  
+                  if (confidence) p2 <- "ggplot(drcc,aes(x=Value,y=Response)) + geom_bar(stat = 'identity',fill=col)+ scale_y_continuous(name = ylab,limits=ylim) + facet_grid(.~variable,scale='free') + geom_errorbar(aes(ymin=lower, ymax=upper),width=.3,position=position_dodge(.9))"
+                  else p2 <- "ggplot(drcc,aes(x=Value,y=Response)) + geom_bar(stat = 'identity',fill=col)+ scale_y_continuous(name = ylab,limits=ylim) + facet_grid(.~variable,scale='free')"
+                  
+                  p2 <- .eval(p2,env=environment())
+                  
+                  if (!.require('gridExtra')) {
+                    warning('you need the package gridExtra to make the plots printed in a single page!')
+                    return(list(p1,p2))
+                  } else {
+                    return(.eval("grid.arrange(p1,p2)",env=environment()))
+                  }
+                } else return(p1)
+              } else {
+                drc <- data.frame(Value=0,Response=0,variable='a')[0,]
+                for (nn in n) {
+                  colnames(x@response[[nn]]) <- c('Value','Response')
+                  drc <- rbind(drc,data.frame(x@response[[nn]],variable=nn))
+                }
+                p1 <- "ggplot(drc,aes(x=Value,y=Response)) + geom_line(colour=col,size=lwd,linetype=lty) + facet_grid(.~variable,scales='free_x') +
+                scale_y_continuous(name = ylab,limits=ylim) + scale_x_continuous(name = xlab) + ggtitle(main) +
+                theme(axis.text=element_text(size=rel(cex.axis)),axis.title=element_text(size=rel(cex.lab)),plot.title = element_text(hjust = 0.5))"
+                p1 <- .eval(p1,env=environment())
+                
+                if (!is.null(nF)) {
+                  drcc <- data.frame(Variable=0,Response=0)[0,]
+                  for (nn in nF) {
+                    colnames(x@response[[nn]]) <- c('Variable','Response')
+                    drcc <- rbind(drcc,data.frame(x@response[[nn]],variable=nn))
+                  }
+                  p2 <- "ggplot(drcc,aes(x=Variable,y=Response)) + geom_bar(stat = 'identity',fill=col) + facet_grid(.~variable,scale='free')"
+                  p2 <- .eval(p2,env=environment())
+                  if (!.require('gridExtra')) {
+                    warning('you need the package gridExtra to make the plots printed in a single page!')
+                    return(list(p1,p2))
+                  } else {
+                    pp <- .eval("grid.arrange(p1,p2)",env=environment())
+                  }
+                } else return(p1)
+              }
+              
+            } else {
+              np <- length(n) + length(nF)
+              
+              if (np > 16) {
+                warning('Due to larger number of variables, only the plots for the first 16 variables are generated!')
+                if (length(n) >= 16) {
+                  n <- n[1:16]
+                  nF <- NULL
+                } else {
+                  nF <- nF[1:(16 - length(n))]
+                }
+                par(mfrow=c(4,4),mar=c(5,4,1,1))
+              } else {
+                w <- floor(sqrt(np))
+                h <- ceiling(np/w)
+                if (abs(w-h) > 1) {
+                  w <- w+1
+                  h <- h-1
+                }
+                par(mfrow=c(w,h),mar=c(5,4,1,1))
+              }
+              
+              #===========
+              if (x@multi) {
+                for (nn in n) {
+                  if (mean) {
+                    .m <- apply(x@response[[nn]][,2:ncol(x@response[[nn]])],1,mean,na.rm=TRUE)
+                    plot(x@response[[nn]][,1],.m,type='l',xlab=nn,col=col,main=main,cex.axis=cex.axis,cex.lab=cex.lab,ylab=ylab,ylim=ylim,...)
+                    if (confidence) {
+                      .n <- length(x@response[[nn]][,1])
+                      .ci <- 1.96 * apply(x@response[[nn]][,2:ncol(x@response[[nn]])],1,sd,na.rm=TRUE) / sqrt(.n)
+                      lines(x@response[[nn]][,1],.m - .ci,col='gray',lty=2,lwd=lwd)
+                      lines(x@response[[nn]][,1],.m + .ci,col='gray',lty=2,lwd=lwd)
+                    }
+                  } else {
+                    plot(x@response[[nn]][,1:2],type='l',xlab=nn,col=col,main=main,cex.axis=cex.axis,cex.lab=cex.lab,ylab=ylab,ylim=ylim,...)
+                    for (i in 3:ncol(x@response[[nn]])) lines(x@response[[nn]][,1],x@response[[nn]][,i],col=col,lwd=lwd)
+                  }
+                }
+                
+                if (!is.null(nF)) {
+                  for (nn in nF) {
+                    .m <- apply(x@response[[nn]][,2:ncol(x@response[[nn]])],1,mean,na.rm=TRUE)
+                    
+                    .bar <- barplot(.m,xlab=nn,col=col,main=main,cex.axis=cex.axis,cex.lab=cex.lab,ylab=ylab,ylim=ylim)
+                    
+                    if (confidence) {
+                      .n <- length(x@response[[nn]][,1])
+                      .ci <- 1.96 * apply(x@response[[nn]][,2:ncol(x@response[[nn]])],1,sd,na.rm=TRUE) / sqrt(.n)
+                      
+                      segments(.bar, .m - .ci, .bar,.m + .ci, lwd = 1.5)
+                      
+                      arrows(.bar, .m - .ci, .bar,.m + .ci, lwd = 1.5, angle = 90,code = 3, length = 0.05)
+                    }
+                  }
+                }
+                
+              } else {
+                for (nn in n) {
+                  plot(x@response[[nn]],type='l',xlab=nn,col=col,main=main,cex.axis=cex.axis,cex.lab=cex.lab,ylab=ylab,ylim=ylim,...)
+                }
+                if (!is.null(nF)) {
+                  for (nn in nF) {
+                    barplot(x@response[[nn]][,2],xlab=nn,col=col,main=main,cex.axis=cex.axis,cex.lab=cex.lab,ylab=ylab,ylim=ylim)
+                  }
+                }
+              }
+            }
+          }
+)
+
+#--------
 if (!isGeneric("boxplot")) {
   setGeneric("boxplot", function(x, ...)
     standardGeneric("boxplot"))

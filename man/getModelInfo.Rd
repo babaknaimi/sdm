@@ -2,15 +2,19 @@
 
 \alias{getModelInfo}
 \alias{getModelInfo,sdmModels-method}
+\alias{getModelId}
+\alias{getModelId,sdmModels-method}
 
-\title{get info out of a sdmModels objects}
+\title{Get information/modelIDs relevant to fitted models in a sdmModels object}
 
 \description{
-When SDMs are fitted using \code{\link{sdm}} function, a \code{sdmModels} object is generated that contains all the information and objects created through fitting and evaluation procedures for all species and methods. These functions facilitate getting these information or specific objects from the \code{sdmModels}.
+When SDMs are fitted using the \code{\link{sdm}} function, a \code{sdmModels} object is generated containing all the information and objects created through fitting and evaluation procedures for all species and methods. To each model, a unique modelID is assigned. \code{getModelInfo} returns a data.frame summarising some information relevant to the fitted models including modelID, method name, whether the model is fitted successfully, whether and what replication procedure is used for data partitioning, etc.  \code{getModelInfo} helps to get the unique model IDs for all or certain models given the parameters that users specify.
 
 }
 
 \usage{
+getModelId(x,success,species,method,replication, run)
+
 getModelInfo(x,...)
 
 
@@ -18,15 +22,21 @@ getModelInfo(x,...)
 
 \arguments{
   \item{x}{a \code{sdmModel} object}
+  \item{success}{logical; specifies whether the info/ids should be returned only for the models that are successfully fitted or not (default is TRUE)}
+  \item{species}{optional; a character vector specifies the name of species for which the info should be returned (default is NULL meaning for all species)}
+  \item{method}{optional; a character vector specifies the name of methods for which the info should be returned (default is NULL meaning for all methods)}
+  \item{replication}{optional; a character vector specifies the name of replication method for which the info should be returned (default is NULL meaning for all species)}
+  \item{run}{optional; a numeric vector specifies for which replication runs the info should be returned (default is NULL meaning for all runs)}
   \item{...}{additional arguments. see details}
   }
 \details{
-\code{getModelInfo} generates a data.frame containing the information on the whole information available in the model (i.e., \code{sdmModels} object), including the name of methods, what setting were used (i.e., replication) to evaluate, whether the fitting or different kinds of evaluations were successful. The first column in the data.frame contains the model IDs, the unique code for each model that is used everywhere in the package. That can be used for referring to a specific object in the other functions.
+in \code{getModelInfo}, as additional arguments, you can use the arguments in the function \code{getModelId} to specify which records should be returned.
 
 }
 
 \value{
- data.frame
+ getModelInfo: data.frame
+ getModelId: a numeric vector
 }
 
 \references{
@@ -49,6 +59,10 @@ file <- system.file("external/model.sdm", package="sdm")
 m <- read.sdm(file)
 
 getModelInfo(m)
+
+getModelId(m)
+
+getModelId(m,method='glm')
 
 }
 

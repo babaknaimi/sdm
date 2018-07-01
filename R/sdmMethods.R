@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last uodate):  July 2017
-# Version 2.2
+# Date (last uodate):  July 2018
+# Version 2.3
 # Licence GPL v3
 
 
@@ -59,21 +59,6 @@ setMethod('getmethodNames', signature(w='ANY'),
             if (missing(alt)) alt <- TRUE
             if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
             if (w == 'sdm') .sdmMethods$getMethodNames(alt=alt)
-          }
-)
-
-
-if (!isGeneric("getModelInfo")) {
-  setGeneric("getModelInfo", function(x,...)
-    standardGeneric("getModelInfo"))
-}
-
-
-setMethod('getModelInfo', signature(x='sdmModels'), 
-          function(x,w,...) {
-            if (missing(w)) w <- NULL
-            .getModel.info(x,w,...)
-            
           }
 )
 
