@@ -1,11 +1,12 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date (last update):  July 2018
-# Version 3.6
+# Version 3.7
 # Licence GPL v3
 #--------
 
 
 .methodFix <- function(n) {
+  .addMethods()
   for (i in seq_along(n)) {
     nx <- .sdmMethods$whichMethod(n[i])
     if (!is.null(nx)) n[i] <- nx
@@ -15,6 +16,7 @@
 }
 #----------
 .replicate.methodFix <- function(n) {
+  .addMethods()
   for (i in seq_along(n)) {
     nx <- .replicateMethods$whichMethod(n[i])
     if (!is.null(nx)) n[i] <- nx

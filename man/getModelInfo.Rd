@@ -60,9 +60,9 @@ m <- read.sdm(file)
 
 getModelInfo(m)
 
-getModelId(m)
+# getModelId(m)
 
-getModelId(m,method='glm')
+# getModelId(m,method='glm')
 
 }
 

@@ -111,6 +111,7 @@ setMethod('getModelInfo', signature(x='sdmModels'),
 )
 #-----------
 
+
 if (!isGeneric("getModelId")) {
   setGeneric("getModelId", function(x,success,species,method,replication,run)
     standardGeneric("getModelId"))

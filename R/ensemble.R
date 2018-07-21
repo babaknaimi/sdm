@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  Oct. 2016
-# Last Update :  June 2018
-# Version 2.2
+# Last Update :  August 2018
+# Version 2.3
 # Licence GPL v3
 
 if (!isGeneric("ensemble")) {
@@ -270,9 +270,12 @@ setMethod('ensemble', signature(x='sdmModels',newdata='Raster'),
             
             
             .nd <- .raster2df(newdata,.getlevels(x@data)[nFact])
-            .nr <- nrow(.nd)
-            memreq <- (object.size(.nd)[[1]] / ncol(.nd))*.nr
             
+            .nr <- nrow(.nd) ## !
+            #memreq <- (object.size(.nd)[[1]] / ncol(.nd))*.nr
+            ####################
+            memreq <- 1 # This needs to be updated to calculate the required memory, and if it is not fitted, .raster2df should be called for chunck of the raster data!
+            ######################
             .ens <- raster(newdata)
             
             
@@ -506,8 +509,12 @@ setMethod('ensemble', signature(x='sdmModels',newdata='data.frame'),
             
             
             .nd <- newdata[,c(nf,nFact)]
-            .nr <- nrow(.nd)
-            memreq <- (object.size(.nd)[[1]] / ncol(.nd))*.nr
+            .nr <- nrow(.nd) ## !
+            #memreq <- (object.size(.nd)[[1]] / ncol(.nd))*.nr
+            
+            ####################
+            memreq <- 1 # This needs to be updated to calculate the required memory
+            ######################
             
             .ens <- rep(NA,nrow(.nd))
             
