@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  August 2018
-# Version 3.8
+# Date (last update):  October 2018
+# Version 3.9
 # Licence GPL v3
 #--------
 
@@ -279,27 +279,7 @@
 }
 
 #-----------
-.require <- function(x) {
-  # based on simplifying the code of the reqiure function in the base package
-  loaded <- paste("package", x, sep = ":") %in% search()
-  if (!loaded) {
-    value <- tryCatch(library(x,character.only = TRUE, logical.return = TRUE, warn.conflicts = FALSE, quietly = TRUE), error = function(e) e)
-    if (inherits(value, "error")) {
-      return(FALSE)
-    }
-    if (!value) return(FALSE)
-  } else value <- TRUE
-  value
-}
-#----------
-.loadLib <- function(pkgs) {
-  options(warn=-1)
-  return(unlist(lapply(pkgs,function(x) {
-    all(unlist(lapply(x,function(p) {.require(p)})))
-  })))
-  options(warn=0)
-}
-#---------
+
 .getRecordID <- function(x,sp,id,train) {
   # x is recordID list
   # it finds the record ID of observation by the rowID used to generate train or dependent test, or in independent test

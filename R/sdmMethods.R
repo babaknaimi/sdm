@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last uodate):  July 2018
-# Version 2.3
+# Date (last uodate):  October 2018
+# Version 2.4
 # Licence GPL v3
 
 
@@ -80,12 +80,6 @@ setMethod('getmethodNames', signature(w='ANY'),
   .sdmOptions$addOption('sdmLoaded',TRUE)
 }
 
-.is.installed <- function(n) {
-  inst <- utils::installed.packages()[,1]
-  nn <- n %in% inst
-  names(nn) <- n
-  nn
-}
 
 
 .create.sdmCorrelativeMethod <- function(name,packages=NULL,modelTypes=NULL,fitParams,fitSettings=NULL,settingRules=NULL,fitFunction,predictParams=NULL,predictSettings=NULL,predictFunction=NULL,tuneParams=NULL,metadata=NULL,...) {
