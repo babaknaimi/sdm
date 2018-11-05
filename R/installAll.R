@@ -1,13 +1,36 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Last Update :  July 2018
-# Version 1.7
+# Last Update :  October 2018
+# Version 1.8
 # Licence GPL v3
 #--------
 
 .eval <- function(x,env) {
   eval(parse(text=x),envir=env)
 }
+#------
+.is.installed <- function(n) {
+  names(n) <- n
+  sapply(n, function(x) length(unlist(lapply(.libPaths(), function(lib) find.package(x, lib, quiet=TRUE, verbose=FALSE)))) > 0)
+}
+#---------
 
+.require <-function(x) {
+  x <- as.character(x)
+  xx <- unlist(lapply(.libPaths(), function(lib) find.package(x, lib, quiet=TRUE, verbose=FALSE)))
+  if (length(xx) > 0) {
+    .loaded <- eval(parse(text=paste0('require(',x,')')))
+    return (.loaded)
+  } else FALSE
+}
+#----------
+.loadLib <- function(pkgs) {
+  options(warn=-1)
+  return(unlist(lapply(pkgs,function(x) {
+    all(unlist(lapply(x,function(p) {.require(p)})))
+  })))
+  options(warn=0)
+}
+#---------
 
 .getPackageList <- function() {
   methodInfo <- NULL
