@@ -7,9 +7,9 @@ importFrom("stats", "as.formula", "cor", "cov", "formula", "glm",
            "lm","optim","density","median")
 importFrom("utils", "combn", "data", "read.csv","object.size","install.packages","remove.packages","write.csv")
 importFrom("parallel", "makeForkCluster", "makePSOCKcluster", "detectCores","clusterExport","clusterEvalQ","stopCluster","parLapply")
-importFrom("raster",  "raster", "brick","cellFromXY","ncell","trim","extract","extent","as.data.frame","predict",
+importFrom("raster",  "raster", "stack" ,"brick","cellFromXY","cellFromRowCol","ncell","trim","extract","extent","as.data.frame","predict",
            "writeRaster","calc","addLayer","setZ","extension","sampleRandom","values","subset","update","getValues")
 exportClasses(sdmdata, sdmFormula,sdmEvaluate,sdmModels,sdmCorrelativeMethod)
 exportMethods(sdmData,sdm,sdmSetting,evaluates,roc,getRoc,add,getmethodNames,getmethod,getModelInfo,getModelId,
-              getEvaluation,read.sdm,write.sdm,installAll,gui,getVarImp,ensemble,subset,rcurve,getResponseCurve)
+              getEvaluation,read.sdm,write.sdm,installAll,gui,getVarImp,ensemble,subset,rcurve,getResponseCurve,niche)
 exportPattern("^[[:alpha:]]+")

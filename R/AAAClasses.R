@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  June 2018
-# Version 4.3
+# Date (last update):  Feb. 2019
+# Version 4.4
 # Licence GPL v3
 
 
@@ -1657,3 +1657,22 @@ setClass(".responseCurve",
            response='list'
          )
 )
+#------
+
+setClass(".nicheRaster",
+         representation(
+           names='characterORnull',
+           nicheRaster='RasterLayer',
+           scaleParams='data.frame'
+         )
+)
+#----------
+setClass(".envSpace",
+         representation(
+           names='character',
+           coords='data.frameORnull',
+           scaledVariables='list',
+           scaleParams='data.frame'
+         )
+)
+#----------

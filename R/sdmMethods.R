@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last uodate):  October 2018
-# Version 2.4
+# Date (last uodate):  Feb. 2019
+# Version 2.5
 # Licence GPL v3
 
 
@@ -74,7 +74,7 @@ setMethod('getmethodNames', signature(w='ANY'),
     pkg <- methodInfo$packages
     pkg <- pkg[!pkg == '.tmp']
     if (!methodInfo$name[1] %in% n && all(.is.installed(pkg))) {
-      add(x=methodInfo,'sdm',echo=FALSE)
+      try(add(x=methodInfo,'sdm',echo=FALSE),silent = TRUE)
     }
   }
   .sdmOptions$addOption('sdmLoaded',TRUE)

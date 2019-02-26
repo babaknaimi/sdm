@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  June 2018
-# Version 2.4
+# Date :  Feb. 2019
+# Version 2.5
 # Licence GPL v3
 
 
@@ -293,7 +293,7 @@ setMethod("plot", signature(x='.responseCurve'),
                   }
                 }
                 
-                p1 <- "p1 <- ggplot(drc,aes(x=Value)) + geom_line(aes_string(y=colnames(drc)[3]),colour=col,size=lwd,linetype=lty) +scale_y_continuous(name = ylab,limits = c(0,1)) + facet_grid(.~variable,scales='free_x')
+                p1 <- "ggplot(drc,aes(x=Value)) + geom_line(aes_string(y=colnames(drc)[3]),colour=col,size=lwd,linetype=lty) +scale_y_continuous(name = ylab,limits = c(0,1)) + facet_grid(.~variable,scales='free_x')
                 for (nn in colnames(drc)[4:ncol(drc)]) p1 <- p1 + geom_line(aes_string(y=nn),colour=col,size=lwd,linetype=lty)"
                 .eval(p1,env=environment())
                 
@@ -342,6 +342,7 @@ setMethod("plot", signature(x='.responseCurve'),
                     return(list(p1,p2))
                   } else {
                     pp <- .eval("grid.arrange(p1,p2)",env=environment())
+                    return(pp)
                   }
                 } else return(p1)
               }
@@ -413,6 +414,48 @@ setMethod("plot", signature(x='.responseCurve'),
                   }
                 }
               }
+            }
+          }
+)
+
+#--------
+
+setMethod("plot", signature(x='.nicheRaster'),
+          function(x,y=NULL,gg=TRUE,xlab,ylab,col,cex.axis,cex.lab,main,...) {
+            if (missing(gg)) gg <- .require('ggplot2')
+            else if (gg && !.require('ggplot2')) gg <- FALSE
+            
+            if (missing(xlab)) xlab <- x@names[1]
+            if (missing(ylab)) ylab <- x@names[2]
+            
+            if (missing(col)) col <- c('darkred','red','yellow','green','darkgreen','darkblue')
+            
+            if (missing(cex.axis)) cex.axis <- 0.8
+            if (missing(cex.lab)) cex.lab <- 1
+            
+            if (missing(main)) main <- paste0('Ecological Niche described by: ',x@names[1],' - ',x@names[2])
+            
+            .lab1 <- round(as.vector(seq(x@scaleParams[1,1], x@scaleParams[2,1], length.out = 6)),1)
+            .lab2 <- round(as.vector(seq(x@scaleParams[1,2], x@scaleParams[2,2], length.out = 6)),1)
+            #--------
+            if (gg) {
+              drc <- as.data.frame(x@nicheRaster,xy=TRUE)
+              p1 <- "ggplot(drc,aes(x=x,y=y,fill=niche)) +geom_raster() + coord_quickmap() + 
+                    scale_y_continuous(breaks=seq(0, 1, length.out = 6),name = ylab,labels=.lab1) + scale_x_continuous(breaks=seq(0, 1, length.out = 6),name = xlab,labels=.lab2) + ggtitle(main) +
+                    scale_fill_gradientn(colours=col,na.value='white') + theme_bw() +
+                    theme(axis.text=element_text(size=rel(cex.axis)),axis.title=element_text(size=rel(cex.lab)),plot.title = element_text(hjust = 0.5))"
+              p1 <- .eval(p1,env=environment())
+              return(p1)
+            } else {
+              if (length(col) < 10) col <- colorRampPalette(col)(100)
+              
+              plot(x@nicheRaster,col=col,xaxt='n',yaxt='n',xlab=xlab,ylab=ylab,main=main,cex.axis=cex.axis,cex.lab=cex.lab,...)
+              
+              axis(1, at=seq(0, 1, length.out = 6), labels = FALSE)
+              text(seq(0, 1, length.out = 6),par("usr")[3] - 0.05, labels = .lab1, srt = 0, pos = 1, xpd = TRUE,cex=cex.axis)
+              
+              axis(2, at=seq(0, 1, length.out = 6), labels = FALSE)
+              text(par("usr")[1]-0.1,seq(0, 1, length.out = 6)+0.05, labels = .lab2, srt = 0, pos = 1, xpd = TRUE,cex=cex.axis)
             }
           }
 )

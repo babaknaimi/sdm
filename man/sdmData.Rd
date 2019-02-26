@@ -70,7 +70,7 @@ d <- sdmData(sp~b15+NDVI,train=df)
 d
 
 # or simply:
-d <- sdmData(sp~b15+NDVI,train=df)
+d <- sdmData(sp~.,train=df)
 
 d
 
