@@ -1,5 +1,6 @@
 import(sp,methods)
-importFrom("graphics", "abline", "legend", "par", "points","lines","boxplot","barplot","arrows","segments")
+importFrom("graphics", "abline", "legend", "par", "points","lines","boxplot","barplot","arrows","segments","text","axis")
+importFrom("grDevices", "colorRampPalette")
 importFrom("stats", "as.formula", "cor", "cov", "formula", "glm",
              "mahalanobis", "predict.glm", "supsmu", "terms",
              "wilcox.test","princomp","plogis","model.frame","model.matrix",
@@ -8,7 +9,7 @@ importFrom("stats", "as.formula", "cor", "cov", "formula", "glm",
 importFrom("utils", "combn", "data", "read.csv","object.size","install.packages","remove.packages","write.csv")
 importFrom("parallel", "makeForkCluster", "makePSOCKcluster", "detectCores","clusterExport","clusterEvalQ","stopCluster","parLapply")
 importFrom("raster",  "raster", "stack" ,"brick","cellFromXY","cellFromRowCol","ncell","trim","extract","extent","as.data.frame","predict",
-           "writeRaster","calc","addLayer","setZ","extension","sampleRandom","values","subset","update","getValues")
+           "writeRaster","calc","addLayer","setZ","extension","sampleRandom","values","subset","update","getValues","nlayers")
 exportClasses(sdmdata, sdmFormula,sdmEvaluate,sdmModels,sdmCorrelativeMethod)
 exportMethods(sdmData,sdm,sdmSetting,evaluates,roc,getRoc,add,getmethodNames,getmethod,getModelInfo,getModelId,
               getEvaluation,read.sdm,write.sdm,installAll,gui,getVarImp,ensemble,subset,rcurve,getResponseCurve,niche)

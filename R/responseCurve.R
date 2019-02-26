@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date:  June 2018
-# Last update:  June 2018
-# Version 1.0
+# Last update:  March 2019
+# Version 1.1
 # Licence GPL v3
 
 
@@ -14,7 +14,7 @@
 
 
 
-.responseCurve <- function(m,id,si=100,includeTest=FALSE) {
+.responseCurve1 <- function(m,id,si=100,includeTest=FALSE) {
   mi <- m@run.info[m@run.info$modelID == id,]
   if (nrow(mi) != 1) stop('the model with the specified id does not exist!')
   
@@ -218,15 +218,17 @@
 if (!isGeneric("getResponseCurve")) {
   setGeneric("getResponseCurve", function(x,id,...)
     standardGeneric("getResponseCurve"))
-}  
+}
 
 
 setMethod("getResponseCurve", signature(x='sdmModels'),
           function(x,id,size=100,includeTest=FALSE,...) {
             
             if (missing(id)) {
-              id <- x@run.info[which(x@run.info$success)[1],1]
-              if (length(which(x@run.info$success)) > 1) cat(paste0('The id is missing; the first successfully fitted model is considered, i.e., id = ',id,'\n'))
+              id <- x@run.info[which(x@run.info$success),1]
+              if (length(id) == 1) cat(paste0('The id argument is not specified; id = ',id,' is considered. \n'))
+              else if (length(id) > 1) cat(paste0('The id argument is not specified; The modelIDs of ', length(id),' successfully fitted models are assigned to id...! \n'))
+              else stop('It seems that no successfully fitted models do exist in the sdmModels object!')
             }
             
             if (missing(size)) size <- 100
@@ -245,11 +247,20 @@ if (!isGeneric("rcurve")) {
 
 
 setMethod("rcurve", signature(x='sdmModels'),
-          function(x,n,id,mean=TRUE,confidence=TRUE,gg=TRUE,size=100,includeTest=FALSE,...) {
+          function(x,n,id,mean,confidence,gg,size,includeTest,...) {
+            
+            # if (missing(id)) {
+            #   id <- x@run.info[which(x@run.info$success)[1],1]
+            #   if (length(which(x@run.info$success)) > 1) cat(paste0('The id is missing; the first successfully fitted model is considered, i.e., id = ',id,'\n'))
+            # }
+            if (missing(gg)) gg <- .require('ggplot2')
+            else if (gg && !.require('ggplot2')) gg <- FALSE
             
             if (missing(id)) {
-              id <- x@run.info[which(x@run.info$success)[1],1]
-              if (length(which(x@run.info$success)) > 1) cat(paste0('The id is missing; the first successfully fitted model is considered, i.e., id = ',id,'\n'))
+              id <- x@run.info[which(x@run.info$success),1]
+              if (length(id) == 1) cat(paste0('The id argument is not specified; id = ',id,' is considered. \n'))
+              else if (length(id) > 1) cat(paste0('The id argument is not specified; The modelIDs of ', length(id),' successfully fitted models are assigned to id...! \n'))
+              else stop('It seems that no successfully fitted models do exist in the sdmModels object!')
             }
             
             if (missing(size)) size <- 100
@@ -258,13 +269,23 @@ setMethod("rcurve", signature(x='sdmModels'),
             
             if (missing(mean)) mean <- TRUE
             
-            if (missing(confidence)) confidence <- TRUE
+            if (missing(confidence)) {
+              if (length(id) == 1) confidence <- FALSE
+              else confidence <- TRUE
+            } else {
+              if (is.logical(confidence)) {
+                if (confidence && length(id) == 1) {
+                  confidence <- FALSE
+                  warning('confidence intervals can only be generated if modelIDs of more than one model are selected in the id argument!')
+                }
+              }
+            }
             
             if (missing(n)) n <- NULL
             
             rc <- .responseCurve(x,id=id,si=size,includeTest=includeTest)
             
-            plot(rc,y=n,mean=mean,confidence=confidence,...)
+            plot(rc,y=n,gg=gg,mean=mean,confidence=confidence,...)
           }
 )
 
@@ -273,12 +294,15 @@ setMethod("rcurve", signature(x='sdmModels'),
 setMethod("rcurve", signature(x='.responseCurve'),
           function(x,n,id,mean=TRUE,confidence=TRUE,gg=TRUE,...) {
             
+            if (missing(gg)) gg <- .require('ggplot2')
+            else if (gg && !.require('ggplot2')) gg <- FALSE
+            
             if (missing(mean)) mean <- TRUE
             
             if (missing(confidence)) confidence <- TRUE
             
             if (missing(n)) n <- NULL
             
-            plot(x,y=n,mean=mean,confidence=confidence,...)
+            plot(x,y=n,gg=gg,mean=mean,confidence=confidence,...)
           }
 )

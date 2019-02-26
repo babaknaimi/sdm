@@ -1,8 +1,8 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  Feb. 2019
-# Version 2.5
+# Date (last update):  March 2019
+# Version 2.6
 # Licence GPL v3
-
+#---------------------
 
 if (!isGeneric("plot")) {
   setGeneric("plot", function(x,y,...)
@@ -186,7 +186,7 @@ setMethod("plot", signature(x='.varImportance'),
 #-------
 
 setMethod("plot", signature(x='.responseCurve'),
-          function(x,y,gg=TRUE,mean=TRUE,confidence=TRUE,xlab,ylab,lty,lwd,col,cex.axis,cex.lab,main,...) {
+          function(x,y,gg=TRUE,mean=TRUE,confidence=TRUE,xlab,ylab,ylim,lty,lwd,col,cex.axis,cex.lab,main,...) {
             if (gg && !.require('ggplot2')) gg <- FALSE
             
             if (missing(mean)) mean <- TRUE
@@ -216,7 +216,8 @@ setMethod("plot", signature(x='.responseCurve'),
             if (missing(cex.lab)) cex.lab <- 1
             
             if (missing(main)) main <- 'Response Curve'
-            if (!'ylim' %in% names(list(...))) ylim <- c(0,1)
+            if (missing(ylim)) ylim <- NULL
+            
             #--------
             if (gg) {
               if (x@multi) {
@@ -243,7 +244,9 @@ setMethod("plot", signature(x='.responseCurve'),
                         drcc <- rbind(drcc,data.frame(Value=x@response[[nn]][,1],Response=.m,lower=.m - .ci,upper=.m + .ci,variable=nn))
                       }
                       
-                      p2 <- "ggplot(drcc,aes(x=Value,y=Response)) + geom_bar(stat = 'identity',fill=col) + facet_grid(.~variable,scale='free') + geom_errorbar(aes(ymin=lower, ymax=upper),width=.3,position=position_dodge(.9))"
+                      p2 <- "ggplot(drcc,aes(x=Value,y=Response)) + geom_bar(stat = 'identity',fill=col) + facet_grid(.~variable,scale='free') + 
+                      geom_errorbar(aes(ymin=lower, ymax=upper),width=.3,position=position_dodge(.9)) +
+                      labs(y = ylab,x = xlab)"
                       
                       p2 <- .eval(p2,env=environment())
                       if (!.require('gridExtra')) {
@@ -259,8 +262,9 @@ setMethod("plot", signature(x='.responseCurve'),
                     for (nn in n) {
                       drc <- rbind(drc,data.frame(Value=x@response[[nn]][,1],Response=apply(x@response[[nn]][,2:ncol(x@response[[nn]])],1,mean,na.rm=TRUE),variable=nn))
                     }
+                    
                     p1 <- "ggplot(drc,aes(x=Value,y=Response)) + geom_line(colour=col,size=lwd,linetype=lty) + 
-                      facet_grid(.~variable,scales='free_x') + scale_y_continuous(name = ylab,limits=ylim) + scale_x_continuous(name = xlab) + ggtitle(main) +
+                      facet_grid(.~variable,scales='free_x') + scale_y_continuous(limits=ylim) + labs(y = ylab,x = xlab)  + ggtitle(main) +
                       theme(axis.text=element_text(size=rel(cex.axis)),axis.title=element_text(size=rel(cex.lab)),plot.title = element_text(hjust = 0.5))"
                     
                     p1 <- .eval(p1,env=environment())
@@ -293,8 +297,8 @@ setMethod("plot", signature(x='.responseCurve'),
                   }
                 }
                 
-                p1 <- "ggplot(drc,aes(x=Value)) + geom_line(aes_string(y=colnames(drc)[3]),colour=col,size=lwd,linetype=lty) +scale_y_continuous(name = ylab,limits = c(0,1)) + facet_grid(.~variable,scales='free_x')
-                for (nn in colnames(drc)[4:ncol(drc)]) p1 <- p1 + geom_line(aes_string(y=nn),colour=col,size=lwd,linetype=lty)"
+                p1 <- ".p1 <- ggplot(drc,aes(x=Value)) + geom_line(aes_string(y=colnames(drc)[3]),colour=col,size=lwd,linetype=lty) +scale_y_continuous(name = ylab,limits = c(0,1)) + facet_grid(.~variable,scales='free_x')
+                for (nn in colnames(drc)[4:ncol(drc)]) .p1 <- .p1 + geom_line(aes_string(y=nn),colour=col,size=lwd,linetype=lty)"
                 .eval(p1,env=environment())
                 
                 if (!is.null(nF)) {
@@ -325,7 +329,7 @@ setMethod("plot", signature(x='.responseCurve'),
                   drc <- rbind(drc,data.frame(x@response[[nn]],variable=nn))
                 }
                 p1 <- "ggplot(drc,aes(x=Value,y=Response)) + geom_line(colour=col,size=lwd,linetype=lty) + facet_grid(.~variable,scales='free_x') +
-                scale_y_continuous(name = ylab,limits=ylim) + scale_x_continuous(name = xlab) + ggtitle(main) +
+                scale_y_continuous(limits=ylim) + labs(y = ylab,x = xlab) + ggtitle(main) +
                 theme(axis.text=element_text(size=rel(cex.axis)),axis.title=element_text(size=rel(cex.lab)),plot.title = element_text(hjust = 0.5))"
                 p1 <- .eval(p1,env=environment())
                 
@@ -368,7 +372,6 @@ setMethod("plot", signature(x='.responseCurve'),
                 }
                 par(mfrow=c(w,h),mar=c(5,4,1,1))
               }
-              
               #===========
               if (x@multi) {
                 for (nn in n) {

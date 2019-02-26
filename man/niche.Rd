@@ -4,7 +4,7 @@
 \alias{niche,RasterStackBrick,RasterLayer-method}
 \alias{niche,RasterStackBrick,SpatialPoints-method}
 \alias{niche,RasterStackBrick,sdmdata-method}
-\alias{niche,sdmdata-method}
+\alias{niche,sdmdata,ANY-method}
 \alias{plot,.nicheRaster-method}
 
 
