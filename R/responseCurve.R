@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date:  June 2018
-# Last update:  March 2019
-# Version 1.1
+# Last update:  Oct. 2019
+# Version 1.2
 # Licence GPL v3
 
 
@@ -149,10 +149,11 @@
     for (n in nFact) {
       u <- .factorFreq(dt[,n])
       dm[,n] <- names(which.max(u)[1])
+      dm[,n] <- factor(dm[,n],levels = levels(dt[,n]))
     }
     
     for (n in nFact) {
-      dt[,n] <- factor(dt[,n])
+      #dt[,n] <- factor(dt[,n])
       u <- unique(dt[,n])
       dc <- data.frame(matrix(nrow=length(u),ncol=1+nrow(mi))) # the results of response curve for categorical variable
       dc[,1] <- u

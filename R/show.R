@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Nov. 2016
-# Version 1.6
+# Date (last update):  March 2019
+# Version 1.7
 # Licence GPL v3
 
 setMethod ('show' , 'sdmdata',
@@ -198,4 +198,10 @@ setMethod ('show' , 'sdmModels',
            }
 )
 
+#----------
 
+setMethod ('show' , '.varImportanceList',
+           function (object) {
+             object
+           }
+)

@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Feb. 2019
-# Version 4.4
+# Date (last update):  March 2019
+# Version 4.5
 # Licence GPL v3
 
 
@@ -1632,6 +1632,14 @@ setClass(".varImportance",
          representation(
            variables='character',
            varImportance='data.frame'
+         )
+)
+#--------
+setClass(".varImportanceList",
+         representation(
+           variables='character',
+           varImportanceList='list',
+           varImportanceMean='list'
          )
 )
 #-----------

@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date (last update):  March 2019
-# Version 2.6
+# Version 2.7
 # Licence GPL v3
 #---------------------
 
@@ -185,6 +185,57 @@ setMethod("plot", signature(x='.varImportance'),
 
 #-------
 
+setMethod("plot", signature(x='.varImportanceList'),
+          function(x,y,gg=TRUE,confidence=TRUE,...) {
+            if (missing(gg)) gg <- TRUE
+            
+            if (missing(confidence)) confidence <- TRUE
+            
+            if (gg && !.require('ggplot2')) gg <- FALSE
+            
+            if (missing(y)) y <- 'corTest'
+            else {
+              y <- y[1]
+              if (is.character(y)) y <- .pmatch(y,c('corTest','AUCtest'))
+              else if (is.numeric(y)) {
+                if (!y %in% c(1,2)) {
+                  y <- 'corTest'
+                  warning('y should be 1 or 2, it is changed to 1 (i.e., corTest)')
+                } else y <- c('corTest','AUCtest')[y]
+              } else {
+                y <- 'corTest'
+                warning('y is not identified... default is used (i.e., corTest)')
+              }
+            }
+            if (gg) {
+              p2 <- "ggplot(drcc,aes(x=Value,y=Response)) + geom_bar(stat = 'identity',fill=col)+ scale_y_continuous(name = ylab,limits=ylim) + facet_grid(.~variable,scale='free') + geom_errorbar(aes(ymin=lower, ymax=upper),width=.3,position=position_dodge(.9))"
+              
+              #p2 <- .eval(p2,env=environment())
+            } else {
+              dot <- list(...)
+              ndot <- names(dot)
+              if (!'xlab' %in% ndot) dot[['xlab']] <- "Relative Variable Importance"
+              if (!'horiz' %in% ndot) dot[['horiz']] <- TRUE
+              if (!'names.arg' %in% ndot) dot[['names.arg']] <- x@variables
+              if (!'col' %in% ndot) dot[['col']] <-'#DDE9EB'
+              if (!'cex.names' %in% ndot) dot[['cex.names']] <- 0.8
+              if (!'las' %in% ndot) dot[['las']] <- 1
+              dot[['height']] <- x@varImportanceMean[[y]][,2]
+              
+              .bar <- do.call(barplot,dot)
+              
+              if (confidence) {
+                segments(.bar, x@varImportanceMean[[y]][,3], .bar,x@varImportanceMean[[y]][,4], lwd = 1.5)
+                
+                arrows(.bar, x@varImportanceMean[[y]][,3], .bar,x@varImportanceMean[[y]][,4], lwd = 1.5, angle = 90,code = 3, length = 0.05)
+              }
+              
+            }
+            
+          }
+)
+
+#-------
 setMethod("plot", signature(x='.responseCurve'),
           function(x,y,gg=TRUE,mean=TRUE,confidence=TRUE,xlab,ylab,ylim,lty,lwd,col,cex.axis,cex.lab,main,...) {
             if (gg && !.require('ggplot2')) gg <- FALSE
