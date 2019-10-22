@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  July 2017
-# Version 1.1
+# Date (last update):  Nov. 2019
+# Version 1.2
 # Licence GPL v3
 
 #-------------
@@ -10,7 +10,7 @@ methodInfo <- list(name=c('brt','BRT','gbm','GBM'),
                   fitParams = list(formula='standard.formula',data='sdmDataFrame'),
                   fitSettings = list(distribution='bernoulli',
                                      n.trees=1000,
-                                     interaction.depth=1,
+                                     interaction.depth=4,
                                      n.minobsinnode = 10,
                                      shrinkage = 0.001,
                                      bag.fraction = 0.5,

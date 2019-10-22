@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July 2016
-# Last update :  March 2019
-# Version 2.8
+# Last update :  Nov. 2019
+# Version 2.9
 # Licence GPL v3
 
 
@@ -60,7 +60,7 @@
 .getVarImpObject <- function(x,id,wtest) {
   # stat can be 1 (threshold-independent) OR 2 (threshold-dependent)
   
-  mi <- m@run.info[m@run.info$modelID %in% id,]
+  mi <- x@run.info[x@run.info$modelID %in% id,]
   
   mi <- mi[mi$success,]
   

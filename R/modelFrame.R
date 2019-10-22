@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Feb. 2018
-# Version 1.3
+# Date (last update):  Oct. 2019
+# Version 1.4
 # Licence GPL v3
 
 .getFeature.linear <- function(x) {
@@ -361,7 +361,7 @@
     
     for (i in 1:length(n)) {
       if (ft[[i]] == 'linear') d[[fn[[i]]]] <- data[,n[[i]]]
-      else if (ft[[i]] == 'factor') d[[fn[[i]]]] <- factor(data[,n[[i]]])
+      else if (ft[[i]] == 'factor') d[[fn[[i]]]] <- data[,n[[i]]]
       else if (ft[[i]] == 'quad') d[[fn[[i]]]] <- .getFeature.quad(data[,n[[i]]])
       else if (ft[[i]] == 'cubic') d[[fn[[i]]]] <- .getFeature.cubic(data[,n[[i]]])
       else if (ft[[i]] == 'poly') {

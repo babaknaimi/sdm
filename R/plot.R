@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  March 2019
-# Version 2.7
+# Date (last update):  December 2019
+# Version 2.8
 # Licence GPL v3
 #---------------------
 
@@ -495,7 +495,7 @@ setMethod("plot", signature(x='.nicheRaster'),
             if (gg) {
               drc <- as.data.frame(x@nicheRaster,xy=TRUE)
               p1 <- "ggplot(drc,aes(x=x,y=y,fill=niche)) +geom_raster() + coord_quickmap() + 
-                    scale_y_continuous(breaks=seq(0, 1, length.out = 6),name = ylab,labels=.lab1) + scale_x_continuous(breaks=seq(0, 1, length.out = 6),name = xlab,labels=.lab2) + ggtitle(main) +
+                    scale_y_continuous(breaks=seq(0, 1, length.out = 6),name = ylab,labels=.lab2) + scale_x_continuous(breaks=seq(0, 1, length.out = 6),name = xlab,labels=.lab1) + ggtitle(main) +
                     scale_fill_gradientn(colours=col,na.value='white') + theme_bw() +
                     theme(axis.text=element_text(size=rel(cex.axis)),axis.title=element_text(size=rel(cex.lab)),plot.title = element_text(hjust = 0.5))"
               p1 <- .eval(p1,env=environment())
