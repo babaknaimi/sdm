@@ -98,4 +98,6 @@ plot(p2)
 }
 }
 
-\keyword{spatial,species,data}
+\keyword{spatial}
+\keyword{data}
+\keyword{model}

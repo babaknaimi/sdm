@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  October 2018
-# Version 3.9
+# Date (last update):  December 2019
+# Version 4.0
 # Licence GPL v3
 #--------
 
@@ -379,12 +379,12 @@
   ww <- .loadLib(pkgs)
   if (!all(ww)) {
     if (!any(ww)) {
-      cat('some methods are removed because they depend on some packages that are not installed on this machine!\n')
-      cat('you can use installAll() function to simply install all the packages that may be required by some functions in the sdm package!\n')
+      cat('some methods are ignored because they depend on package(s) that is/are not installed on the machine!\n')
+      cat('you can use the installAll() function to simply install all the packages that may be required by some functions in the sdm package!\n')
       stop(paste('There is no installed packages rquired by the selected methods. Package names:',paste(unlist(pkgs),collapse=', ')))
     } else {
-      cat('some methods are removed because they depend on some packages that are not installed on this machine!\n')
-      cat('you can use installAll() function to simply install all the packages that may be required by some functions in the sdm package!\n')
+      cat('some methods are ignored because they depend on some package(s) that is/are not installed on the machine!\n')
+      cat('you can use the installAll() function to simply install all the packages that may be required by some functions in the sdm package!\n')
       warning(paste('There is no installed packages rquired by the methods:',paste(s@methods[!ww],collapse=', '),'; These methods are excluded! The packages need to be installed for these methods:',paste(unlist(pkgs[!ww]),collapse=', ')))
       s@methods <- s@methods[ww]
     }
@@ -394,13 +394,14 @@
   #-----------
   #fr <- .getFeaturetype(d,s@sdmFormula)
   w <- new('.workload',ncore=s@parallelSettings@ncore,data=d,setting=s,frame=s@featuresFrame,filename=filename)
+  #-----
   hasTest <- 'test' %in% d@groups$training@values[,2]
   nFact <- NULL
   if (!is.null(d@factors) > 0 && any(d@factors %in% s@sdmFormula@vars)) nFact <- d@factors[d@factors %in% s@sdmFormula@vars]
   nf <- .excludeVector(d@features.name,nFact)
   nf <- nf[nf %in% s@sdmFormula@vars]
   nFact <- nFact[nFact %in% s@sdmFormula@vars]
-  
+  #---------
   for (sp in s@sdmFormula@species) {
     dt <- as.data.frame(d,sp=sp,grp='train')
     w$recordIDs[[sp]]$train <- data.frame(rID=dt[,1],rowID=1:nrow(dt))
@@ -569,6 +570,7 @@
     f <- .replicateMethods$getFunctions(s@replicate)
     for (sp in names(w$train)) {
       if (d@species[[sp]]@type %in% c('Presence-Absence','Presence-Background')) family <- 'binomial'
+      else if (d@species[[sp]]@type %in% c('Abundance')) family <- 'poisson'
       else family <- 'xxx'
       
       # sdmDataFrame! Leter should be checked for other types of data!

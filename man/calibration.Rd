@@ -60,4 +60,5 @@ plot(ca)
 
 }
 
-\keyword{spatial,species,data}
+\keyword{spatial}
+\keyword{data}

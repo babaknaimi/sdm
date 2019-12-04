@@ -53,3 +53,4 @@ gui(m)
 }
 
 \keyword{spatial}
+\keyword{interface}

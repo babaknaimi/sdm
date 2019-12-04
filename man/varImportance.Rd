@@ -61,4 +61,4 @@ plot(vi,'cor')
 }
 }
 
-\keyword{spatial,data}
+\keyword{spatial}

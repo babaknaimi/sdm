@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  Jan. 2018
-# Version 1.2
+# Date (last update):  Dec. 2019
+# Version 1.3
 # Licence GPL v3
 
 .newFormulaFunction <- function(cls,name,args,getFeature) {
@@ -24,10 +24,10 @@
 .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.hinge',
                                                             representation(x='character',
                                                                            thresholds='numeric',
-                                                                           knots='numeric',
+                                                                           nknots='numeric',
                                                                            term='call'
                                                             ))),
-                                         name=c('hinge','h','H','Hinge','hing','Hing'),args=c('x','nknots')))
+                                         name=c('hinge','h','H','Hinge','hing','Hing'),args=c('x','knots')))
 
 
 .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.quad',
@@ -51,7 +51,7 @@
 .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.threshold',
                                                             representation(x='character',
                                                                            threshold='numeric',
-                                                                           increasing='logical',
+                                                                           nknots='numeric',
                                                                            term='call'
                                                             ))),
                                          name=c('threshold','th','Th','thereshold','thresh','Thresh'),args=c('x','threshold','increasing')))
@@ -97,95 +97,7 @@
 .sdmFormulaFuncs$setClasses() # set the classes
 # 
 # 
-# .newFormulaFunction <- function(cls,name,args,getFeature) {
-#   new('.formulaFunction',cls=cls,name=name,args=args,getFeature=getFeature)
-# }
-# 
-# # adding the classes of formula functions into the corresponding container:
-# # for each function, a specific class is defined in which the name of feature, 
-# # and its arguments as well as the function to generate the feature from dataset is specified
-# 
-# .sdmFormulaFuncs <- new('.formulaFunctions')
-# 
-# .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.auto',
-#                                                             representation(x='character',
-#                                                                            features='character',
-#                                                                            stat='characterORnull',
-#                                                                            term='call'
-#                                                             ))),
-#                                          name=c('auto','a','Auto'),args=c('x','features','stat'),getFeature = .getFeature.auto))
-# 
-# .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.hinge',
-#                                                             representation(x='character',
-#                                                                            threshold='numeric',
-#                                                                            increasing='logical',
-#                                                                            term='call'
-#                                                             ))),
-#                                          name=c('hinge','h','H','Hinge','hing','Hing'),args=c('x','threshold','increasing'),getFeature = .getFeature.hinge))
-# 
-# 
-# .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.quad',
-#                                                             representation(x='character',
-#                                                                            term='call'
-#                                                             ))),
-#                                          name=c('quad','q','Q','Quad','quadratic','Quadratic'),args=c('x'),getFeature = .getFeature.quad))
-# 
-# .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.cubic',
-#                                                             representation(x='character',
-#                                                                            term='call'
-#                                                             ))),
-#                                          name=c('cubic','c','C','Cubic'),args=c('x'),getFeature = .getFeature.cubic))
-# 
-# .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.factor',
-#                                                             representation(x='character',
-#                                                                            term='call'
-#                                                             ))),
-#                                          name=c('factor','f','F','Factor','fact','Fact'),args=c('x'),getFeature = .getFeature.factor))
-# 
-# .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.threshold',
-#                                                             representation(x='character',
-#                                                                            threshold='numeric',
-#                                                                            increasing='logical',
-#                                                                            term='call'
-#                                                             ))),
-#                                          name=c('threshold','th','Th','thereshold','thresh','Thresh'),args=c('x','threshold','increasing'),getFeature = .getFeature.threshold))
-# 
-# .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.poly',
-#                                                             representation(x='character',
-#                                                                            degree='numeric',
-#                                                                            raw='logical',
-#                                                                            term='call'
-#                                                             ),
-#                                                             prototype(
-#                                                               degree=3,
-#                                                               raw=TRUE
-#                                                             ))),
-#                                          name=c('poly','Po','po','Poly'),args=c('x','degree','raw'),getFeature = .getFeature.poly))
-# 
-# .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.product',
-#                                                             representation(x='character',
-#                                                                            term='call'
-#                                                             ))),
-#                                          name=c('product','p','P','Product','prod','Prod'),args=c('x'),getFeature = .getFeature.product))
-# 
-# .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.func',
-#                                                             representation(x='call',
-#                                                                            term='call'
-#                                                             ))),
-#                                          name=c('I','i'),args=c('x'),getFeature = .getFeature.func))
-# 
-# .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.simple.func',
-#                                                             representation(term='call'
-#                                                             ))),
-#                                          name=c('xxxxxxxx'),args=c('x'),getFeature = .getFeature.simplefunc))
-# 
-# .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.log',
-#                                                             representation(x='character',
-#                                                                            term='call'
-#                                                             ))),
-#                                          name=c('log','log10','exp'),args=c('x'),getFeature = .getFeature.log))
-# 
-# .sdmFormulaFuncs$setClasses() # set the classes
+
 ########################################################
 
 #------ split a formula (f) based on the sep

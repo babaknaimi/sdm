@@ -44,4 +44,4 @@ installAll()
 }
 }
 
-\keyword{utilities, data}
+\keyword{utilities}

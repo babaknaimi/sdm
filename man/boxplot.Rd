@@ -46,4 +46,5 @@ boxplot(e)
 
 }
 
-\keyword{spatial,data}
+\keyword{visualise}
+\keyword{data}

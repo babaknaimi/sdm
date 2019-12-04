@@ -20,7 +20,7 @@ Make a Raster object with a weighted averaging over all predictions from several
 
 \arguments{
   \item{x}{a sdmModels object}
-  \item{newdata}{Raster* object or data.frame}
+  \item{newdata}{Raster* object or data.frame, can be either predictors or the results of the predict function}
   \item{filename}{character, output file name}
   \item{setting}{list, contains the parameters that are used in the ensemble procedure; see details}
   \item{...}{additional arguments passed to the predict function}
@@ -30,15 +30,39 @@ Make a Raster object with a weighted averaging over all predictions from several
 ensemble function uses the fitted models in an \code{sdmModels} object to generate an ensemble/consensus of predictions by individual models. Several methods do exist for this procedure, that are (or will be) implemented in this function, and can be defined in the method argument.
 A list can be introduced in the \code{setting} argument in which several parameters can be set including:
 
-- method: specify which ensemble method should be used. Currently, 'unweighted' (unweighted averaging), and 'weighted' (weighted averaging) are implemented, but more methods will be added.
+- \code{method}: specify which ensemble method should be used. Several methods are implemented including:
+ 
+ -- 'unweighted': unweighted averaging/mean.
+ 
+ -- 'weighted': weighted averaging.
+ 
+ -- 'median': median.
+ 
+ -- 'pa': mean of predicted presence-absence values (predicted probability of occurrences are first converted to presence-absence using a threshold, then they are averaged).
+ 
+ -- 'mean-weighted': A two step mean that is when several replications are fitted for each modelling methods (e.g., through bootstrapping or cross-validation), using this method an unweighted mean is taken over the predicted values of different replications of each method (i.e., within model averaging), then a weighted mean is used to combine them into final ensemble values (i.e., between models averaging).
 
-- stat: if the method='weighted' is used, this specify which evaluation statistics can be used as weight in the weighted averaging procedure. Alternatively, one may directly introduce weights (see the next argument)
+-- 'mean-unweighted': Same as the previous one, but an unweighted mean is also used for the second step (instead of unweighted mean).
 
-- weights: an optional numeric vector (with a length equal to the models that are successfully fitted) to specify the weights for weighted averaging procedure (if the method='weighted' is specified)
+-- 'median-weighted': Same as the 'mean-unweighted, but the median is used instead of unweighted mean.
 
-- id: specify the model IDs that should be considered in the ensemble procedure. If missing, all the models that are successfully fitted are considered.
+-- 'median-unweighted': another two-step method, median is used for the first step and unweighted mean is used for the second step.
 
-- wtest: specify which test dataset ("training","test.dep","test.indep") should be used to extract the statistic (stat) values as weights (if a relevant method is specified)
+-- 'uncertainty' or 'entropy': this method generates the uncertainty among the models' predictions that can be interpreted as model-based uncertainty or inconsistency among different models. It ranges between 0 and 1, 0 means all the models predicted the same value (either presence or absence), and 1 referes to maximum uncertainy, e.g., half of the models predicted presence (or absence) and the other half predicted the oposite value.
+
+
+- \code{stat}: if the method='weighted' is used, this specify which evaluation statistics can be used as weight in the weighted averaging procedure. Alternatively, one may directly introduce weights (see the next argument)
+
+- \code{weights}: an optional numeric vector (with a length equal to the models that are successfully fitted) to specify the weights for weighted averaging procedure (if the method='weighted' is specified)
+
+- \code{id}: specify the model IDs that should be considered in the ensemble procedure. If missing, all the models that are successfully fitted are considered.
+
+- \code{wtest}: specify which test dataset ("training","test.dep","test.indep") should be used to extract the statistic (stat) values as weights (if a relevant method is specified)
+
+- \code{opt}: If either of the thershold_based stats are selected, \code{opt} can be also specified to select one of the criteria for optimising the threshold. The possible value can be between 1 to 10 for \code{"sp=se", "max(se+sp)", "min(cost)", "minROCdist", "max(kappa)", "max(ppv+npv)", "ppv=npv", "max(NMI)", "max(ccr)", "prevalence"} criteria, respectively.
+
+- \code{power}: default: 1, a numeric value to which the weights are raised. Greater value than 1 affects weighting scheme (for the methods e.g., "weighted") to increase the weights for the models with greater weight. For example, if weights are c(0.2,0.2,0.2,0.4), raising them to power 2 would be resulted to new weights as c(0.1428571,0.1428571, 0.1428571, 0.5714286) that causes greater influence of the models with  greater performances to the ensemble output.
+
 
 
 }
@@ -99,4 +123,7 @@ plot(p2)
 
 }
 
-\keyword{spatial,species,data}
+\keyword{spatial}
+\keyword{sdm}
+\keyword{modelling}
+\keyword{learning}

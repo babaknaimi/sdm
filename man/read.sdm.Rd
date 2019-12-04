@@ -63,4 +63,5 @@ list.files(pattern='dataset')
 }
 }
 
-\keyword{ write, write sdm}
+\keyword{ write}
+\keyword{sdm}

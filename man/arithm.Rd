@@ -60,4 +60,6 @@ m
 
 }
 
-\keyword{spatial,species,sdm, model}
+\keyword{sdm}
+\keyword{math}
+\keyword{methods}

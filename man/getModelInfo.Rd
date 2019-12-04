@@ -66,4 +66,5 @@ getModelInfo(m)
 
 }
 
-\keyword{spatial,species,data}
+\keyword{model}
+\keyword{sdm}

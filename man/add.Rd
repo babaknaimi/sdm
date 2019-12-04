@@ -60,4 +60,5 @@ getmethodNames('sdm')
 }
 }
 
-\keyword{spatial,species,data}
+\keyword{method}
+\keyword{extensible}

@@ -82,4 +82,5 @@ rcurve(m,method = 'glm',smooth = T) # only for models fitted using glm method & 
 }
 }
 
-\keyword{spatial,species,data}
+\keyword{spatial}
+\keyword{sdm}

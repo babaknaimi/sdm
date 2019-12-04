@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date of last update :  June 2018
-# Version 2.7
+# Date of last update :  December 2019
+# Version 2.8
 # Licence GPL v3
 
 #------
@@ -1132,7 +1132,7 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'),
             trainSP <-NULL
             errLog <- list()
             
-            nxy <- coordnames(train)
+            nxy <- coordnames(train)[1:2]
             wF <- is.factor(predictors)
            
             if (!is.null(test)) {
@@ -1167,7 +1167,7 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'),
                   test <- test[,colnames(test)[!w]]
                   errLog <- c(errLog,paste('WARNING: The variables',colnames(test)[w],'were removed from the test dataset as they exist in the predictors as well.'))
                 }
-              } else stop('the coordinates name are not match in the train and test datasets!')
+              } else stop('the coordinate names in the train and test datasets do not match!')
             }
             
             if (!is.na(proj4string(train))) crs <- CRS(proj4string(train))
@@ -1182,7 +1182,7 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'),
               wNA <- which(cNA)
               train <- train[-wNA,]
               cells <- cells[-wNA]
-              errLog <- c(errLog,paste(length(wNA),'records were removed from the train dataset because of no overlap with the predictors.'))
+              errLog <- c(errLog,paste(length(wNA),'records were removed from the train dataset as they had no overlap with the predictors.'))
             }
             rm(cNA)
             

@@ -98,4 +98,7 @@ m
 
 }
 
-\keyword{spatial,species,sdm, model}
+\keyword{spatial}
+\keyword{model}
+\keyword{data}
+\keyword{species}

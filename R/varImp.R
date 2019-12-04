@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July 2016
-# Last update :  Nov. 2019
-# Version 2.9
+# Last update :  Jan. 2020
+# Version 3.0
 # Licence GPL v3
 
 
@@ -116,7 +116,7 @@
 
 #--------
 if (!isGeneric("getVarImp")) {
-  setGeneric("getVarImp", function(x,id, wtest, species,...)
+  setGeneric("getVarImp", function(x,id, wtest, ...)
     standardGeneric("getVarImp"))
 }  
 

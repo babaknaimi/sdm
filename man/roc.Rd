@@ -72,4 +72,6 @@ roc(m,method = 'glm',smooth = T) # only for models fitted using glm method & wit
 }
 }
 
-\keyword{spatial,species,data}
+\keyword{spatial}
+\keyword{accuracy}
+\keyword{model}

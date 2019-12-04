@@ -40,4 +40,7 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 
 
-\keyword{spatial,species,data}
+\keyword{spatial}
+\keyword{methods}
+\keyword{data}
+\keyword{species}

@@ -99,4 +99,6 @@ niche(x=preds, h=d, n=c('vegetation','temperature','Occurrence'))
 }
 }
 
-\keyword{spatial,species,data, niche}
+\keyword{spatial}
+\keyword{species}
+\keyword{data}

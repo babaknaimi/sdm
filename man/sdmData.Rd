@@ -207,4 +207,6 @@ d       # as you see in the type, the data is Presence-Background
 }
 }
 
-\keyword{spatial,species,data}
+\keyword{spatial}
+\keyword{data}
+\keyword{species}

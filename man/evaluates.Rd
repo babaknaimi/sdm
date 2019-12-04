@@ -92,4 +92,6 @@ evaluates(x=c(1,1,0,1,0,0,0,1,1,1,0),
 }
 }
 
-\keyword{spatial,species,data}
+\keyword{spatial}
+\keyword{data}
+\keyword{accuracy}

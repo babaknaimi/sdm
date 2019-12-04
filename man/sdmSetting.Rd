@@ -96,4 +96,7 @@ s
 }
 }
 
-\keyword{spatial,species,data}
+\keyword{spatial}
+\keyword{model}
+\keyword{data}
+

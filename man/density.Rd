@@ -57,4 +57,5 @@ density(e)
 
 }
 
-\keyword{spatial,data}
+\keyword{spatial}
+\keyword{data}
