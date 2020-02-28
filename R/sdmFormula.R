@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Dec. 2019
-# Version 1.3
+# Date (last update):  Feb. 2020
+# Version 1.4
 # Licence GPL v3
 
 .newFormulaFunction <- function(cls,name,args,getFeature) {
@@ -289,8 +289,8 @@
 }
 
 #################---- detect the terms in the nested formula (model) inside the main formula:
-.nested_terms <- function(x,r='.parent',output='.prediction') {
-  n <- new('.nestedModel',response=r,output=output)
+.nested_terms <- function(x,r='.parent',output='.prediction',setting=NULL,method='glm') {
+  n <- new('.nestedModel',response=r,output=output,setting=setting,method=method)
   if (length(x) > 1) {
     if (x[[1]] == '~') {
       if (length(x) == 3) {

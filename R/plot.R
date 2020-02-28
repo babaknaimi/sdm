@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  December 2019
-# Version 2.8
+# Date (last update):  Feb. 2020
+# Version 3.0
 # Licence GPL v3
 #---------------------
 
@@ -207,27 +207,99 @@ setMethod("plot", signature(x='.varImportanceList'),
                 warning('y is not identified... default is used (i.e., corTest)')
               }
             }
+            
+            dot <- list(...)
+            ndot <- names(dot)
+            
             if (gg) {
-              p2 <- "ggplot(drcc,aes(x=Value,y=Response)) + geom_bar(stat = 'identity',fill=col)+ scale_y_continuous(name = ylab,limits=ylim) + facet_grid(.~variable,scale='free') + geom_errorbar(aes(ymin=lower, ymax=upper),width=.3,position=position_dodge(.9))"
+              drcc <-  x@varImportanceMean[[y]]
               
-              #p2 <- .eval(p2,env=environment())
+              if (!'horiz' %in% ndot) horiz <- TRUE
+              else horiz <- dot[['horiz']]
+              
+              if (!'xlab' %in% ndot) xlab <- "Variables"
+              else xlab <- dot[['xlab']]
+              if (!'ylab' %in% ndot) ylab <- "Relative Variable Importance"
+              else ylab <- dot[['ylab']]
+              
+              if (!'col' %in% ndot) col <-'#9966CC'
+              else col <- dot[['col']]
+              
+              if (!'main' %in% ndot) main <- 'Relative Variable Importance'
+              else main <- dot[['main']]
+              
+              if (y == 'corTest') {
+                if (horiz) {
+                  if (confidence) {
+                    p2 <- "ggplot(drcc,aes(x=variables,y=corTest)) + geom_bar(stat = 'identity',fill=col) + geom_errorbar(aes(ymin=lower, ymax=upper),width=.3,position=position_dodge(.9)) + 
+                  coord_flip() + labs(y = ylab,x = xlab) + ggtitle(main)"
+                  } else {
+                    p2 <- "ggplot(drcc,aes(x=variables,y=corTest)) + geom_bar(stat = 'identity',fill=col) + 
+                  coord_flip() + labs(y = ylab,x = xlab) + ggtitle(main)"
+                  }
+                  
+                } else {
+                  if (confidence) {
+                    p2 <- "ggplot(drcc,aes(x=variables,y=corTest)) + geom_bar(stat = 'identity',fill=col) + geom_errorbar(aes(ymin=lower, ymax=upper),width=.3,position=position_dodge(.9)) +
+                  labs(y = ylab,x = xlab) + ggtitle(main)"
+                  } else {
+                    p2 <- "ggplot(drcc,aes(x=variables,y=corTest)) + geom_bar(stat = 'identity',fill=col) +
+                  labs(y = ylab,x = xlab) + ggtitle(main)"
+                  }
+                  
+                }
+              } else {
+                if (horiz) {
+                  if (confidence) {
+                    p2 <- "ggplot(drcc,aes(x=variables,y=AUCtest)) + geom_bar(stat = 'identity',fill=col) + geom_errorbar(aes(ymin=lower, ymax=upper),width=.3,position=position_dodge(.9)) + 
+                  coord_flip() + labs(y = ylab,x = xlab) + ggtitle(main)"
+                  } else {
+                    p2 <- "ggplot(drcc,aes(x=variables,y=AUCtest)) + geom_bar(stat = 'identity',fill=col) + 
+                  coord_flip() + labs(y = ylab,x = xlab) + ggtitle(main)"
+                  }
+                  
+                } else {
+                  if (confidence) {
+                    p2 <- "ggplot(drcc,aes(x=variables,y=AUCtest)) + geom_bar(stat = 'identity',fill=col) + geom_errorbar(aes(ymin=lower, ymax=upper),width=.3,position=position_dodge(.9)) +
+                  labs(y = ylab,x = xlab) + ggtitle(main)"
+                  } else {
+                    p2 <- "ggplot(drcc,aes(x=variables,y=AUCtest)) + geom_bar(stat = 'identity',fill=col) +
+                  labs(y = ylab,x = xlab) + ggtitle(main)"
+                  }
+                  
+                }
+              }
+              
+              p2 <- .eval(p2,env=environment())
+              return(p2)
             } else {
-              dot <- list(...)
-              ndot <- names(dot)
               if (!'xlab' %in% ndot) dot[['xlab']] <- "Relative Variable Importance"
               if (!'horiz' %in% ndot) dot[['horiz']] <- TRUE
               if (!'names.arg' %in% ndot) dot[['names.arg']] <- x@variables
               if (!'col' %in% ndot) dot[['col']] <-'#DDE9EB'
               if (!'cex.names' %in% ndot) dot[['cex.names']] <- 0.8
               if (!'las' %in% ndot) dot[['las']] <- 1
+              if (dot[['horiz']]) {
+                if (!'xlim' %in% ndot) dot[['xlim']] <- c(0,max(x@varImportanceMean[[y]][,4],na.rm=TRUE))
+              } else {
+                if (!'ylim' %in% ndot) dot[['ylim']] <- c(0,max(x@varImportanceMean[[y]][,4],na.rm=TRUE))
+              }
+              
               dot[['height']] <- x@varImportanceMean[[y]][,2]
               
               .bar <- do.call(barplot,dot)
               
               if (confidence) {
-                segments(.bar, x@varImportanceMean[[y]][,3], .bar,x@varImportanceMean[[y]][,4], lwd = 1.5)
+                if (dot[['horiz']]) {
+                  segments(x@varImportanceMean[[y]][,3], .bar,x@varImportanceMean[[y]][,4], .bar, lwd = 1.5)
+                  
+                  arrows(x@varImportanceMean[[y]][,3], .bar,x@varImportanceMean[[y]][,4], .bar, lwd = 1.5, angle = 90,code = 3, length = 0.05)
+                } else {
+                  segments(.bar,x@varImportanceMean[[y]][,3], .bar,x@varImportanceMean[[y]][,4], lwd = 1.5)
+                  
+                  arrows(.bar,x@varImportanceMean[[y]][,3], .bar,x@varImportanceMean[[y]][,4], lwd = 1.5, angle = 90,code = 3, length = 0.05)
+                }
                 
-                arrows(.bar, x@varImportanceMean[[y]][,3], .bar,x@varImportanceMean[[y]][,4], lwd = 1.5, angle = 90,code = 3, length = 0.05)
               }
               
             }

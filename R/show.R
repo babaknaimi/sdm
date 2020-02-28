@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  March 2019
-# Version 1.7
+# Date (last update):  February 2020
+# Version 1.8
 # Licence GPL v3
 
 setMethod ('show' , 'sdmdata',
@@ -202,6 +202,127 @@ setMethod ('show' , 'sdmModels',
 
 setMethod ('show' , '.varImportanceList',
            function (object) {
-             object
+             cat('Relative Variable Importance List \n')
+             cat('=============================================================','\n')
+             cat('method              : Permutation based on two metrics (Pearson Correlation and AUC)\n')
+             cat('number of variables : ' , length(object@variables), '\n')
+             cat('variable names      : ' , if (length(object@variables) > 3) paste(c(object@variables,'...'),collapse=', ') else paste(object@variables,collapse=', '), '\n')
+             cat('number of models    : ' , length(object@varImportanceList), '\n')
+             cat('=============================================================','\n')
+             cat('Summary of relative variable importance \n')
+             cat('----------------------------------------------','\n')
+             cat('Based on Correlation metric: \n')
+             cat('----------------------------------------------','\n')
+             for (n in object@variables) {
+               .ns <- unlist(strsplit(n,''))
+               w <- which(object@varImportanceMean$corTest$variables == n)
+               v <- round(object@varImportanceMean$corTest$corTest[w]*50)
+               ci1 <- round(object@varImportanceMean$corTest$lower[w]*50)
+               ci2 <- round(object@varImportanceMean$corTest$upper[w]*50)
+               vp <- round(object@varImportanceMean$corTest$corTest[w]*100,1)
+               
+               if (length(.ns) >= 20) {
+                 xx <- c(.ns[1:20],': ',rep('*',v))
+                 xx[21+ci1] <- '['
+                 xx[21+ci2] <- ']'
+                 if (any(is.na(xx))) xx[is.na(xx)] <- '-'
+                 xx <- c(xx,' (',vp,' %)')
+                 cat(paste(xx,collapse=''),'\n')
+               } else {
+                 xx <- c(.ns,rep(' ',20 - length(.ns)), ': ',rep('*',v))
+                 xx[21+ci1] <- '['
+                 xx[21+ci2] <- ']'
+                 if (any(is.na(xx))) xx[is.na(xx)] <- '-'
+                 xx <- c(xx,' (',vp,' %)')
+                 cat(paste(xx,collapse=''),'\n')
+               }
+             }
+             
+             cat('=============================================================','\n')
+             cat('Based on AUC metric: \n')
+             cat('----------------------------------------------','\n')
+             for (n in object@variables) {
+               .ns <- unlist(strsplit(n,''))
+               w <- which(object@varImportanceMean$AUCtest$variables == n)
+               v <- round(object@varImportanceMean$AUCtest$AUCtest[w]*50)
+               ci1 <- round(object@varImportanceMean$AUCtest$lower[w]*50)
+               ci2 <- round(object@varImportanceMean$AUCtest$upper[w]*50)
+               vp <- round(object@varImportanceMean$AUCtest$AUCtest[w]*100,1)
+               
+               if (length(.ns) >= 20) {
+                 xx <- c(.ns[1:20],': ',rep('*',v))
+                 xx[21+ci1] <- '['
+                 xx[21+ci2] <- ']'
+                 if (any(is.na(xx))) xx[is.na(xx)] <- '-'
+                 xx <- c(xx,' (',vp,' %)')
+                 cat(paste(xx,collapse=''),'\n')
+               } else {
+                 xx <- c(.ns,rep(' ',20 - length(.ns)), ': ',rep('*',v))
+                 xx[21+ci1] <- '['
+                 xx[21+ci2] <- ']'
+                 if (any(is.na(xx))) xx[is.na(xx)] <- '-'
+                 xx <- c(xx,' (',vp,' %)')
+                 cat(paste(xx,collapse=''),'\n')
+               }
+             }
+             cat('=============================================================','\n')
+             
            }
 )
+####----------
+
+setMethod ('show' , '.varImportance',
+           function (object) {
+             cat('Relative Variable Importance \n')
+             cat('=============================================================','\n')
+             cat('method              : Permutation based on two metrics (Pearson Correlation and AUC)\n')
+             cat('number of variables : ' , length(object@variables), '\n')
+             cat('variable names      : ' , if (length(object@variables) > 3) paste(c(object@variables,'...'),collapse=', ') else paste(object@variables,collapse=', '), '\n')
+             cat('=============================================================','\n')
+             cat('Relative variable importance \n')
+             cat('----------------------------------------------','\n')
+             cat('Based on Correlation metric: \n')
+             cat('----------------------------------------------','\n')
+             for (n in object@variables) {
+               .ns <- unlist(strsplit(n,''))
+               w <- which(object@varImportance$variables == n)
+               v <- round(object@varImportance$corTest[w]*50)
+               vp <- round(object@varImportance$corTest[w]*100,1)
+               
+               if (length(.ns) >= 20) {
+                 xx <- c(.ns[1:20],': ',rep('*',v))
+                 xx <- c(xx,' (',vp,' %)')
+                 cat(paste(xx,collapse=''),'\n')
+               } else {
+                 xx <- c(.ns,rep(' ',20 - length(.ns)), ': ',rep('*',v))
+                 xx <- c(xx,' (',vp,' %)')
+                 cat(paste(xx,collapse=''),'\n')
+               }
+             }
+             
+             cat('=============================================================','\n')
+             cat('Based on AUC metric: \n')
+             cat('----------------------------------------------','\n')
+             for (n in object@variables) {
+               .ns <- unlist(strsplit(n,''))
+               w <- which(object@varImportance$variables == n)
+               v <- round(object@varImportance$AUCtest[w]*50)
+               vp <- round(object@varImportance$AUCtest[w]*100,1)
+               
+               if (length(.ns) >= 20) {
+                 xx <- c(.ns[1:20],': ',rep('*',v))
+                 xx <- c(xx,' (',vp,' %)')
+                 cat(paste(xx,collapse=''),'\n')
+               } else {
+                 xx <- c(.ns,rep(' ',20 - length(.ns)), ': ',rep('*',v))
+                 xx <- c(xx,' (',vp,' %)')
+                 cat(paste(xx,collapse=''),'\n')
+               }
+             }
+             cat('=============================================================','\n')
+             
+           }
+)
+
+
+

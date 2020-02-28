@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  Oct. 2016
-# Last Update :  December 2019
-# Version 2.8
+# Last Update :  February 2020
+# Version 2.9
 # Licence GPL v3
 
 
@@ -21,6 +21,44 @@
 
 #--------
 
+.getWeights <- function(x, mi, wtest, id, stat, opt) {
+  if (all(mi[,wtest[1]])) {
+    weight <- getEvaluation(x,w = id,wtest = wtest[1],stat = stat,opt = opt)[,2]
+  } else {
+    id1 <- mi$modelID[mi[,wtest[1]]]
+    if (length(wtest) > 1) {
+      w <- which(!mi[,wtest[1]])
+      if (any(mi[w,wtest[2]])) {
+        id2 <- mi$modelID[w][mi[w,wtest[2]]]
+      } else id2 <- NULL
+      if (length(c(id1,id2)) < length(id)) {
+        if (length(wtest) == 3) {
+          w <- id[which(!id %in% c(id1,id2))]
+          w <- which(mi$modelID %in% w)
+          if (any(mi[w,wtest[3]])) {
+            id3 <- mi$modelID[w][mi[w,wtest[3]]]
+          } else id3 <- NULL
+        } else id3 <- NULL
+      } else id3 <- NULL
+    } else id2 <- id3 <- NULL
+    
+    id <- id[which(id %in% c(id1,id2,id3))]
+    mi <- mi[mi$modelID %in% id,]
+    id <- mi$modelID
+    w1 <- getEvaluation(x,w = id1,wtest = wtest[1],stat = stat,opt = opt)[,2]
+    if (!is.null(id2)) w2 <- getEvaluation(x,w = id2,wtest = wtest[2],stat = stat,opt = opt)[,2]
+    else w2 <- NULL
+    if (!is.null(id3)) w3 <- getEvaluation(x,w = id3,wtest = wtest[2],stat = stat,opt = opt)[,2]
+    else w3 <- NULL
+    idw <- c(id1,id2,id3)
+    w <- c(w1,w2,w3)
+    weight <- w[sapply(id,function(x) which(idw == x))]
+  }
+  
+  list(weight=weight,mi=mi)
+  
+}
+#--------
 if (!isGeneric("ensemble")) {
   setGeneric("ensemble", function(x,newdata,filename,setting,...)
     standardGeneric("ensemble"))
@@ -185,37 +223,10 @@ setMethod('ensemble', signature(x='sdmModels',newdata='Raster'),
             ####################
             if (method == 'weighted') {
               if (is.null(weight)) {
-                if (all(mi[,wtest[1]])) {
-                  weight <- getEvaluation(x,w = id,wtest = wtest[1],stat = stat,opt = opt)[,2]
-                } else {
-                  id1 <- mi$modelID[mi[,wtest[1]]]
-                  if (length(wtest) > 1) {
-                    w <- which(!mi[,wtest[1]])
-                    if (any(mi[w,wtest[2]])) {
-                      id2 <- mi$modelID[w][mi[w,wtest[2]]]
-                    } else id2 <- NULL
-                    if (length(c(id1,id2)) < length(id)) {
-                      if (length(wtest) == 3) {
-                        w <- id[which(!id %in% c(id1,id2))]
-                        w <- which(mi$modelID %in% w)
-                        if (any(mi[w,wtest[3]])) {
-                          id3 <- mi$modelID[w][mi[w,wtest[3]]]
-                        } else id3 <- NULL
-                      } else id3 <- NULL
-                    } else id3 <- NULL
-                  } else id2 <- id3 <- NULL
-                  id <- id[which(id %in% c(id1,id2,id3))]
-                  mi <- mi[mi$modelID %in% id,]
-                  id <- mi$modelID
-                  w1 <- getEvaluation(x,w = id1,wtest = wtest[1],stat = stat,opt = opt)[,2]
-                  if (!is.null(id2)) w2 <- getEvaluation(x,w = id2,wtest = wtest[2],stat = stat,opt = opt)[,2]
-                  else w2 <- NULL
-                  if (!is.null(id3)) w3 <- getEvaluation(x,w = id3,wtest = wtest[2],stat = stat,opt = opt)[,2]
-                  else w3 <- NULL
-                  idw <- c(id1,id2,id3)
-                  w <- c(w1,w2,w3)
-                  weight <- w[sapply(id,function(x) which(idw == x))]
-                }
+                weight <- .getWeights(x = x, mi = mi, wtest = wtest, id = id, stat = stat, opt = opt)
+                mi <- weight$mi
+                id <- mi$modelID
+                weight <- weight$weight
               }
               f <- function(x) {
                 sum(weight * x)
@@ -309,37 +320,11 @@ setMethod('ensemble', signature(x='sdmModels',newdata='Raster'),
               
               .ens[.cellnr] <- .p
             } else if (method == 'pa') {
-              if (all(mi[,wtest[1]])) {
-                .th <- getEvaluation(x,w = id,wtest = wtest[1],stat = 'threshold',opt = opt)[,2]
-              } else {
-                id1 <- mi$modelID[mi[,wtest[1]]]
-                if (length(wtest) > 1) {
-                  w <- which(!mi[,wtest[1]])
-                  if (any(mi[w,wtest[2]])) {
-                    id2 <- mi$modelID[w][mi[w,wtest[2]]]
-                  } else id2 <- NULL
-                  if (length(c(id1,id2)) < length(id)) {
-                    if (length(wtest) == 3) {
-                      w <- id[which(!id %in% c(id1,id2))]
-                      w <- which(mi$modelID %in% w)
-                      if (any(mi[w,wtest[3]])) {
-                        id3 <- mi$modelID[w][mi[w,wtest[3]]]
-                      } else id3 <- NULL
-                    } else id3 <- NULL
-                  } else id3 <- NULL
-                } else id2 <- id3 <- NULL
-                id <- id[which(id %in% c(id1,id2,id3))]
-                mi <- mi[mi$modelID %in% id,]
-                id <- mi$modelID
-                .th1 <- getEvaluation(x,w = id1,wtest = wtest[1],stat = 'threshold',opt = opt)[,2]
-                if (!is.null(id2)) .th2 <- getEvaluation(x,w = id2,wtest = wtest[2],stat = 'threshold',opt = opt)[,2]
-                else .th2 <- NULL
-                if (!is.null(id3)) .th3 <- getEvaluation(x,w = id3,wtest = wtest[2],stat = 'threshold',opt = opt)[,2]
-                else .th3 <- NULL
-                idw <- c(id1,id2,id3)
-                .th <- c(.th1,.th2,.th3)
-                .th <- .th[sapply(id,function(x) which(idw == x))]
-              }
+              .th <- .getWeights(x = x, mi = mi, wtest = wtest, id = id, stat = 'threshold', opt = opt)
+              mi <- weight$mi
+              id <- mi$modelID
+              .th <- .th$weight
+              
               #-----
               if (is.null(p)) p <- predict(x,newdata=.nd,w=id,obj.size=obj.size,...)
               else {
@@ -374,51 +359,14 @@ setMethod('ensemble', signature(x='sdmModels',newdata='Raster'),
               
               .ens[.cellnr] <- .p
             } else if (method == 'mean-weighted') {
+              
               if (is.null(weight)) {
-                if (all(mi[,wtest[1]])) {
-                  weight <- getEvaluation(x,w = id,wtest = wtest[1],stat = stat,opt = opt)[,2]
-                } else {
-                  id1 <- mi$modelID[mi[,wtest[1]]]
-                  if (length(wtest) > 1) {
-                    w <- which(!mi[,wtest[1]])
-                    if (any(mi[w,wtest[2]])) {
-                      id2 <- mi$modelID[w][mi[w,wtest[2]]]
-                    } else id2 <- NULL
-                    if (length(c(id1,id2)) < length(id)) {
-                      if (length(wtest) == 3) {
-                        w <- id[which(!id %in% c(id1,id2))]
-                        w <- which(mi$modelID %in% w)
-                        if (any(mi[w,wtest[3]])) {
-                          id3 <- mi$modelID[w][mi[w,wtest[3]]]
-                        } else id3 <- NULL
-                      } else id3 <- NULL
-                    } else id3 <- NULL
-                  } else id2 <- id3 <- NULL
-                  id <- id[which(id %in% c(id1,id2,id3))]
-                  mi <- mi[mi$modelID %in% id,]
-                  id <- mi$modelID
-                  w1 <- getEvaluation(x,w = id1,wtest = wtest[1],stat = stat,opt = opt)[,2]
-                  if (!is.null(id2)) w2 <- getEvaluation(x,w = id2,wtest = wtest[2],stat = stat,opt = opt)[,2]
-                  else w2 <- NULL
-                  if (!is.null(id3)) w3 <- getEvaluation(x,w = id3,wtest = wtest[2],stat = stat,opt = opt)[,2]
-                  else w3 <- NULL
-                  idw <- c(id1,id2,id3)
-                  w <- c(w1,w2,w3)
-                  weight <- w[sapply(id,function(x) which(idw == x))]
-                }
-              }
-              f <- function(x) {
-                sum(weight * x)
+                weight <- .getWeights(x = x, mi = mi, wtest = wtest, id = id, stat = stat, opt = opt)
+                mi <- weight$mi
+                id <- mi$modelID
+                weight <- weight$weight
               }
               
-              f2 <- function(x) {
-                if (!all(is.na(x))) {
-                  .w <- which(!is.na(x))
-                  .we <- weight[.w]
-                  .we <- .we / sum(.we)
-                  sum(.we * x[.w])
-                } else NA
-              }
               #weight <- weight / sum(weight)
               
               if (length(weight) != nrow(mi)) stop('something is wrong...! [length of weights is not equal to the number of models...]')
@@ -535,13 +483,8 @@ setMethod('ensemble', signature(x='sdmModels',newdata='Raster'),
                       .ens[.cellnr] <- .pp
                     }
                   }
-                  
                 }
-                
-                
               }
-              
-              
             }  else if (method == 'mean-unweighted') {
               if (is.null(p)) {
                 p <- predict(x,newdata=.nd,w=id,obj.size=obj.size,mean=TRUE,...)
@@ -573,51 +516,11 @@ setMethod('ensemble', signature(x='sdmModels',newdata='Raster'),
               .ens[.cellnr] <- .p
             } else if (method == 'median-weighted') {
               if (is.null(weight)) {
-                if (all(mi[,wtest[1]])) {
-                  weight <- getEvaluation(x,w = id,wtest = wtest[1],stat = stat,opt = opt)[,2]
-                } else {
-                  id1 <- mi$modelID[mi[,wtest[1]]]
-                  if (length(wtest) > 1) {
-                    w <- which(!mi[,wtest[1]])
-                    if (any(mi[w,wtest[2]])) {
-                      id2 <- mi$modelID[w][mi[w,wtest[2]]]
-                    } else id2 <- NULL
-                    if (length(c(id1,id2)) < length(id)) {
-                      if (length(wtest) == 3) {
-                        w <- id[which(!id %in% c(id1,id2))]
-                        w <- which(mi$modelID %in% w)
-                        if (any(mi[w,wtest[3]])) {
-                          id3 <- mi$modelID[w][mi[w,wtest[3]]]
-                        } else id3 <- NULL
-                      } else id3 <- NULL
-                    } else id3 <- NULL
-                  } else id2 <- id3 <- NULL
-                  id <- id[which(id %in% c(id1,id2,id3))]
-                  mi <- mi[mi$modelID %in% id,]
-                  id <- mi$modelID
-                  w1 <- getEvaluation(x,w = id1,wtest = wtest[1],stat = stat,opt = opt)[,2]
-                  if (!is.null(id2)) w2 <- getEvaluation(x,w = id2,wtest = wtest[2],stat = stat,opt = opt)[,2]
-                  else w2 <- NULL
-                  if (!is.null(id3)) w3 <- getEvaluation(x,w = id3,wtest = wtest[2],stat = stat,opt = opt)[,2]
-                  else w3 <- NULL
-                  idw <- c(id1,id2,id3)
-                  w <- c(w1,w2,w3)
-                  weight <- w[sapply(id,function(x) which(idw == x))]
-                }
+                weight <- .getWeights(x = x, mi = mi, wtest = wtest, id = id, stat = stat, opt = opt)
+                mi <- weight$mi
+                id <- mi$modelID
+                weight <- weight$weight
               }
-              f <- function(x) {
-                sum(weight * x)
-              }
-              
-              f2 <- function(x) {
-                if (!all(is.na(x))) {
-                  .w <- which(!is.na(x))
-                  .we <- weight[.w]
-                  .we <- .we / sum(.we)
-                  sum(.we * x[.w])
-                } else NA
-              }
-              
               
               if (length(weight) != nrow(mi)) stop('something is wrong...! [length of weights is not equal to the number of models...]')
               
@@ -706,7 +609,6 @@ setMethod('ensemble', signature(x='sdmModels',newdata='Raster'),
                 }
               
               } else {
-                
                 .me <- as.character(mi$method)
                 
                 if (length(unique(.me)) == 1) {
@@ -723,43 +625,15 @@ setMethod('ensemble', signature(x='sdmModels',newdata='Raster'),
                       else .p[,.u] <- apply(p[,w],1,median,na.rm=TRUE)
                     }
                   }
-                  
                 }
               }
               rm(p); gc()
               .ens[.cellnr] <- apply(.p,1,mean,na.rm=TRUE)
             } else if (method == 'entropy') {
-              if (all(mi[,wtest[1]])) {
-                .th <- getEvaluation(x,w = id,wtest = wtest[1],stat = 'threshold',opt = opt)[,2]
-              } else {
-                id1 <- mi$modelID[mi[,wtest[1]]]
-                if (length(wtest) > 1) {
-                  w <- which(!mi[,wtest[1]])
-                  if (any(mi[w,wtest[2]])) {
-                    id2 <- mi$modelID[w][mi[w,wtest[2]]]
-                  } else id2 <- NULL
-                  if (length(c(id1,id2)) < length(id)) {
-                    if (length(wtest) == 3) {
-                      w <- id[which(!id %in% c(id1,id2))]
-                      w <- which(mi$modelID %in% w)
-                      if (any(mi[w,wtest[3]])) {
-                        id3 <- mi$modelID[w][mi[w,wtest[3]]]
-                      } else id3 <- NULL
-                    } else id3 <- NULL
-                  } else id3 <- NULL
-                } else id2 <- id3 <- NULL
-                id <- id[which(id %in% c(id1,id2,id3))]
-                mi <- mi[mi$modelID %in% id,]
-                id <- mi$modelID
-                .th1 <- getEvaluation(x,w = id1,wtest = wtest[1],stat = 'threshold',opt = opt)[,2]
-                if (!is.null(id2)) .th2 <- getEvaluation(x,w = id2,wtest = wtest[2],stat = 'threshold',opt = opt)[,2]
-                else .th2 <- NULL
-                if (!is.null(id3)) .th3 <- getEvaluation(x,w = id3,wtest = wtest[2],stat = 'threshold',opt = opt)[,2]
-                else .th3 <- NULL
-                idw <- c(id1,id2,id3)
-                .th <- c(.th1,.th2,.th3)
-                .th <- .th[sapply(id,function(x) which(idw == x))]
-              }
+              .th <- .getWeights(x = x, mi = mi, wtest = wtest, id = id, stat = 'threshold', opt = opt)
+              mi <- weight$mi
+              id <- mi$modelID
+              .th <- .th$weight
               #-----
               if (is.null(p)) p <- predict(x,newdata=.nd,w=id,obj.size=obj.size,...)
               else {
@@ -772,7 +646,6 @@ setMethod('ensemble', signature(x='sdmModels',newdata='Raster'),
                 x[.x] <- 1
                 .ent(x)
               }
-              
               
               .p <- apply(p,1,f)
               
@@ -934,37 +807,10 @@ setMethod('ensemble', signature(x='sdmModels',newdata='data.frame'),
             ####################
             if (method == 'weighted') {
               if (is.null(weight)) {
-                if (all(mi[,wtest[1]])) {
-                  weight <- getEvaluation(x,w = id,wtest = wtest[1],stat = stat,opt = opt)[,2]
-                } else {
-                  id1 <- mi$modelID[mi[,wtest[1]]]
-                  if (length(wtest) > 1) {
-                    w <- which(!mi[,wtest[1]])
-                    if (any(mi[w,wtest[2]])) {
-                      id2 <- mi$modelID[w][mi[w,wtest[2]]]
-                    } else id2 <- NULL
-                    if (length(c(id1,id2)) < length(id)) {
-                      if (length(wtest) == 3) {
-                        w <- id[which(!id %in% c(id1,id2))]
-                        w <- which(mi$modelID %in% w)
-                        if (any(mi[w,wtest[3]])) {
-                          id3 <- mi$modelID[w][mi[w,wtest[3]]]
-                        } else id3 <- NULL
-                      } else id3 <- NULL
-                    } else id3 <- NULL
-                  } else id2 <- id3 <- NULL
-                  id <- id[which(id %in% c(id1,id2,id3))]
-                  mi <- mi[mi$modelID %in% id,]
-                  id <- mi$modelID
-                  w1 <- getEvaluation(x,w = id1,wtest = wtest[1],stat = stat,opt = opt)[,2]
-                  if (!is.null(id2)) w2 <- getEvaluation(x,w = id2,wtest = wtest[2],stat = stat,opt = opt)[,2]
-                  else w2 <- NULL
-                  if (!is.null(id3)) w3 <- getEvaluation(x,w = id3,wtest = wtest[2],stat = stat,opt = opt)[,2]
-                  else w3 <- NULL
-                  idw <- c(id1,id2,id3)
-                  w <- c(w1,w2,w3)
-                  weight <- w[sapply(id,function(x) which(idw == x))]
-                }
+                weight <- .getWeights(x = x, mi = mi, wtest = wtest, id = id, stat = stat, opt = opt)
+                mi <- weight$mi
+                id <- mi$modelID
+                weight <- weight$weight
               }
               f <- function(x) {
                 sum(weight * x)
@@ -1044,37 +890,10 @@ setMethod('ensemble', signature(x='sdmModels',newdata='data.frame'),
               
               .ens <- .p
             } else if (method == 'pa') {
-              if (all(mi[,wtest[1]])) {
-                .th <- getEvaluation(x,w = id,wtest = wtest[1],stat = 'threshold',opt = opt)[,2]
-              } else {
-                id1 <- mi$modelID[mi[,wtest[1]]]
-                if (length(wtest) > 1) {
-                  w <- which(!mi[,wtest[1]])
-                  if (any(mi[w,wtest[2]])) {
-                    id2 <- mi$modelID[w][mi[w,wtest[2]]]
-                  } else id2 <- NULL
-                  if (length(c(id1,id2)) < length(id)) {
-                    if (length(wtest) == 3) {
-                      w <- id[which(!id %in% c(id1,id2))]
-                      w <- which(mi$modelID %in% w)
-                      if (any(mi[w,wtest[3]])) {
-                        id3 <- mi$modelID[w][mi[w,wtest[3]]]
-                      } else id3 <- NULL
-                    } else id3 <- NULL
-                  } else id3 <- NULL
-                } else id2 <- id3 <- NULL
-                id <- id[which(id %in% c(id1,id2,id3))]
-                mi <- mi[mi$modelID %in% id,]
-                id <- mi$modelID
-                .th1 <- getEvaluation(x,w = id1,wtest = wtest[1],stat = 'threshold',opt = opt)[,2]
-                if (!is.null(id2)) .th2 <- getEvaluation(x,w = id2,wtest = wtest[2],stat = 'threshold',opt = opt)[,2]
-                else .th2 <- NULL
-                if (!is.null(id3)) .th3 <- getEvaluation(x,w = id3,wtest = wtest[2],stat = 'threshold',opt = opt)[,2]
-                else .th3 <- NULL
-                idw <- c(id1,id2,id3)
-                .th <- c(.th1,.th2,.th3)
-                .th <- .th[sapply(id,function(x) which(idw == x))]
-              }
+              .th <- .getWeights(x = x, mi = mi, wtest = wtest, id = id, stat = 'threshold', opt = opt)
+              mi <- weight$mi
+              id <- mi$modelID
+              .th <- .th$weight
               #-----
               p <- predict(x,newdata=.nd,w=id,obj.size=obj.size,...)
               f <- function(x) {
@@ -1106,51 +925,11 @@ setMethod('ensemble', signature(x='sdmModels',newdata='data.frame'),
               .ens <- .p
             } else if (method == 'mean-weighted') {
               if (is.null(weight)) {
-                if (all(mi[,wtest[1]])) {
-                  weight <- getEvaluation(x,w = id,wtest = wtest[1],stat = stat,opt = opt)[,2]
-                } else {
-                  id1 <- mi$modelID[mi[,wtest[1]]]
-                  if (length(wtest) > 1) {
-                    w <- which(!mi[,wtest[1]])
-                    if (any(mi[w,wtest[2]])) {
-                      id2 <- mi$modelID[w][mi[w,wtest[2]]]
-                    } else id2 <- NULL
-                    if (length(c(id1,id2)) < length(id)) {
-                      if (length(wtest) == 3) {
-                        w <- id[which(!id %in% c(id1,id2))]
-                        w <- which(mi$modelID %in% w)
-                        if (any(mi[w,wtest[3]])) {
-                          id3 <- mi$modelID[w][mi[w,wtest[3]]]
-                        } else id3 <- NULL
-                      } else id3 <- NULL
-                    } else id3 <- NULL
-                  } else id2 <- id3 <- NULL
-                  id <- id[which(id %in% c(id1,id2,id3))]
-                  mi <- mi[mi$modelID %in% id,]
-                  id <- mi$modelID
-                  w1 <- getEvaluation(x,w = id1,wtest = wtest[1],stat = stat,opt = opt)[,2]
-                  if (!is.null(id2)) w2 <- getEvaluation(x,w = id2,wtest = wtest[2],stat = stat,opt = opt)[,2]
-                  else w2 <- NULL
-                  if (!is.null(id3)) w3 <- getEvaluation(x,w = id3,wtest = wtest[2],stat = stat,opt = opt)[,2]
-                  else w3 <- NULL
-                  idw <- c(id1,id2,id3)
-                  w <- c(w1,w2,w3)
-                  weight <- w[sapply(id,function(x) which(idw == x))]
-                }
+                weight <- .getWeights(x = x, mi = mi, wtest = wtest, id = id, stat = stat, opt = opt)
+                mi <- weight$mi
+                id <- mi$modelID
+                weight <- weight$weight
               }
-              f <- function(x) {
-                sum(weight * x)
-              }
-              
-              f2 <- function(x) {
-                if (!all(is.na(x))) {
-                  .w <- which(!is.na(x))
-                  .we <- weight[.w]
-                  .we <- .we / sum(.we)
-                  sum(.we * x[.w])
-                } else NA
-              }
-              #weight <- weight / sum(weight)
               
               if (length(weight) != nrow(mi)) stop('something is wrong...! [length of weights is not equal to the number of models...]')
               
@@ -1200,8 +979,6 @@ setMethod('ensemble', signature(x='sdmModels',newdata='data.frame'),
                   
                   .ens <- .p
                 }
-                
-                
               }
               
             } else if (method == 'mean-unweighted') {
@@ -1213,51 +990,11 @@ setMethod('ensemble', signature(x='sdmModels',newdata='data.frame'),
               .ens <- .p
             } else if (method == 'median-weighted') {
               if (is.null(weight)) {
-                if (all(mi[,wtest[1]])) {
-                  weight <- getEvaluation(x,w = id,wtest = wtest[1],stat = stat,opt = opt)[,2]
-                } else {
-                  id1 <- mi$modelID[mi[,wtest[1]]]
-                  if (length(wtest) > 1) {
-                    w <- which(!mi[,wtest[1]])
-                    if (any(mi[w,wtest[2]])) {
-                      id2 <- mi$modelID[w][mi[w,wtest[2]]]
-                    } else id2 <- NULL
-                    if (length(c(id1,id2)) < length(id)) {
-                      if (length(wtest) == 3) {
-                        w <- id[which(!id %in% c(id1,id2))]
-                        w <- which(mi$modelID %in% w)
-                        if (any(mi[w,wtest[3]])) {
-                          id3 <- mi$modelID[w][mi[w,wtest[3]]]
-                        } else id3 <- NULL
-                      } else id3 <- NULL
-                    } else id3 <- NULL
-                  } else id2 <- id3 <- NULL
-                  id <- id[which(id %in% c(id1,id2,id3))]
-                  mi <- mi[mi$modelID %in% id,]
-                  id <- mi$modelID
-                  w1 <- getEvaluation(x,w = id1,wtest = wtest[1],stat = stat,opt = opt)[,2]
-                  if (!is.null(id2)) w2 <- getEvaluation(x,w = id2,wtest = wtest[2],stat = stat,opt = opt)[,2]
-                  else w2 <- NULL
-                  if (!is.null(id3)) w3 <- getEvaluation(x,w = id3,wtest = wtest[2],stat = stat,opt = opt)[,2]
-                  else w3 <- NULL
-                  idw <- c(id1,id2,id3)
-                  w <- c(w1,w2,w3)
-                  weight <- w[sapply(id,function(x) which(idw == x))]
-                }
+                weight <- .getWeights(x = x, mi = mi, wtest = wtest, id = id, stat = stat, opt = opt)
+                mi <- weight$mi
+                id <- mi$modelID
+                weight <- weight$weight
               }
-              f <- function(x) {
-                sum(weight * x)
-              }
-              
-              f2 <- function(x) {
-                if (!all(is.na(x))) {
-                  .w <- which(!is.na(x))
-                  .we <- weight[.w]
-                  .we <- .we / sum(.we)
-                  sum(.we * x[.w])
-                } else NA
-              }
-              
               
               if (length(weight) != nrow(mi)) stop('something is wrong...! [length of weights is not equal to the number of models...]')
               
@@ -1342,37 +1079,10 @@ setMethod('ensemble', signature(x='sdmModels',newdata='data.frame'),
               .ens <- apply(.p,1,mean,na.rm=TRUE)
               }
             } else if (method == 'entropy') {
-              if (all(mi[,wtest[1]])) {
-                .th <- getEvaluation(x,w = id,wtest = wtest[1],stat = 'threshold',opt = opt)[,2]
-              } else {
-                id1 <- mi$modelID[mi[,wtest[1]]]
-                if (length(wtest) > 1) {
-                  w <- which(!mi[,wtest[1]])
-                  if (any(mi[w,wtest[2]])) {
-                    id2 <- mi$modelID[w][mi[w,wtest[2]]]
-                  } else id2 <- NULL
-                  if (length(c(id1,id2)) < length(id)) {
-                    if (length(wtest) == 3) {
-                      w <- id[which(!id %in% c(id1,id2))]
-                      w <- which(mi$modelID %in% w)
-                      if (any(mi[w,wtest[3]])) {
-                        id3 <- mi$modelID[w][mi[w,wtest[3]]]
-                      } else id3 <- NULL
-                    } else id3 <- NULL
-                  } else id3 <- NULL
-                } else id2 <- id3 <- NULL
-                id <- id[which(id %in% c(id1,id2,id3))]
-                mi <- mi[mi$modelID %in% id,]
-                id <- mi$modelID
-                .th1 <- getEvaluation(x,w = id1,wtest = wtest[1],stat = 'threshold',opt = opt)[,2]
-                if (!is.null(id2)) .th2 <- getEvaluation(x,w = id2,wtest = wtest[2],stat = 'threshold',opt = opt)[,2]
-                else .th2 <- NULL
-                if (!is.null(id3)) .th3 <- getEvaluation(x,w = id3,wtest = wtest[2],stat = 'threshold',opt = opt)[,2]
-                else .th3 <- NULL
-                idw <- c(id1,id2,id3)
-                .th <- c(.th1,.th2,.th3)
-                .th <- .th[sapply(id,function(x) which(idw == x))]
-              }
+              .th <- .getWeights(x = x, mi = mi, wtest = wtest, id = id, stat = 'threshold', opt = opt)
+              mi <- weight$mi
+              id <- mi$modelID
+              .th <- .th$weight
               #-----
               p <- predict(x,newdata=.nd,w=id,obj.size=obj.size,...)
               f <- function(x) {

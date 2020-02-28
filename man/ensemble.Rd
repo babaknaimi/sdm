@@ -42,9 +42,9 @@ A list can be introduced in the \code{setting} argument in which several paramet
  
  -- 'mean-weighted': A two step mean that is when several replications are fitted for each modelling methods (e.g., through bootstrapping or cross-validation), using this method an unweighted mean is taken over the predicted values of different replications of each method (i.e., within model averaging), then a weighted mean is used to combine them into final ensemble values (i.e., between models averaging).
 
--- 'mean-unweighted': Same as the previous one, but an unweighted mean is also used for the second step (instead of unweighted mean).
+-- 'mean-unweighted': Same as the previous one, but an unweighted mean is also used for the second step (instead of weighted mean).
 
--- 'median-weighted': Same as the 'mean-unweighted, but the median is used instead of unweighted mean.
+-- 'median-weighted': Same as the 'mean-weighted, but the median is used instead of unweighted mean.
 
 -- 'median-unweighted': another two-step method, median is used for the first step and unweighted mean is used for the second step.
 

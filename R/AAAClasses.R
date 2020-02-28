@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  December 2019
-# Version 4.6
+# Date (last update):  February 2020
+# Version 4.7
 # Licence GPL v3
 
 
@@ -72,6 +72,8 @@ setClass('sdmFormula',
 setClass('.nestedModel',
          representation(response='character',
                         terms='list',
+                        method='character',
+                        setting='list',
                         output='character'
          )
 )

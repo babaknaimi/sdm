@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July 2016
-# Last update :  Jan. 2020
-# Version 3.0
+# Last update :  Fenruary 2020
+# Version 3.1
 # Licence GPL v3
 
 
@@ -123,34 +123,28 @@ if (!isGeneric("getVarImp")) {
 setMethod('getVarImp', signature(x='sdmModels'),
           function(x, id, wtest,...) {
             mi <- x@run.info[x@run.info$success,]
-            
             if (nrow(mi) == 0) stop('No successfully fitted models exist in the sdmModels object!')
             
             if (missing(id) || is.null(id)) {
-              if (length(unique(mi$species)) > 1) {
-                id <- mi[mi$species == as.character(mi$species[1]),1]
-                
-                if (length(id) == 1) cat(paste0('The id argument is not specified; id = ',id,' for the first species is considered. \n'))
-                else if (length(id) > 1) cat(paste0('The id argument is not specified; The modelIDs of ', length(id),' successfully fitted models for the first species are assigned to id...! \n'))
-                else stop('It seems that no successfully fitted models exist in the sdmModels object!')
-                
-              } else {
-                id <- mi[,1]
-                if (length(id) == 1) cat(paste0('The id argument is not specified; id = ',id,' is considered. \n'))
-                else if (length(id) > 1) cat(paste0('The id argument is not specified; The modelIDs of ', length(id),' successfully fitted models are assigned to id...! \n'))
-                else stop('It seems that no successfully fitted models exist in the sdmModels object!')
-              }
+              id <- getModelId(x, success = TRUE, ...)
+              if (length(id) == 0) stop('No successfully fitted models is selected!')
+              else if (length(id) > 1 && length(id) == nrow(mi)) cat('\nThe variable importance for all the models are combined (averaged)... \n')
+              else cat(paste0('\nThe values of relative variable importance are generated from ', length(id),' models... \n'))
             } else {
-              if (!any(id %in% mi$modelID)) stop('No successfully fitted models has modelID equal to specified modelIDs (id)!')
+              if (!any(id %in% mi$modelID)) stop('No successfully fitted models are corresponding to the specified modelIDs (id)!')
               
               if (!all(id %in% mi$modelID)) {
                 id <- id[id %in% mi$modelID]
                 if (length(id) == 1) cat(paste0('Only the id  = ',id,' does exist in the list of successfully fitted models. \n'))
-                else if (length(id) > 1) cat(paste0('Some of the specified modelIDs (id) are not available; ', length(id),' items in id are available...! \n'))
+                else if (length(id) > 1) cat(paste0('Some of the specified modelIDs (id) are not available; ', length(id),' models are considered...! \n'))
               }
               
               if (length(unique(mi$species)) > 1) {
                 warning('Consider that the specified modelIDs in id are related to several species!')
+              }
+              
+              if (length(unique(mi$method)) > 1) {
+                warning('Consider that the specified modelIDs in id are related to several methods!')
               }
             }
             #--------------
