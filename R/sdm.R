@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  December 2019
-# Version 4.0
+# Date (last update):  Februray 2020
+# Version 4.1
 # Licence GPL v3
 #--------
 
@@ -1699,8 +1699,9 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
   if (is.null(woL$ncore)) nc <- 1L
   else {
     .require('parallel')
-    nc <- detectCores()
-    if (woL$ncore < nc) nc <- woL$ncore
+    #nc <- detectCores()
+    #if (woL$ncore < nc) nc <- woL$ncore
+    nc <- woL$ncore
     if (.is.windows() || 'maxent' %in% models) .fork <- FALSE
   }
   #----####################
@@ -1779,7 +1780,7 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
           if (nc == 1) {
             nc <- length(which(.hostnames == 'localhost'))
             nc <- max(nc,1)
-            if (nc > detectCores()) nc <- detectCores()
+            #if (nc > detectCores()) nc <- detectCores()
             cl <- makePSOCKcluster(nc)
           }
         }

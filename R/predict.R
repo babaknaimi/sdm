@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Dec. 2017
-# Version 2.7
+# Date (last update):  February 2020
+# Version 2.9
 # Licence GPL v3
 
 
@@ -132,6 +132,8 @@ if (!isGeneric("predict")) {
 
 .generateWLP <- function(x,newdata,w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,ncore=NULL) {
   
+  if (missing(ncore) || is.null(ncore)) ncore <- 1
+  
   mi <- .getModel.info(x,w=w,species=species,method=method,replication=replication,run=run)
   
   s <- mi$success
@@ -157,12 +159,12 @@ if (!isGeneric("predict")) {
   #----
   w <- new('.workloadP',runTasks=mi)
   
-  if (is.null(ncore)) w$ncore <- 1L
+  if (is.null(ncore)) w$ncore <- 1
   else {
-    w$ncore <- parallel::detectCores()
-    if (ncore < w$ncore) w$ncore <- ncore
+    #w$ncore <- parallel::detectCores()
+    w$ncore <- ncore
     # temporary until the HPC for windows is implemented:
-    if (.is.windows()) w$ncore <- 1L
+    if (.is.windows()) w$ncore <- 1
   }
   
   w$newdata$raster <- NULL
@@ -295,8 +297,10 @@ if (!isGeneric("predict")) {
 
 
 setMethod('predict', signature(object='sdmModels'), 
-          function(object, newdata, filename="",w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,mean=FALSE,control=NULL,overwrite=FALSE,nc=1L,obj.size=1,err=FALSE,...) {
+          function(object, newdata, filename="",w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,mean=FALSE,control=NULL,overwrite=FALSE,nc=1,obj.size=1,err=FALSE,...) {
             if (missing(newdata)) stop('mewdata is missing...')
+            
+            if (missing(nc) || is.null(nc)) nc <- 1
             #---
             if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
             #---
