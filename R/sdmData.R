@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date of last update :  December 2019
-# Version 2.8
+# Date of last update :  April 2020
+# Version 2.9
 # Licence GPL v3
 
 #------
@@ -1154,7 +1154,7 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'),
                   test <- test[-wNA,]
                   cells <- cells[-wNA]
                   errLog <- c(errLog,paste(length(wNA),'records were removed from the test dataset because of no overlap with the predictors.'))
-                  rm(cNA,wNA)
+                  rm(wNA)
                 }
                 rm(cNA)
                 if (!any(wF)) test.p <- data.frame(predictors[cells])
