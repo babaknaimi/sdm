@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Feb. 2020
-# Version 1.4
+# Date (last update):  May 2020
+# Version 1.5
 # Licence GPL v3
 
 .newFormulaFunction <- function(cls,name,args,getFeature) {
@@ -23,11 +23,11 @@
 
 .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.hinge',
                                                             representation(x='character',
-                                                                           thresholds='numeric',
-                                                                           nknots='numeric',
+                                                                           th='numericORnull',
+                                                                           k='numericORnull',
                                                                            term='call'
                                                             ))),
-                                         name=c('hinge','h','H','Hinge','hing','Hing'),args=c('x','knots')))
+                                         name=c('hinge','h','H','Hinge','hing','Hing'),args=c('x','th','k')))
 
 
 .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.quad',
@@ -50,11 +50,11 @@
 
 .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.threshold',
                                                             representation(x='character',
-                                                                           threshold='numeric',
-                                                                           nknots='numeric',
+                                                                           th='numeric',
+                                                                           k='numeric',
                                                                            term='call'
                                                             ))),
-                                         name=c('threshold','th','Th','thereshold','thresh','Thresh'),args=c('x','threshold','increasing')))
+                                         name=c('threshold','th','Th','thereshold','thresh','Thresh'),args=c('x','th','k')))
 
 .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.poly',
                                                             representation(x='character',
@@ -380,18 +380,20 @@
     cls <- new(ss[[xx]]@cls[[2]])
     n <- names(x)
     n <- n[2:length(n)]
+    #ss[[xx]]@cls[[n]]
     
     if (!is.null(n)) {
-      n <- .pmatch(n,a)
+      #n <- .pmatch(n,a)
       if (length(n[n != ''] > 0) && !all(n[n != ''] %in% a)) stop(paste0('some arguments in function ',xx, ' is unknown!'))
       for (i in 1:length(n)) {
         if (n[i] != '') {
-          if (class(x[[i+1]]) == 'name') slot(cls,n[i]) <- as.character(x[[i+1]])
-          else slot(cls,n[i]) <- x[[i+1]]
+          if (class(x[[i+1]]) == 'name') {
+            slot(cls,n[i]) <- as.character(x[[i+1]])
+          } else slot(cls,n[i]) <- x[[i+1]]
         } else {
           if (class(x[[i+1]]) == 'name') slot(cls,a[i]) <- as.character(x[[i+1]])
           else slot(cls,a[i]) <- x[[i+1]]
-        } 
+        }
       }
     } else {
       for (i in 2:length(x)) {

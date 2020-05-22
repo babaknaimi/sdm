@@ -1,15 +1,18 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  July 2017
-# Version 1.1
+# Date (last update):  May 2020
+# Version 1.3
 # Licence GPL v3
 
 #-------------
 methodInfo <-list(name=c('gam','GAM'),
            packages='mgcv',
            modelTypes = c('pa','pb','ab','n'),
-           fitParams = list(formula='gam.mgcv.formula',data='sdmDataFrame'),
-           fitSettings = list(family=binomial(link='logit'),weights=NULL,subset=NULL,na.action='na.omit',offset=NULL,method='GCV.Cp',optimizer=c("outer","newton"),select=FALSE,knots=NULL,sp=NULL,min.sp=NULL,H=NULL,gamma=1,fit=TRUE,paraPen=NULL,G=NULL),
-           fitFunction = 'gam',
+           fitParams = list(v='sdmVariables',data='sdmDataFrame'),
+           fitSettings = list(family=binomial(link='logit'),k=-1,bs='tp',weights=NULL,subset=NULL,na.action='na.omit',offset=NULL,method='GCV.Cp',optimizer=c("outer","newton"),select=FALSE,knots=NULL,sp=NULL,min.sp=NULL,H=NULL,gamma=1,fit=TRUE,paraPen=NULL,G=NULL),
+           fitFunction = function(v,data,k=-1,bs='tp',...) {
+             .f <- .getFormula.gammgcv(n=c(v@response,v@variables$numeric),nFact = v@variables$nFact,k=k,bs=bs)
+             gam(formula = .f, data = data,...)
+           },
            settingRules = function(x='sdmVariables',f='fitSettings') {
              if (x@distribution == 'poisson') f[['family']] <- x@distribution
              else if (x@distribution == 'multinomial') f[['family']] <- 'multinom'

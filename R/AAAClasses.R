@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  February 2020
-# Version 4.7
+# Date (last update):  May 2020
+# Version 4.8
 # Licence GPL v3
 
 
@@ -742,6 +742,7 @@ setClass('.sdmCorSetting',
 setClass('.sdmVariables',
          representation(
            response='character',
+           variables='list',
            distribution='character',
            features.numeric='characterORnull',
            features.factor='characterORnull',
@@ -786,15 +787,20 @@ setRefClass(".workload",
               fit=function(woL=.self,species,models,runs,hasTest,.parMethod=.self$setting@parallelSettings@method,.hostnames=.self$setting@parallelSettings@hosts,.fork=.self$setting@parallelSettings@fork,filename=.self$filename) {
                 .fit(woL=woL,species=species,runs=runs,hasTest = hasTest,.parMethod=.parMethod,.hostnames = .hostnames,.fork = .fork,filename = filename)
               },
-              getSdmVariables=function(sp,nFact) {
+              getSdmVariables=function(sp,nf,nFact) {
                 if (length(.self$sdmVariables) > 0 && !is.null(.self$sdmVariables[[sp]])) .self$sdmVariables[[sp]]
                 else {
                   if (missing(nFact)) {
                     nFact <- .where(is.factor,.self$train[[sp]]$sdmDataFrame)
                     nFact <- names(nFact)[which(nFact)]
                     if (length(nFact) == 0) nFact <- NULL
+                  } else nFact=NULL
+                  
+                  if (missing(nf)) {
+                    nf <- .excludeVector(.self$setting@sdmFormula@vars,nFact)
                   }
-                  .self$sdmVariables[[sp]] <- new('.sdmVariables',response=sp,distribution=.self$setting@distribution[[sp]],features.numeric=.excludeVector(colnames(.self$train[[sp]]$sdmDataFrame),c(sp,nFact)),features.factor=nFact,number.of.records=if (is.null(.self$test)) nrow(.self$train[[sp]]$sdmDataFrame) else c(train=nrow(.self$train[[sp]]$sdmDataFrame),test=nrow(.self$test[[sp]]$sdmDataFrame)))
+                  
+                  .self$sdmVariables[[sp]] <- new('.sdmVariables',response=sp,variables=list(numeric=nf,factors=nFact),distribution=.self$setting@distribution[[sp]],features.numeric=.excludeVector(colnames(.self$train[[sp]]$sdmDataFrame),c(sp,nFact)),features.factor=nFact,number.of.records=if (is.null(.self$test)) nrow(.self$train[[sp]]$sdmDataFrame) else c(train=nrow(.self$train[[sp]]$sdmDataFrame),test=nrow(.self$test[[sp]]$sdmDataFrame)))
                   .self$sdmVariables[[sp]]
                 }
               },

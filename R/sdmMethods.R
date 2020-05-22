@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last uodate):  Feb. 2019
-# Version 2.5
+# Date (last uodate):  May. 2020
+# Version 2.6
 # Licence GPL v3
 
 
@@ -178,7 +178,7 @@ setMethod('getmethodNames', signature(w='ANY'),
     
   } else if (class(fitFunction) == 'function') {
     if (is.null(m@.temp.env)) m@.temp.env <- new.env()
-    if (!paste(m@name,'.fit',sep='') %in% ls(envir=m@.temp.env)) fn <-paste(m@name,'.fit',sep='') ####
+    if (!paste(m@name,'_fit',sep='') %in% ls(envir=m@.temp.env)) fn <-paste(m@name,'_fit',sep='') ####
     else stop('the user defined function in fitFunction cannot be registered because an object with a similar name exists in the container!')
     assign(fn,fitFunction,envir = m@.temp.env) ####
     m@packages <- unique(c(m@packages,'.temp'))
@@ -213,7 +213,7 @@ setMethod('getmethodNames', signature(w='ANY'),
       } else stop('predictFunction cannot be identified!')
     } else if (class(predictFunction) == 'function') {
       if (is.null(m@.temp.env)) m@.temp.env <- new.env()
-      if (!paste(m@name,'.predict',sep='') %in% ls(envir=m@.temp.env)) fn <-paste(m@name,'.predict',sep='') ####
+      if (!paste(m@name,'_predict',sep='') %in% ls(envir=m@.temp.env)) fn <-paste(m@name,'_predict',sep='') ####
       else stop('the user defined function in predictFunction cannot be registered because an object with a similar name exists in the container!')
       assign(fn,predictFunction,envir = m@.temp.env) ####
       m@packages <- unique(c(m@packages,'.temp'))

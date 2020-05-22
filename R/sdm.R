@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Februray 2020
-# Version 4.1
+# Date (last update):  May 2020
+# Version 4.3
 # Licence GPL v3
 #--------
 
@@ -50,13 +50,27 @@
   as.formula(paste(n[1],'~',paste(n[-1],collapse='+'),sep=''),env = env)
 }
 
-.getFormula.gammgcv.rhs <- function(n,nFact=NULL,env=parent.frame()) {
-  if (!is.null(nFact)) as.formula(paste('~',paste(c(paste(paste('s(',n,sep=''),')',sep=''),nFact),collapse='+'),sep=''),env = env)
-  else as.formula(paste('~',paste(paste(paste('s(',n,sep=''),')',sep=''),collapse='+'),sep=''),env = env)
+.getFormula.gammgcv.rhs <- function(n,nFact=NULL,k=-1,bs='tp',env=parent.frame()) {
+  # if (!is.null(nFact)) as.formula(paste('~',paste(c(paste(paste('s(',n,sep=''),')',sep=''),nFact),collapse='+'),sep=''),env = env)
+  # else as.formula(paste('~',paste(paste(paste('s(',n,sep=''),')',sep=''),collapse='+'),sep=''),env = env)
+  
+  if (length(k) > 1) {
+    if (length(k) != length(n)) stop('the number of items in k (smothing parameter for the GAM formula) should be either one or equal to the number of continuous variables!')
+  } 
+  
+  if (!is.null(nFact)) as.formula(paste('~',paste(c(paste(paste0('s(',n,sep=''),', k = ',k,', bs = "',bs,'")',sep=''),nFact),collapse='+'),sep=''),env = env)
+  else as.formula(paste('~',paste(paste(paste('s(',n,sep=''),', k = ',k,', bs = "',bs,'")',sep=''),collapse='+'),sep=''),env = env)
+  
 }
-.getFormula.gammgcv <- function(n,nFact=NULL,env=parent.frame()) {
-  if (!is.null(nFact)) as.formula(paste(n[1],'~',paste(c(paste(paste('s(',n[-1],sep=''),')',sep=''),nFact),collapse='+'),sep=''),env = env)
-  else as.formula(paste(n[1],'~',paste(paste(paste('s(',n[-1],sep=''),')',sep=''),collapse='+'),sep=''),env = env)
+
+.getFormula.gammgcv <- function(n,nFact=NULL,k=-1,bs='tp',env=parent.frame()) {
+  if (length(k) > 1) {
+    if (length(k) != length(n[-1])) stop('the number of items in k (smothing parameter for the GAM formula) should be either one or equal to the number of continuous variables!')
+  } 
+  
+  if (!is.null(nFact)) as.formula(paste(n[1],'~',paste(c(paste(paste0('s(',n[-1],sep=''),', k = ',k,', bs = "',bs,'")',sep=''),nFact),collapse='+'),sep=''),env = env)
+  else as.formula(paste(n[1],'~',paste(paste(paste('s(',n[-1],sep=''),', k = ',k,', bs = "',bs,'")',sep=''),collapse='+'),sep=''),env = env)
+  
 }
 #----------
 
@@ -401,6 +415,8 @@
   nf <- .excludeVector(d@features.name,nFact)
   nf <- nf[nf %in% s@sdmFormula@vars]
   nFact <- nFact[nFact %in% s@sdmFormula@vars]
+  
+  
   #---------
   for (sp in s@sdmFormula@species) {
     dt <- as.data.frame(d,sp=sp,grp='train')
@@ -443,6 +459,8 @@
         #}
       }
     }
+    #--------
+    w$getSdmVariables(sp=sp,nf=nf,nFact = nFact)
   }
   #------------
   w$funs[['fit']] <- .sdmMethods$getFitFunctions(s@methods)
