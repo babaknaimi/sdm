@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  May 2020
-# Version 4.3
+# Date (last update):  Dec. 2020
+# Version 4.4
 # Licence GPL v3
 #--------
 
@@ -49,6 +49,12 @@
 .getFormula <- function(n,env=parent.frame()) {
   as.formula(paste(n[1],'~',paste(n[-1],collapse='+'),sep=''),env = env)
 }
+
+.getFormula.glmPoly <- function(n,nFact=NULL,degree=3,env=parent.frame()) {
+  if (!is.null(nFact)) as.formula(paste(n[1],'~',paste(c(paste(paste0('poly(',n[-1],sep=''),', degree = ',degree,')',sep=''),nFact),collapse='+'),sep=''),env = env)
+  else as.formula(paste(n[1],'~',paste(paste(paste('poly(',n[-1],sep=''),', degree = ',degree,')',sep=''),collapse='+'),sep=''),env = env)
+}
+
 
 .getFormula.gammgcv.rhs <- function(n,nFact=NULL,k=-1,bs='tp',env=parent.frame()) {
   # if (!is.null(nFact)) as.formula(paste('~',paste(c(paste(paste('s(',n,sep=''),')',sep=''),nFact),collapse='+'),sep=''),env = env)

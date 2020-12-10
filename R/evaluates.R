@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Jan. 2017
-# Version 1.4
+# Date (last update):  Dec. 2020
+# Version 1.5
 # Licence GPL v3
 #--------
 
@@ -282,7 +282,7 @@ setMethod('evaluates', signature(x='vector',p='vector'),
             w <- which(!is.na(x) & !is.na(p))
             p <- p[w]; x <- x[w]
             if (length(x) != length(p)) stop('observed and predicted vectors should have the same length')
-            if (missing(distribution)) {
+            if (missing(distribution) || is.null(distribution)) {
               if (.isBinomial(x)) distribution <- 'binomial'
               else {
                 # guessing!!
@@ -470,3 +470,88 @@ setMethod('getEvaluation', signature(x='sdmModels'),
             }
           }
 )
+#--------------------------------
+# evaluation of predicted raster (e.g., ensemble) dataset:
+setMethod('evaluates', signature(x='sdmdata',p='RasterLayer'),
+          function(x, p,distribution,wtest=NULL,...) {
+            if (is.null(x@info) || is.null(x@info@coords)) stop('sdmdata object does not contain spatial coordintes!')
+            
+            if (missing(distribution)) distribution <- NULL
+            if (missing(wtest)) wtest <- NULL
+            
+            if ('test' %in% .getGroupNames(x,levels=TRUE)) {
+              if (!is.null(wtest)) {
+                if (wtest %in% c('test','test.indep','test.dep')) d <- .getDataFrame(x,grp='test',...)
+                else if (wtest %in% c('train','training')) d <- .getDataFrame(x,grp='train',...)
+                else {
+                  warning('"test" is considered for wtest (it should be either "train" or "test")...!')
+                  d <- .getDataFrame(x,grp='test',...)
+                } 
+              } else d <- .getDataFrame(x,grp='test',...)
+            } else d <- .getDataFrame(x,...)
+            #--------
+            if (length(x@species.names) > 1) {
+              w <- which(x@species.names %in% colnames(d))
+              if (length(w) > 1) {
+                stop('sdmdata object has multiple species. specify the name of species through the spn argument...')
+              }
+               spn <- x@species.names[w] 
+            } else spn <- x@species.names
+            
+            o <- d[,spn]
+            p <- extract(p,d[,colnames(coordinates(x))])
+            
+            evaluates(o, p, distribution = distribution)
+          }
+)
+
+#-------------
+
+if (!isGeneric("getReplication")) {
+  setGeneric("getReplication", function(x,id,replication,species,run,index=FALSE,test=TRUE)
+    standardGeneric("getReplication"))
+}
+
+
+setMethod('getReplication', signature(x='sdmModels'), 
+          function(x,id,replication=NULL,species=NULL,run=NULL,index=FALSE,test=TRUE) {
+            
+            if (missing(species)) species <- NULL
+            if (missing(replication)) replication <- NULL
+            if (missing(id)) id <- NULL
+            if (missing(run)) run <- NULL
+            
+            if (missing(index)) index <- FALSE
+            if (missing(test)) test <- TRUE
+            
+            mi <- .getModel.info(x,w=id,species=species,method=NULL,replication=replication,run=run)
+            
+            if (nrow(mi) > 1) {
+              if (all(is.na(mi$replication))) stop('There is no data partitioning (no replications...)!')
+              
+              if (max(c(length(unique(mi$replicationID)),length(unique(mi$replication)))) > 1) stop('Multiple replications are selected...!')
+              
+            }
+            
+            id <- unique(mi$replicationID)
+            method <- unique(mi$replication)
+            
+            .r  <- x@replicates[[as.character(mi$species[1])]]
+            
+            
+            if (length(unique(x@run.info$replication)) > 1) {
+              .r <- .r[which(sapply(.r,function(x) x$method) == method)]
+            }
+            
+            if (test) indx <- .r[[id]]$test
+            else indx <- .r[[id]]$train
+            
+            if (index) {
+              indx
+            } else {
+              .df <- as.data.frame(x@data,sp=as.character(mi$species[1]),grp='training')
+              .df[.df$rID %in% indx,as.character(mi$species[1])]
+            }
+          }
+)
+

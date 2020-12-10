@@ -92,7 +92,8 @@ niche(x=preds, h=p1, c('vegetation','temperature'))
 niche(x=preds, h=species, c('vegetation','temperature','Occurrence'))
 
 
-niche(x=preds, h=d, n=c('vegetation','temperature','Occurrence'))
+niche(x=preds, h=d, n=c('vegetation','temperature','Occurrence'), rnd=2) 
+# rnd is the argument specifies the decimal degrees to which the values on axis rounded.
 
 
 

@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  Feb. 2015
-# Last update: Nov. 2018
-# Version 1.4
+# Last update: Dec. 2020
+# Version 1.5
 # Licence GPL v3
 
 .deleteRecords <- function(x,id) {
@@ -183,7 +183,7 @@
   x
 }
 #---------
-.getDataFame <- function(x,id=NULL,sp=NULL,grp=NULL,time=NULL) {
+.getDataFrame <- function(x,id=NULL,sp=NULL,grp=NULL,time=NULL) {
   if (is.null(id)) id <- .getIndex(x,sp=sp,groups=grp,time=time)
   f <- NULL
   if (length(id) > 0) {
@@ -200,7 +200,7 @@
 setMethod("[", c("sdmdata"),
           function(x, i, ...,drop=FALSE) {
             if (missing(i)) stop('i is missing!')
-            if(drop) .getDataFame(x,i,...)
+            if(drop) .getDataFrame(x,i,...)
             else .subsetRecords(x,i)
           }
 )

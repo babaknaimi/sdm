@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Feb. 2020
-# Version 3.0
+# Date (last update):  Nov. 2020
+# Version 3.1
 # Licence GPL v3
 #---------------------
 
@@ -547,7 +547,7 @@ setMethod("plot", signature(x='.responseCurve'),
 #--------
 
 setMethod("plot", signature(x='.nicheRaster'),
-          function(x,y=NULL,gg=TRUE,xlab,ylab,col,cex.axis,cex.lab,main,...) {
+          function(x,y=NULL,gg=TRUE,rnd=1,xlab,ylab,col,cex.axis,cex.lab,main,...) {
             if (missing(gg)) gg <- .require('ggplot2')
             else if (gg && !.require('ggplot2')) gg <- FALSE
             
@@ -559,10 +559,12 @@ setMethod("plot", signature(x='.nicheRaster'),
             if (missing(cex.axis)) cex.axis <- 0.8
             if (missing(cex.lab)) cex.lab <- 1
             
+            if (missing(rnd)) rnd <- 1
+            
             if (missing(main)) main <- paste0('Ecological Niche described by: ',x@names[1],' - ',x@names[2])
             
-            .lab1 <- round(as.vector(seq(x@scaleParams[1,1], x@scaleParams[2,1], length.out = 6)),1)
-            .lab2 <- round(as.vector(seq(x@scaleParams[1,2], x@scaleParams[2,2], length.out = 6)),1)
+            .lab1 <- round(as.vector(seq(x@scaleParams[1,1], x@scaleParams[2,1], length.out = 6)),rnd)
+            .lab2 <- round(as.vector(seq(x@scaleParams[1,2], x@scaleParams[2,2], length.out = 6)),rnd)
             #--------
             if (gg) {
               drc <- as.data.frame(x@nicheRaster,xy=TRUE)

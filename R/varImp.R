@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July 2016
-# Last update :  Fenruary 2020
-# Version 3.1
+# Last update :  Dec. 2020
+# Version 3.2
 # Licence GPL v3
 
 
@@ -131,13 +131,16 @@ setMethod('getVarImp', signature(x='sdmModels'),
               else if (length(id) > 1 && length(id) == nrow(mi)) cat('\nThe variable importance for all the models are combined (averaged)... \n')
               else cat(paste0('\nThe values of relative variable importance are generated from ', length(id),' models... \n'))
             } else {
-              if (!any(id %in% mi$modelID)) stop('No successfully fitted models are corresponding to the specified modelIDs (id)!')
+              
+              if (!any(id %in% mi$modelID)) stop('No successfully fitted models corresspond to the specified modelIDs (id)!')
               
               if (!all(id %in% mi$modelID)) {
                 id <- id[id %in% mi$modelID]
                 if (length(id) == 1) cat(paste0('Only the id  = ',id,' does exist in the list of successfully fitted models. \n'))
                 else if (length(id) > 1) cat(paste0('Some of the specified modelIDs (id) are not available; ', length(id),' models are considered...! \n'))
               }
+              
+              mi <- mi[mi$modelID %in% id,]
               
               if (length(unique(mi$species)) > 1) {
                 warning('Consider that the specified modelIDs in id are related to several species!')

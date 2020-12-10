@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  March 2018
-# Last update: March 2018
-# Version 1.0
+# Last update: Nov. 2020
+# Version 1.1
 # Licence GPL v3
 ##############################################
 
@@ -53,6 +53,7 @@
   for (i in 1:nrow(mi2)) {
     .m <- list(m2@models[[as.character(mi2$species[i])]][[as.character(mi2$method[i])]][[as.character(mi2$modelID[i])]])
     names(.m) <- as.character(.newID[i])
+    .m[[as.character(.newID[i])]]@mID <- .newID[i]
     m1@models[[as.character(mi2$species[i])]][[as.character(mi2$method[i])]] <- c(m1@models[[as.character(mi2$species[i])]][[as.character(mi2$method[i])]],.m)
     #m1@models[[as.character(mi2$species[i])]][[as.character(mi2$method[i])]][[as.character(.newID[i])]] <- .m
   }

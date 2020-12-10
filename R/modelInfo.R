@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date:  June 2018
-# Last update:  June 2018
-# Version 1.0
+# Last update:  Dec. 2020
+# Version 1.2
 # Licence GPL v3
 
 .getModel.info <- function(x,w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL) {
@@ -103,9 +103,9 @@ if (!isGeneric("getModelInfo")) {
 
 
 setMethod('getModelInfo', signature(x='sdmModels'), 
-          function(x,w,...) {
-            if (missing(w)) w <- NULL
-            .getModel.info(x,w,...)
+          function(x,id,...) {
+            if (missing(id)) id <- NULL
+            .getModel.info(x,id,...)
             
           }
 )
@@ -134,5 +134,42 @@ setMethod('getModelId', signature(x='sdmModels'),
             
             if (nrow(mi) > 0) return(mi$modelID)
             else return(NULL)
+          }
+)
+#---------
+
+if (!isGeneric("getModelObject")) {
+  setGeneric("getModelObject", function(x,id,species=NULL,method=NULL,replication=NULL,run=NULL)
+    standardGeneric("getModelObject"))
+}
+
+
+setMethod('getModelObject', signature(x='sdmModels'), 
+          function(x,id,species=NULL,method=NULL,replication=NULL,run=NULL) {
+            
+            if (missing(species)) species <- NULL
+            if (missing(method)) method <- NULL
+            if (missing(replication)) replication <- NULL
+            if (missing(run)) run <- NULL
+            
+            if (missing(id)) id <- NULL
+            
+            
+              mi <- .getModel.info(x,w=id,species=species,method=method,replication=replication,run=run)
+            
+            if (nrow(mi) > 1) {
+              if (!is.null(id)) stop('The modelID (id) for a single model should be specified...!')
+              else {
+                if (all(is.null(c(species,method,replication,run)))) stop('The modelID (id) for a single model should be specified...!')
+                else stop('Specify the setting for a single model...!')
+              }
+            }
+            
+            if (nrow(mi) == 0) stop('No model is selected...')
+            
+            if (!mi$success) stop('The specified model was not successfully fitted, so the model object does not exist...!')
+            
+            x@models[[mi$species]][[mi$method]][[as.character(mi$modelID)]]@object
+            
           }
 )

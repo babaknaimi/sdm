@@ -10,29 +10,31 @@ sdm is an object-oriented, reproducible and extensible R platform for species di
 
 ## Installing sdm and all the required packages
 
-sdm is also on CRAN, therefore, it can simply be installed using the standard install.packages function as:
+sdm is also available on CRAN, therefore, it can simply be installed using the standard install.packages function as:
 
 install.packages('sdm') 
 
-The GitHub version of sdm may be newer than CRAN version, and can be installed using the install_github function from the devtools package:
+The version of the package available on GitHub may be newer than the one available on CRAN, that can be installed using the install_github function from the devtools package:
 
 devtools::install_github("babaknaimi/sdm")
 
 
-Depending on the methods are selected through the modelling and using the package, several packages may be needed, and therefore, should be installed on your machine. A quick way to install all the required packages (to guarantee having full functionaliy of sdm), is to simply use the function **installAll** offered by the sdm package. You can simply call it without any argument:
+Depending on the methods selected for modelling of species distribution, several packages may be required, that are needed to be installed on your machine before running the modelling procedure. A quick way to install all the required packages (as a guarantee of having access to the full functionaliy of sdm), is to simply use the function **installAll** offered by the sdm package. You can simply call it without any argument:
 
 installAll()
 
 ## sdm website:
 
-The official website of the package is currently can be accessed at http://biogeoinformatics.org
+The official website of the package is currently available at http://biogeoinformatics.org
 
 There is a Google group/forum for the users of the package where the questions can be posted and discussed:
 
 https://groups.google.com/d/forum/rsdm
 
 
-The authors of the package (Miguel Araujo & Babak Naimi) organise a summer school (usually for PhDs and Postdocs) every year, where both the conceptual theories and practices of species distribution modelling are well discussed. If you are interested, you can find more information on the next course at http://www.maraujolab.com; see for example: http://www.maraujolab.com/2018-species-distributions-course/
+The authors of the package (Miguel Araujo & Babak Naimi) organise a summer school (usually for PhDs and Postdocs) every year, where both the conceptual theories and practices of species distribution modelling are well discussed. If you are interested, you can find more information on the next course at http://www.maraujolab.com; see for example: 
+
+http://www.maraujolab.com/3967-2/
 
 ### More information about the authors of the package:
 
