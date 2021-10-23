@@ -1,6 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July 2016
-# Version 2.7
+# last update: Oct. 2021
+# Version 2.8
 # Licence GPL v3
 
 
@@ -114,7 +115,7 @@
                                                    )
                                                    
                                                  )
-                                               ),icon=shiny::icon('line-chart',"fa-2x")
+                                               ),icon=shiny::icon('chart-line',"fa-2x")
                                       ),
                                       shiny::tabPanel('threshold-based',
                                                .wellP(

@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Oct. 2019
-# Version 1.4
+# Date (last update):  Sep. 2021
+# Version 1.5
 # Licence GPL v3
 
 .getFeature.linear <- function(x) {
@@ -22,142 +22,79 @@
   d
 }
 
-
-
-#-------
-.getFeature.hinge <- function(x,nknots) {
-  # if (increasing) {
-  #   .hinge(x,th)
-  # } else {
-  #   .invhinge(x,th)
-  # }
-  .hinge(x,nknots)
-}
-#-------
-.getFeature.threshold <- function(x,th,increasing) {
-  if (increasing) {
-    .thresh(x,th)
-  } else {
-    .invthresh(x,th)
-  }
-}
-
 #-------
 .hinge <- function(x,th) {
-  ifelse(x < th,0,(x - th) / (max(x,na.rm=TRUE) - th))
+  ifelse(x <= th,0,(x - th) / (max(x,na.rm=TRUE) - th))
 }
 
 .invhinge <- function(x,th) {
-  ifelse(x > th,0,1 - ((x - min(x,na.rm=TRUE)) / (th - min(x,na.rm=TRUE))))
+  ifelse(x >= th,0,1 - ((x - min(x,na.rm=TRUE)) / (th - min(x,na.rm=TRUE))))
 }
 #---------
 .invthresh <- function(x,th) {
-  ifelse(x > th,0,1)
+  ifelse(x >= th,0,1)
 }
 
 .thresh <- function(x,th) {
   ifelse(x <= th,0,1)
 }
+
+#-------
+.getFeature.hinge <- function(x,knots=20) {
+  .min <- min(x,na.rm=TRUE)
+  .max <- max(x,na.rm=TRUE)
+  k <- seq(.min,.max,length=knots)
+  h1 <- as.data.frame(lapply(k[-length(k)],function(th,x,...) {
+    .hinge(x,th)
+  },x=x))
+  colnames(h1) <- paste0('hi_',k[-length(k)])
+  #----
+  h2 <- as.data.frame(lapply(k[-1],function(th,x,...) {
+    .invhinge(x,th)
+  },x=x))
+  colnames(h2) <- paste0('hd_',k[-1])
+  cbind(h1,h2)
+}
+#-------
+.getFeature.threshold <- function(x,knots=20) {
+  .min <- min(x,na.rm=TRUE)
+  .max <- max(x,na.rm=TRUE)
+  k <- seq(.min,.max,length=knots)
+  t1 <- as.data.frame(lapply(k[-length(k)],function(th,x,...) {
+    .thresh(x,th)
+  },x=x))
+  colnames(t1) <- paste0('ti_',k[-length(k)])
+  #----
+  t2 <- as.data.frame(lapply(k[-1],function(th,x,...) {
+    .invthresh(x,th)
+  },x=x))
+  colnames(t2) <- paste0('td_',k[-length(k)])
+  cbind(t1,t2)
+}
+
+
 #------
 .Jackard <- function(x,y) {
   sum(apply(data.frame(x,y),1,min)) / sum(apply(data.frame(x,y),1,max))
 }
 #----------
-
+# 
+# .getFeature.product <- function(data) {
+#   apply(data,1,function(x) {
+#     xx <- 1
+#     for (i in seq_along(x))  xx <- xx * x[i]
+#     xx
+#   })
+# }
+#----------
 .getFeature.product <- function(data) {
-  apply(data,1,function(x) {
-    xx <- 1
-    for (i in seq_along(x))  xx <- xx * x[i]
-    xx
-  })
-}
-#----------
-
-.getHingeParams <- function(x,y,method='deviance') {
-  n <- min(20,length(x))
-  th <- as.vector(quantile(x,0:n/n))
-  
-  if (coefficients(lm(y~x))[2] < 0) {
-    j <- rep(NA,length(th))
-    if (method %in% c('deviance','dev','Deviance','Dev','devience')) {
-      for (i in 1:length(th)) j[i] <- .deviance_binomial(y,.invhinge(x,th[i]))
-      w <- which(j == min(j,na.rm=TRUE))
-    } else if (method %in% c('jackard','J','jac','Jackard')) {
-      for (i in 1:length(th)) j[i] <- .Jackard(y,.invhinge(x,th[i]))
-      w <- which(j == max(j,na.rm=TRUE))
-    }
-    list(increasing=FALSE,threshold=th[w[1]])
-  } else {
-    j <- rep(NA,length(th))
-    if (method %in% c('deviance','dev','Deviance','Dev','devience')) {
-      for (i in 1:length(th)) j[i] <- .deviance_binomial(y,.hinge(x,th[i]))
-      w <- which(j == min(j,na.rm=TRUE))
-    } else if (method %in% c('jackard','J','jac','Jackard')) {
-      for (i in 1:length(th)) j[i] <- .Jackard(y,.hinge(x,th[i]))
-      w <- which(j == max(j,na.rm=TRUE))
-    }
-    list(increasing=TRUE,threshold=th[w[length(w)]])
+  x <- data[,1]
+  for (i in 2:ncol(data)) {
+    x <- x * data[,i]
   }
-}
-#-----------
-
-.getThresholdParams <- function(x,y,method='deviance') {
-  n <- min(20,length(x))
-  th <- as.vector(quantile(x,0:n/n))
-  
-  if (coefficients(lm(y~x))[2] < 0) {
-    j <- rep(NA,length(th))
-    if (method %in% c('deviance','dev','Deviance','Dev','devience')) {
-      for (i in 1:length(th)) j[i] <- .deviance_binomial(y,.invthresh(x,th[i]))
-      w <- which(j == min(j,na.rm=TRUE))
-    } else if (method %in% c('jackard','J','jac','Jackard')) {
-      for (i in 1:length(th)) j[i] <- .Jackard(y,.invthresh(x,th[i]))
-      w <- which(j == max(j,na.rm=TRUE))
-    }
-    list(increasing=FALSE,threshold=th[w[1]])
-  } else {
-    j <- rep(NA,length(th))
-    if (method %in% c('deviance','dev','Deviance','Dev','devience')) {
-      for (i in 1:length(th)) j[i] <- .deviance_binomial(y,.thresh(x,th[i]))
-      w <- which(j == min(j,na.rm=TRUE))
-    } else if (method %in% c('jackard','J','jac','Jackard')) {
-      for (i in 1:length(th)) j[i] <- .Jackard(y,.thresh(x,th[i]))
-      w <- which(j == max(j,na.rm=TRUE))
-    }
-    list(increasing=TRUE,threshold=th[w[length(w)]])
-  }
+  x
 }
 
-#--------
-
-# test the hinge feature against the null model; a vector equal to the number of simulation is returned,
-# lower values close to 0 is better, and higher, i.e., closer to 1 implies random or worse than random
-
-.hingeNull_binomial <- function(x,y,n=99,method='mont') {
-  m1 <- .getHingeParams(x,y)
-  o <- rep(NA,n)
-  if (method %in% c('mont','Mont','M','m','Monte Carlo','monte','Monte')) yn <- replicate(n,sample(y))
-  else if (method %in% c('boot','Boot','B','b','bootstrp','Bootstrap')) yn <- replicate(n,sample(y,length(y),replace=TRUE))
-  
-  if (m1$increasing) {
-    h <- .hinge(x,m1$threshold)
-    b <- .deviance_binomial(y,h)
-    for (i in 1:n) o[i] <- .deviance_binomial(yn[,i],.hinge(x,m1$threshold))
-  } else {
-    h <- .invhinge(x,m1$threshold)
-    b <- .deviance_binomial(y,h)
-    for (i in 1:n) o[i] <- .deviance_binomial(yn[,i],.invhinge(x,m1$threshold))
-  }
-  o <- b / o
-  w1 <- quantile(o,0.99)
-  w2 <- quantile(o,0.01)
-  w1 <- which(o > w1)
-  w2 <- which(o < w2)
-  if (length(w1) > 0) o <- o[-w1]
-  if (length(w2) > 0) o <- o[-w2]
-  o
-}
-#----------
 
 
 .getSingleFeatureFrame <- function(n,cls,params=NULL,response=NULL) {
@@ -191,12 +128,10 @@
     o@feature.name <- paste0(n,'.hinge')
     o@type <- 'hinge'
     o@params <- params
-    o@response <- response
   } else if (cls == '.threshold') {
     o@feature.name <- paste0(n,'.threshold')
     o@type <- 'threshold'
     o@params <- params
-    o@response <- response
   } else if (cls == '.func') {
     o@var <- character()
     o@feature.name <- deparse(params[[1]])
@@ -211,7 +146,6 @@
     o@feature.name <- paste0(cls,'.',n)
     o@type <- cls
     o@params <- params
-    o@response <- response
   }
   o
 }
@@ -234,8 +168,6 @@
       l <- as.list(m@x)
       if (as.character(l[[1]]) %in% c(':','*')) {
         o <- c(o,.getSingleFeatureFrame(as.character(.split.formula(m@x,l[[1]])),'.product'))
-      } else if (as.character(l[[1]]) %in% c('>','<') && length(l) == 3) {
-        o <- c(o,.getSingleFeatureFrame(as.character(l[[2]]),'.threshold',list(threshold=l[[3]],increasing=as.character(l[[1]]) == '>')))
       } else if (as.character(l[[1]]) %in% c('^') && length(l) == 3) {
         if (l[[3]] == 2) o <- c(o,.getSingleFeatureFrame(as.character(l[[2]]),'.quad'))
         else if (l[[3]] == 3) o <- c(o,.getSingleFeatureFrame(as.character(l[[2]]),'.cubic'))
@@ -247,35 +179,10 @@
     } else if (fc == '.simple.func') {
       o <- c(o,.getSingleFeatureFrame('xxx',fc,list(m@term)))
     } else if (fc == '.hinge') {
-      if (length(m@threshold) > 0 & length(m@increasing) > 0) o <- c(o,.getSingleFeatureFrame(m@x,fc,list(threshold=m@threshold,increasing=m@increasing)))
-      else {
-        if (length(f@species) == 0)  stop('The parameters for the hinge feature cannot be estimated without response variable!')
-        else {
-          if (!is.null(os)) os <- list()
-          if (!all(f@species %in% d@species.names)) stop('the specified species in the formula has NO record in the data!')
-          for (s in f@species) {
-            ind <- .getIndex(d,sp=s)
-            p <- .getHingeParams(x=.getFeatureRecords(d,ind=ind,n=m@x)[,2],y=.getSpeciesRecords(d,sp=s,ind=ind)[,2])
-            os <- c(os,.getSingleFeatureFrame(m@x,fc,p,s))
-          }
-        }
-      }
+      o <- c(o,.getSingleFeatureFrame(m@x,fc,list(k=m@k)))
       
     } else if (fc == '.threshold') {
-      if (length(m@threshold) > 0 & length(m@increasing) > 0) o <- c(o,.getSingleFeatureFrame(m@x,fc,list(threshold=m@threshold,increasing=m@increasing)))
-      else {
-        if (length(f@species) == 0) stop('The parameters for the threshold feature cannot be estimated without response variable!')
-        else {
-          if (!f@species %in% d@species.names) stop('the specified species in the formula has NO record in the data!')
-          if (!is.null(os)) os <- list()
-          for (s in f@species) {
-            ind <- .getIndex(d,sp=s)
-            p <- .getThresholdParams(x=.getFeatureRecords(d,ind=ind,n=m@x)[,2],y=.getSpeciesRecords(d,sp=s,ind=ind)[,2])
-            os <- c(os,.getSingleFeatureFrame(m@x,fc,p,s))
-          }
-        }
-      }
-      
+      o <- c(o,.getSingleFeatureFrame(m@x,fc,list(k=m@k)))
     } else if (fc == '.selectFrame') {
       # .getFeaturetype(d,f) # recursive
       # need to be checked and tested to select the final set!
@@ -285,10 +192,6 @@
   }
   ff@vars <- unique(unlist(lapply(o,function(x) x@var)))
   ff@feature.types <- o
-  if (!is.null(os)) {
-    ff@vars <- unique(c(ff@vars,unlist(lapply(os,function(x) x@var))))
-    ff@response.specific <- os
-  }
   
   if (!is.null(om)) {
     ff@vars <- unique(c(ff@vars,unlist(lapply(om,function(x) x@var))))
@@ -297,7 +200,7 @@
   
   ff
 }
-
+#--------------
 
 
 
@@ -375,29 +278,10 @@
         temp <- model.frame(as.formula(paste('~',deparse(x@feature.types[[i]]@params[[1]]))),data=data)
         n <- colnames(temp)
         d[[n]] <- as.vector(temp[,1])
-      } else if (ft[[i]] == 'threshold') d[[fn[[i]]]] <- .getFeature.threshold(data[,n[[i]]],th = x@feature.types[[i]]@params$threshold,increasing=x@feature.types[[i]]@params$increasing)
-      else if (ft[[i]] == 'hinge') d[[fn[[i]]]] <- .getFeature.hinge(data[,n[[i]]],nknots = x@feature.types[[i]]@params$nknots)
+      } else if (ft[[i]] == 'threshold') d[[fn[[i]]]] <- .getFeature.threshold(data[,n[[i]]],knots = x@feature.types[[i]]@params$k)
+      else if (ft[[i]] == 'hinge') d[[fn[[i]]]] <- .getFeature.hinge(data[,n[[i]]],knots = x@feature.types[[i]]@params$k)
     }
-    if (!is.null(x@response.specific)) {
-      sp <- lapply(x@response.specific, function(x) x@response)
-      if (!is.null(response)) {
-        w <- response %in% sp
-        if (any(w)) sp <- response[w]
-        else warning('the specified response variable(s) do not exist in the data, all the existing responses are considered!')
-      }
-      o <- list()
-      for (s in sp) {
-        dd <- data.frame(matrix(nrow=nrow(data),ncol=0))
-        n <- lapply(x@response.specific,function(x) x@var)
-        fn <- lapply(x@response.specific,function(x) x@feature.name)
-        ft <- lapply(x@response.specific,function(x) x@type)
-        for (i in 1:length(n)) {
-          if (ft[[i]] == 'threshold') dd[[fn[[i]]]] <- .getFeature.threshold(data[,n[[i]]],th = x@response.specific[[i]]@params$threshold,increasing=x@response.specific[[i]]@params$increasing)
-          else if (ft[[i]] == 'hinge') dd[[fn[[i]]]] <- .getFeature.hinge(data[,n[[i]]],nknots = x@feature.types[[i]]@params$nknots)
-        }
-        o[[s]] <- dd
-      }
-    }
+    
   } else stop('some of the specified variables in the formula do not exist in the data!')
   list(features=d,specis_specific=o) 
 }

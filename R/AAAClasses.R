@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  May 2020
-# Version 4.8
+# Date (last update):  Oct. 2021
+# Version 4.9
 # Licence GPL v3
 
 
@@ -56,7 +56,7 @@ setClass(".methodTemplate",
 setClass('sdmFormula',
          representation(
            formula='formula',
-           vars='character',
+           vars='.variables',
            species='characterORnull',
            model.terms='listORnull',
            data.terms='listORnull'
@@ -87,10 +87,9 @@ setClass('.var',
 
 # select function
 setClass('.selectFrame',
-         representation(sets='list',
-                        n='numeric',
-                        stat='character',
-                        keep='characterORnull'
+         representation(vars='character',
+                        n='integer',
+                        stat='character'
          )
 )
 
@@ -109,6 +108,17 @@ setClass('.grouping',
 setClass('.all.vars',
          representation(
            names='character'
+         )
+)
+
+#--- variable parameters 
+#------- params keeps min, max, mean, sd for each variable
+#------- groups.params is the same as params but stratified based on response variable (e.g., for presence/absence)
+setClass('.variables',
+         representation(
+           names='character',
+           params='data.frame',
+           groups.params="listORnull"
          )
 )
 
@@ -140,7 +150,8 @@ setClass('.formulaFunction',
          representation(cls='call',
                         name='character',
                         args='character',
-                        getFeature='function'
+                        setFrame='functionORnull',
+                        getFeature='functionORnull'
          )
 )
 
@@ -206,6 +217,7 @@ setRefClass('.formulaFunctions',
 )
 #-----------
 #------------
+
 
 setClass('featuresFrame',
          representation(
