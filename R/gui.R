@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July 2016
 # last update: Oct. 2021
-# Version 2.8
+# Version 2.9
 # Licence GPL v3
 
 
@@ -25,8 +25,7 @@
   ui <- shiny::fluidPage(
     shiny::tags$head(.css),
     
-    shiny::tabsetPanel(position='above',
-                       shiny::tabPanel("Summary", .wellP(shiny::verbatimTextOutput("summary"))),
+    shiny::tabsetPanel(shiny::tabPanel("Summary", .wellP(shiny::verbatimTextOutput("summary"))),
                        shiny::tabPanel("Model Runs Details", .wellP(shiny::tableOutput('run_info'))),
                        shiny::tabPanel("Evaluation",
                                        .wellP(
@@ -144,7 +143,7 @@
                                                    shiny::column(3,shiny::selectInput('wtest7','Which Test Dataset?',wt,selected=wt[length(wt)]))
                                                  )
                                                ),
-                                               .wellP(shiny::tableOutput('thTable2')),icon=shiny::icon('arrows-h',"fa-2x")
+                                               .wellP(shiny::tableOutput('thTable2')),icon=shiny::icon('arrows-alt-h',"fa-2x")
                                       )
                                       
                                       ,id='Statistic'

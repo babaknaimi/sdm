@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date (last update):  Oct. 2021
-# Version 4.9
+# Version 5.0
 # Licence GPL v3
 
 
@@ -49,6 +49,16 @@ setClass(".methodTemplate",
          )
 )
 #----------
+#--- variable parameters 
+#------- params keeps min, max, mean, sd for each variable
+#------- groups.params is the same as params but stratified based on response variable (e.g., for presence/absence)
+setClass('.variables',
+         representation(
+           names='character',
+           params='data.frame',
+           groups.params="listORnull"
+         )
+)
 
 
 ################################
@@ -111,16 +121,6 @@ setClass('.all.vars',
          )
 )
 
-#--- variable parameters 
-#------- params keeps min, max, mean, sd for each variable
-#------- groups.params is the same as params but stratified based on response variable (e.g., for presence/absence)
-setClass('.variables',
-         representation(
-           names='character',
-           params='data.frame',
-           groups.params="listORnull"
-         )
-)
 
 # coordinate columns:
 setClass('.coord.vars',

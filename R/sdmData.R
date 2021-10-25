@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date of last update :  Sep. 2021
-# Version 3.0
+# Date of last update :  Oct. 2021
+# Version 3.1
 # Licence GPL v3
 
 #------
@@ -214,8 +214,8 @@
       }
       s <- d@species.names[s]
       hP <- .getHingeParams(d@features[rid,n],y=.getSpeciesDF(d,sp=s,id=id)[[1]]$value) # should be updated!
-      .getFeature.hinge(d@features[rid,n],nknots=10) # should be updated!!
-    } else .getFeature.hinge(d@features[rid,n],nknots=10) # should be updated!
+      .getFeature.hinge(d@features[rid,n],knots=10) # should be updated!!
+    } else .getFeature.hinge(d@features[rid,n],knots=10) # should be updated!
     
   } else if (type %in% c('th','threshold')) {
     if ('th' %in% names(dot)) th <- dot[['th']]
@@ -232,9 +232,9 @@
         } else s <- 1
       }
       s <- d@species.names[s]
-      thP <- .getThresholdParams(d@features[rid,n],y=.getSpeciesDF(d,sp=s,id=id)[[1]]$value)
-      .getFeature.threshold(d@features[rid,n],th=thP$threshold,increasing=thP$increasing)
-    } else .getFeature.threshold(d@features[rid,n],th=th)
+      #thP <- .getThresholdParams(d@features[rid,n],y=.getSpeciesDF(d,sp=s,id=id)[[1]]$value)
+      #.getFeature.threshold(d@features[rid,n],th=thP$threshold,increasing=thP$increasing)
+    } else .getFeature.threshold(d@features[rid,n])
     
     
     
@@ -559,7 +559,7 @@ setReplaceMethod('.addLog','sdmdata',
   }
   
   exf <- .exFormula(formula,train)
-  nall <- c(exf@vars,exf@species)
+  nall <- c(exf@vars@names,exf@species)
   
   
   if (!.varExist(train,nall)) stop('one or more specified variables in the formula do not exist in the train data!')
@@ -651,7 +651,7 @@ setReplaceMethod('.addLog','sdmdata',
   #-------
   
   if (is.null(nf) & is.null(nFact)) {
-    nf <- exf@vars
+    nf <- exf@vars@names
     w <- .where(is.factor,train[,nf]) | .where(is.character,train[,nf])
     if (any(w)) nFact <- nf[w]
     

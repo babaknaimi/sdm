@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Sep. 2021
-# Version 4.5
+# Date (last update):  Oct. 2021
+# Version 4.6
 # Licence GPL v3
 #--------
 
@@ -417,10 +417,10 @@
   #-----
   hasTest <- 'test' %in% d@groups$training@values[,2]
   nFact <- NULL
-  if (!is.null(d@factors) > 0 && any(d@factors %in% s@sdmFormula@vars)) nFact <- d@factors[d@factors %in% s@sdmFormula@vars]
+  if (!is.null(d@factors) > 0 && any(d@factors %in% s@sdmFormula@vars@names)) nFact <- d@factors[d@factors %in% s@sdmFormula@vars@names]
   nf <- .excludeVector(d@features.name,nFact)
-  nf <- nf[nf %in% s@sdmFormula@vars]
-  nFact <- nFact[nFact %in% s@sdmFormula@vars]
+  nf <- nf[nf %in% s@sdmFormula@vars@names]
+  nFact <- nFact[nFact %in% s@sdmFormula@vars@names]
   #---------
   for (sp in s@sdmFormula@species) {
     dt <- as.data.frame(d,sp=sp,grp='train')
@@ -697,7 +697,7 @@ setMethod('sdmSetting', signature(formula='ANY','sdmdata','character'),
             #---------
             if (missing(formula)) {
               if (!is.null(sobj)) {
-                if (all(sobj@sdmFormula@vars %in% data@features.name)) s@sdmFormula <- sobj@sdmFormula
+                if (all(sobj@sdmFormula@vars@names %in% data@features.name)) s@sdmFormula <- sobj@sdmFormula
                 else s@sdmFormula <- data@sdmFormula
               } else s@sdmFormula <- data@sdmFormula
               
@@ -706,11 +706,11 @@ setMethod('sdmSetting', signature(formula='ANY','sdmdata','character'),
               s@sdmFormula <- .exFormula(formula,as.data.frame(data)[,-1])
             } else if (inherits(formula,'.sdmCorSetting')) {
               sobj <- formula
-              if (all(sobj@sdmFormula@vars %in% data@features.name)) s@sdmFormula <- sobj@sdmFormula
+              if (all(sobj@sdmFormula@vars@names %in% data@features.name)) s@sdmFormula <- sobj@sdmFormula
               else s@sdmFormula <- data@sdmFormula
             } else {
               if (!is.null(sobj)) {
-                if (all(sobj@sdmFormula@vars %in% data@features.name)) s@sdmFormula <- sobj@sdmFormula
+                if (all(sobj@sdmFormula@vars@names %in% data@features.name)) s@sdmFormula <- sobj@sdmFormula
                 else s@sdmFormula <- data@sdmFormula
               } else s@sdmFormula <- data@sdmFormula
             }
@@ -980,7 +980,7 @@ setMethod('sdm', signature(formula='ANY',data='sdmdata',methods='.sdmCorSetting'
             
             s <- methods
             
-            if (missing(formula) && !all(s@sdmFormula@vars %in% data@features.name)) s@sdmFormula <- data@sdmFormula
+            if (missing(formula) && !all(s@sdmFormula@vars@names %in% data@features.name)) s@sdmFormula <- data@sdmFormula
             else if (inherits(formula,'sdmFormula')) s@sdmFormula <- formula
             else if (inherits(formula,'formula')) {  
               s@sdmFormula <- .exFormula(formula,as.data.frame(data)[,-1])

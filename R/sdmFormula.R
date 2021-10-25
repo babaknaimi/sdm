@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Sep 2021
-# Version 1.6
+# Date (last update):  Oct. 2021
+# Version 1.7
 # Licence GPL v3
 
 .newFormulaFunction <- function(cls,name,args,setFrame=NULL,getFeature=NULL) {
@@ -344,6 +344,16 @@
   #if (length(unique(n)) < length(n)) stop('repeated arguments!')
   n
 }
+#-----------
+
+.getDataParams <- function(data,n,id=NULL) {
+  if (!is.null(id)) data <- data[id,,drop=FALSE]
+  
+  data.frame(names=n,min=apply(data,2,min,na.rm=TRUE)[n],
+             max=apply(data,2,max,na.rm=TRUE)[n],
+             mean=apply(data,2,mean,na.rm=TRUE)[n],
+             sd=apply(data,2,sd,na.rm=TRUE)[n])
+}
 
 #################---- detect the terms in the nested formula (model) inside the main formula:
 .nested_terms <- function(x,r='.parent',output='.prediction',setting=NULL,method='glm') {
@@ -591,7 +601,7 @@
     
   }
   #f@vars <- nall
-  f@vars <- new('.variables',names=nall,params=.getDataParams(data,nall))
+  
   
   f@species <- as.character(lhs)
   
@@ -603,6 +613,8 @@
   if (any(temp)) nxy <- as.character(.split.formula(rhsi[[which(temp)]][[2]],'+'))
   
   vars <- .excludeVector(nall,c(n,nxy))
+  nall <- .excludeVector(nall,nxy)
+  nf <- .excludeVector(nall,nFact)
   
   w <- unlist(lapply(rhsi,function(x) x == '.'))
   if (any(w)) {
@@ -635,6 +647,7 @@
       else f@model.terms <- c(f@model.terms,temp[wt])
     }
   }
+  f@vars <- new('.variables',names=nall,params=.getDataParams(data,nf))
   f
 }
 #-----------

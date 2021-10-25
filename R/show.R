@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  February 2020
-# Version 1.8
+# Date (last update):  Oct. 2021
+# Version 2.0
 # Licence GPL v3
 
 setMethod ('show' , 'sdmdata',
@@ -45,7 +45,7 @@ setMethod ('show' , '.sdmCorSetting',
              cat('modelling methods                     : ' , paste(object@methods,collapse=', '), '\n')
              sn <- object@sdmFormula@species
              cat('species names                         : ' , if (length(sn) > 3) paste(length(sn),'species including:',paste(c(sn,'...'),collapse=', ')) else paste(sn,collapse=', '), '\n')
-             cat('feature names                         : ' , if (length(object@sdmFormula@vars) > 3) paste(length(object@sdmFormula@vars),'variables including:',paste(c(object@sdmFormula@vars[1:3],'...'),collapse=', ')) else paste(object@sdmFormula@vars,collapse=', '), '\n')
+             cat('feature names                         : ' , if (length(object@sdmFormula@vars@names) > 3) paste(length(object@sdmFormula@vars@names),'variables including:',paste(c(object@sdmFormula@vars@names[1:3],'...'),collapse=', ')) else paste(object@sdmFormula@vars@names,collapse=', '), '\n')
              cat('feature types                         : ' , paste(unique(unlist(lapply(object@featuresFrame@feature.types,function(x) x@type))),collapse=', '), '\n')
              if (!is.null(object@replicate)) {
                r.n <- length(object@replicate)
@@ -144,8 +144,8 @@ setMethod ('show' , 'sdmModels',
                
                cat(paste(mo[i],paste(rep(' ',lb - length(unlist(strsplit(mo[i],'')))),collapse=''),' : ',paste(rep(' ',3),collapse=''),a4,sep='')  , '  %\n')
              }
-             wtest <- colnames(mi)[9:7][which(as.matrix(mi[1,c(9,8,7)]))[1]]
-             
+             #wtest <- colnames(mi)[9:7][which(as.matrix(mi[1,c(9,8,7)]))[1]]
+             wtest <- colnames(mi)[9:7][which(apply(mi[,c(9,8,7)],2,any))[1]]
              
              cat('\n###################################################################\n')
              if (n > 1) {
