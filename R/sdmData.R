@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date of last update :  Oct. 2021
-# Version 3.1
+# Date of last update :  Nov. 2021
+# Version 3.2
 # Licence GPL v3
 
 #------
@@ -177,69 +177,69 @@
   d
 }
 #-----
-.getFeature <- function(d,n,type='l',id,...) {
-  if (missing(id)) id <- .getIndex(d)
-  rid <- which(d@features$rID %in% id)
-  n <- n[1]
-  type <- tolower(type)
-  dot <- list(...)
-  if (!n %in% d@features.name) stop('the variable does not exist!')
-  if (type %in% c('l','linear')) {
-    d@features[rid,n]
-  } else if (type %in% c('q','quad','quadratic')) {
-    .getFeature.quad(d@features[rid,n])
-  } else if (type %in% c('c','cub','cubic')) {
-    .getFeature.cubic(d$features[rid,n])
-  } else if (type %in% c('poly')) {
-    if ('degree' %in% names(dot)) degree <- dot[['degree']]
-    else degree <- 3
-    if ('raw' %in% names(dot)) raw <- dot[['raw']]
-    else raw <- TRUE
-    o <- .getFeature.poly(d@features[rid,n],degree=degree,raw=raw)
-    colnames(o) <- paste(colnames(o),'.',n,sep='')
-    o
-  } else if (type %in% c('h','hing','hinge')) {
-    if ('th' %in% names(dot)) th <- dot[['th']]
-    else th <- NULL
-    if (is.null(th)) {
-      if ('species' %in% names(dot)) {
-        if (is.numeric(dot[['species']]) && dot[['species']] <= length(d@species.names)) s <- dot[['species']]
-        else if (is.character(dot[['species']]) && dot[['species']] %in% d@species.names) s <- which(d@species.names == dot[['species']])
-        else stop('species is not identified!')
-      } else {
-        if (length(d@species.names) > 1) {
-          s <- 1
-          warning('to detect the threshold for the hinge feature, the species name is needed; since it is not specified the first species is used')
-        } else s <- 1
-      }
-      s <- d@species.names[s]
-      hP <- .getHingeParams(d@features[rid,n],y=.getSpeciesDF(d,sp=s,id=id)[[1]]$value) # should be updated!
-      .getFeature.hinge(d@features[rid,n],knots=10) # should be updated!!
-    } else .getFeature.hinge(d@features[rid,n],knots=10) # should be updated!
-    
-  } else if (type %in% c('th','threshold')) {
-    if ('th' %in% names(dot)) th <- dot[['th']]
-    else th <- NULL
-    if (is.null(th)) {
-      if ('species' %in% names(dot)) {
-        if (is.numeric(dot[['species']]) && dot[['species']] <= length(d@species.names)) s <- dot[['species']]
-        else if (is.character(dot[['species']]) && dot[['species']] %in% d@species.names) s <- which(d@species.names == dot[['species']])
-        else stop('species is not identified!')
-      } else {
-        if (length(d@species.names) > 1) {
-          s <- 1
-          warning('to detect the threshold for the threshold feature, the species name is needed; since it is not specified the first species is used')
-        } else s <- 1
-      }
-      s <- d@species.names[s]
-      #thP <- .getThresholdParams(d@features[rid,n],y=.getSpeciesDF(d,sp=s,id=id)[[1]]$value)
-      #.getFeature.threshold(d@features[rid,n],th=thP$threshold,increasing=thP$increasing)
-    } else .getFeature.threshold(d@features[rid,n])
-    
-    
-    
-  }
-}
+# .getFeature <- function(d,n,type='l',id,...) {
+#   if (missing(id)) id <- .getIndex(d)
+#   rid <- which(d@features$rID %in% id)
+#   n <- n[1]
+#   type <- tolower(type)
+#   dot <- list(...)
+#   if (!n %in% d@features.name) stop('the variable does not exist!')
+#   if (type %in% c('l','linear')) {
+#     d@features[rid,n]
+#   } else if (type %in% c('q','quad','quadratic')) {
+#     .getFeature.quad(d@features[rid,n])
+#   } else if (type %in% c('c','cub','cubic')) {
+#     .getFeature.cubic(d$features[rid,n])
+#   } else if (type %in% c('poly')) {
+#     if ('degree' %in% names(dot)) degree <- dot[['degree']]
+#     else degree <- 3
+#     if ('raw' %in% names(dot)) raw <- dot[['raw']]
+#     else raw <- TRUE
+#     o <- .getFeature.poly(d@features[rid,n],degree=degree,raw=raw)
+#     colnames(o) <- paste(colnames(o),'.',n,sep='')
+#     o
+#   } else if (type %in% c('h','hing','hinge')) {
+#     if ('th' %in% names(dot)) th <- dot[['th']]
+#     else th <- NULL
+#     if (is.null(th)) {
+#       if ('species' %in% names(dot)) {
+#         if (is.numeric(dot[['species']]) && dot[['species']] <= length(d@species.names)) s <- dot[['species']]
+#         else if (is.character(dot[['species']]) && dot[['species']] %in% d@species.names) s <- which(d@species.names == dot[['species']])
+#         else stop('species is not identified!')
+#       } else {
+#         if (length(d@species.names) > 1) {
+#           s <- 1
+#           warning('to detect the threshold for the hinge feature, the species name is needed; since it is not specified the first species is used')
+#         } else s <- 1
+#       }
+#       s <- d@species.names[s]
+#       hP <- .getHingeParams(d@features[rid,n],y=.getSpeciesDF(d,sp=s,id=id)[[1]]$value) # should be updated!
+#       .getFeature.hinge(d@features[rid,n],knots=10) # should be updated!!
+#     } else .getFeature.hinge(d@features[rid,n],knots=10) # should be updated!
+#     
+#   } else if (type %in% c('th','threshold')) {
+#     if ('th' %in% names(dot)) th <- dot[['th']]
+#     else th <- NULL
+#     if (is.null(th)) {
+#       if ('species' %in% names(dot)) {
+#         if (is.numeric(dot[['species']]) && dot[['species']] <= length(d@species.names)) s <- dot[['species']]
+#         else if (is.character(dot[['species']]) && dot[['species']] %in% d@species.names) s <- which(d@species.names == dot[['species']])
+#         else stop('species is not identified!')
+#       } else {
+#         if (length(d@species.names) > 1) {
+#           s <- 1
+#           warning('to detect the threshold for the threshold feature, the species name is needed; since it is not specified the first species is used')
+#         } else s <- 1
+#       }
+#       s <- d@species.names[s]
+#       #thP <- .getThresholdParams(d@features[rid,n],y=.getSpeciesDF(d,sp=s,id=id)[[1]]$value)
+#       #.getFeature.threshold(d@features[rid,n],th=thP$threshold,increasing=thP$increasing)
+#     } else .getFeature.threshold(d@features[rid,n])
+#     
+#     
+#     
+#   }
+# }
 #-----------
 
 if (!isGeneric('.addLog<-')) {

@@ -31,9 +31,9 @@ A HTML page in browser is opened.
 
 \author{Babak Naimi \email{naimi.b@gmail.com}
 
-\url{http://r-gis.net}
+\url{https://www.r-gis.net/}
 
-\url{http://biogeoinformatics.org}
+\url{https://www.biogeoinformatics.org}
 
 }
 

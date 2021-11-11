@@ -73,9 +73,9 @@ Slots for sdmModels objects:
 
 \email{naimi.b@gmail.com}
 
-\url{http://r-gis.net}
+\url{https://www.r-gis.net/}
 
-\url{http://biogeoinformatics.org}
+\url{https://www.biogeoinformatics.org}
 }
 
 

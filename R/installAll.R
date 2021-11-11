@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Last Update :  October 2018
-# Version 1.8
+# Last Update :  Nov. 2021
+# Version 1.9
 # Licence GPL v3
 #--------
 
@@ -113,7 +113,10 @@ setMethod('installAll', signature(pkgs='ANY'),
                   pGi <- pGr[.is.installed(pGr)]
                   if (length(pGi) > 0) {
                     pGi <- try(remove.packages(pGi),silent = TRUE)
-                    s[(length(p)+1):length(c(p,pG))] <- .eval("devtools::install_github(pG,quiet=TRUE)")
+                    .xx <- try(.eval("devtools::install_github(pG,quiet=TRUE)"),silent = TRUE)
+                    if (inherits(.xx,'try-error')) .xx <- FALSE
+                    else .xx <- TRUE
+                    s[(length(p)+1):length(c(p,pG))] <- .xx
                   }
                 }
                 if (any(!s)) {

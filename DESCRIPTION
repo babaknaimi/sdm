@@ -1,8 +1,8 @@
 Package: sdm
 Type: Package
 Title: Species Distribution Modelling
-Version: 1.1-5
-Date: 2021-10-30
+Version: 1.1-8
+Date: 2021-11-11
 Author: Babak Naimi, Miguel B. Araujo
 Maintainer: Babak Naimi <naimi.b@gmail.com>
 Depends: methods, sp, R (>= 3.0.0)
@@ -14,5 +14,5 @@ Description: An extensible framework for developing species distribution
     space and time. For more information, please check the following paper:
     Naimi, B., Araujo, M.B. (2016) <doi:10.1111/ecog.01881>.
 License: GPL (>= 3)
-URL: http://biogeoinformatics.org
+URL: https://www.biogeoinformatics.org
 VignetteBuilder: R.rsp

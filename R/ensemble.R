@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  Oct. 2016
-# Last Update :  February 2020
-# Version 2.9
+# Last Update :  Nov, 2021
+# Version 3.0
 # Licence GPL v3
 
 
@@ -68,10 +68,16 @@ if (!isGeneric("ensemble")) {
 
 
 setMethod('ensemble', signature(x='sdmModels',newdata='Raster'), 
-          function(x, newdata, filename,setting,obj.size=1L,...) {
+          function(x, newdata, filename,setting,obj.size=1L,overwrite=FALSE,...) {
             if (missing(setting)) setting <- list(method='weighted',stat='AUC',wtest=NULL,power=1)
             
-            if (missing(filename)) filename=''
+            if (missing(filename)) filename <- ''
+            
+            if (missing(overwrite)) overwrite <- FALSE
+            
+            if (filename != '' && !overwrite) {
+              if (file.exists(filename)) stop('The specified filename does exist. You may use overwrite = TRUE or use a different filename...!')
+            }
             
             if (missing(obj.size)) obj.size <- 1L
             
@@ -656,7 +662,7 @@ setMethod('ensemble', signature(x='sdmModels',newdata='Raster'),
             }
             
             
-            if (filename != '') .ens <- writeRaster(.ens,filename)
+            if (filename != '') .ens <- writeRaster(.ens,filename,overwrite = overwrite)
             
             .ens
           }
@@ -666,9 +672,15 @@ setMethod('ensemble', signature(x='sdmModels',newdata='Raster'),
 
 
 setMethod('ensemble', signature(x='sdmModels',newdata='data.frame'), 
-          function(x, newdata, filename,setting,obj.size=1L,...) {
+          function(x, newdata, filename,setting,obj.size=1L,overwrite=FALSE,...) {
             if (missing(setting)) setting <- list(method='weighted',stat='AUC',wtest=NULL,power=1)
             if (missing(filename)) filename=''
+            
+            if (missing(overwrite)) overwrite <- FALSE
+            
+            if (filename != '' && !overwrite) {
+              if (file.exists(filename)) stop('The specified filename does exist. You may use overwrite = TRUE or use a different filename...!')
+            } 
             
             if (missing(obj.size)) obj.size <- 1L
             

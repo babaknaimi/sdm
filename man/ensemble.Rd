@@ -79,7 +79,9 @@ A list can be introduced in the \code{setting} argument in which several paramet
 
 \author{Babak Naimi \email{naimi.b@gmail.com}
 
-\url{http://biogeoinformatics.org}
+\url{https://www.r-gis.net/}
+
+\url{https://www.biogeoinformatics.org}
 }
 
 \seealso{# }

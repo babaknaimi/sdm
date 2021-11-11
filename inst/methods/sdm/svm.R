@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  July 2017
-# Version 1.1
+# Date (last update):  Nov. 2021
+# Version 1.3
 # Licence GPL v3
 
 #-------------
@@ -8,7 +8,7 @@ methodInfo <- list(name=c('svm','SVM','ksvm'),
                    packages='kernlab',
                    modelTypes = c('pa','pb','ab','n'),
                    fitParams = list(x='standard.formula',data='sdmDataFrame'),
-                   fitSettings = list(type='eps-svr',kernel='rbfdot',epsilon=0.1,prob.model=FALSE,tol=0.001,shrinking=TRUE),
+                   fitSettings = list(type='C-svc',kernel='rbfdot',epsilon=0.1,prob.model=TRUE,tol=0.001,shrinking=TRUE),
                    fitFunction = 'ksvm',
                    settingRules = function(x='sdmVariables',f='fitSettings') {
                      if (x@distribution == 'multinomial') f[['type']] <- 'C-svc'
@@ -16,8 +16,12 @@ methodInfo <- list(name=c('svm','SVM','ksvm'),
                    },
                    tuneParams = NULL,
                    predictParams=list(object='model',newdata='sdmDataFrame'),
-                   predictSettings=list(type='response'),
-                   predictFunction='predict',
+                   predictSettings=list(type='probabilities'),
+                   predictFunction=function(object, newdata, type , coupler = "minpair") {
+                     px <- predict(object,newdata,type=type,coupler=coupler)
+                     if (ncol(px) == 2) px[,2]
+                     else px
+                   },
                    #------ metadata (optional):
                    title='Support Vector Machines',
                    creator='Babak Naimi',

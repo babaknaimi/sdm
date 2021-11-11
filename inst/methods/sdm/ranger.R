@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Jan 2021
-# Version 1.0
+# Date (last update):  Nov. 2021
+# Version 1.1
 # Licence GPL v3
 
 #-------------
@@ -21,9 +21,9 @@ methodInfo <- list(name=c('ranger','rangerRF','rangerForest'),
                    settingRules = NULL,
                    tuneParams = NULL,
                    predictParams=list(object='model',data='sdmDataFrame'),
-                   predictSettings=list(type='response',num.threads=1),
-                   predictFunction=function(object,data,type,num.threads=num.threads) {
-                     predict(object,data=data,type=type)$predictions
+                   predictSettings=list(type='response',num.threads=1,se.method = "infjack",verbose=FALSE,seed=NULL),
+                   predictFunction=function(object,data,type,num.threads,se.method,verbose,seed) {
+                     predict(object,data=data,type=type,num.threads=num.threads,verbose=verbose,seed=seed)$predictions
                    },
                    #------ metadata (optional):
                    title='Random Forest (Ranger)',

@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Oct. 2021
-# Version 1.7
+# Date (last update):  Nov. 2021
+# Version 1.9
 # Licence GPL v3
 
 .newFormulaFunction <- function(cls,name,args,setFrame=NULL,getFeature=NULL) {
@@ -345,15 +345,15 @@
   n
 }
 #-----------
-
 .getDataParams <- function(data,n,id=NULL) {
   if (!is.null(id)) data <- data[id,,drop=FALSE]
-  
-  data.frame(names=n,min=apply(data,2,min,na.rm=TRUE)[n],
-             max=apply(data,2,max,na.rm=TRUE)[n],
-             mean=apply(data,2,mean,na.rm=TRUE)[n],
-             sd=apply(data,2,sd,na.rm=TRUE)[n])
+  data<- data[,n,drop=FALSE]
+  data.frame(names=n,min=apply(data,2,min,na.rm=TRUE),
+             max=apply(data,2,max,na.rm=TRUE),
+             mean=apply(data,2,mean,na.rm=TRUE),
+             sd=apply(data,2,sd,na.rm=TRUE))
 }
+
 
 #################---- detect the terms in the nested formula (model) inside the main formula:
 .nested_terms <- function(x,r='.parent',output='.prediction',setting=NULL,method='glm') {
@@ -507,7 +507,7 @@
 
 #-------------
 .select.terms <- function(x) {
-  a <- c('formula','n','stat')
+  a <- c('formula','stat','n')
   s <- list()
   n <- names(x)
   if (length(n) > 0) {
@@ -529,8 +529,8 @@
   if (length(s[['formula']]) > 1) {
     if (s[['formula']][[1]] != '|' && s[['formula']][[1]] != 'select') stop('something in `select` is wrong, check the help to see how the select function in formula should be used...')
     else {
-      l <- sdm:::.split.formula(s[['formula']],'|')
-      if (any(unlist(lapply(l,function(x) {length(x) > 1 && x[[1]] == '+'})))) stop('something wrong with select; example: select(var1|var2|var3,n=2,stat="auc"')
+      l <- .split.formula(s[['formula']],'+')
+      if (any(unlist(lapply(l,function(x) {length(x) > 1})))) stop('something wrong with select; example: select(var1+var2+var3,stat="vifstep",n="auto"')
     }
   } else l <- list(s[['formula']])
   
@@ -554,6 +554,7 @@
 # .exFormula extract terms in formula and detect what each term is. it may be a model.term (including a
 # variable, a function, a nested model, etc.) or a data.term (including coordinates, select function, group, etc.)
 .exFormula <- function(f,data,detect=TRUE) {
+  nf <- nt <- ng <- nFact <- nsp <- ni <- NULL
   f <- .fixFormula(f)
   v <- colnames(data)
   
@@ -565,6 +566,8 @@
   }
   
   nFact <- v[.where(is.factor,data)]
+  nFact <- c(nFact,v[.where(is.character,data)])
+  
   if (length(nFact) == 0) nFact <- NULL
   else {
     if (any(nFact %in% nall)) nFact <- nFact[nFact %in% nall]
@@ -612,9 +615,7 @@
   temp <- unlist(lapply(rhsi,function(x) as.character(x)[[1]] == 'coords'))
   if (any(temp)) nxy <- as.character(.split.formula(rhsi[[which(temp)]][[2]],'+'))
   
-  vars <- .excludeVector(nall,c(n,nxy))
-  nall <- .excludeVector(nall,nxy)
-  nf <- .excludeVector(nall,nFact)
+  vars <- .excludeVector(nall,c(n,nxy,nFact))
   
   w <- unlist(lapply(rhsi,function(x) x == '.'))
   if (any(w)) {
@@ -632,6 +633,7 @@
     }
   }
   
+  nf <- .excludeVector(nall,c(nxy,nFact))
   
   func.cls <- unlist(lapply(.sdmFormulaFuncs$funcNames,function(x) .sdmFormulaFuncs$funcs[[x]]@cls[[2]]))
   temp <- lapply(rhsi,.term)
@@ -639,7 +641,48 @@
   wt <- which(w %in% c('.var','.nestedModel',func.cls))
   if (length(wt) > 0) f@model.terms <- temp[wt]
   wt <- which(w %in% c('.coord.vars','.grouping','.Info','.time'))
-  if (length(wt) > 0) f@data.terms <- c(f@data.terms,temp[wt])
+  if (length(wt) > 0) {
+    f@data.terms <- c(f@data.terms,temp[wt])
+    w <- unlist(lapply(f@data.terms,class))
+    
+    if (".grouping" %in% w) {
+      wt <- f@data.terms[which(w == ".grouping")]
+      ng <- sapply(wt,function(x) x@group.var)
+      nf <- .excludeVector(nf,ng)
+      nFact <- .excludeVector(nFact,ng)
+    }
+    #---
+    if ('.time' %in% w) {
+      wt <- f@data.terms[which(w == ".time")]
+      nt <- sapply(wt,function(x) as.character(x@terms[1]))
+      nf <- .excludeVector(nf,nt)
+      nFact <- .excludeVector(nFact,nt)
+    }
+    #---
+    if ('.Info' %in% w) {
+      wt <- f@data.terms[which(w == ".Info")]
+      ni <- sapply(wt,function(x) as.character(x@names))
+      nf <- .excludeVector(nf,ni)
+      nFact <- .excludeVector(nFact,ni)
+    }
+  }
+  #-----
+  if (!is.null(f@model.terms)) {
+    w <- unlist(lapply(f@model.terms,class))
+    if ('.factor' %in% w) {
+      wi <- which(w == '.factor')
+      for (i in wi) {
+        w <- as.character(f@model.terms[[i]]@x)
+        w <- .excludeVector(w,'+')
+        nFact <- unique(c(nFact,w))
+        if (is.factor(data[,w])) f@model.terms[[i]]@levels <- levels(data[,w])
+        else f@model.terms[[i]]@levels <- sort(unique(as.character(data[,w])))
+      }
+    }
+  }
+  
+  nf <- .excludeVector(nf,nFact)
+  #----
   wt <- which(w %in% c('.selectFrame'))
   if (length(wt) > 0) {
     for (i in wt) {
@@ -647,7 +690,11 @@
       else f@model.terms <- c(f@model.terms,temp[wt])
     }
   }
-  f@vars <- new('.variables',names=nall,params=.getDataParams(data,nf))
+  #-----
+  #nall <- .excludeVector(nall,nxy)
+  
+  
+  f@vars <- new('.variables',names=c(nf,nFact),params=.getDataParams(data,nf))
   f
 }
 #-----------
