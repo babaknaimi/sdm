@@ -1,0 +1,207 @@
+---
+title: "getting started with sdm package"
+author: "Babak Naimi, Miguel B. Araujo"
+date: "3 April 2016"
+output: rmarkdown::html_vignette
+
+vignette: >
+  %\VignetteIndexEntry{getting started with sdm package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\usepackage[utf8]{inputenc}
+---
+
+sdm is an object-oriented, reproducible and extensible R platform for species distribution modelling. The sdm package is designed to create a comprehensive modelling and simulation framework that: 1) provides a standardised and unified structure for handling species distributions data and modelling techniques (e.g. a unified interface is used to fit different models offered by different packages); 2) is able to support markedly different modelling approaches; 3) enables scientists to modify the existing methods, extend the framework by developing new methods or procedures, and share them to be reproduced by the other scientists; 4) handles spatial as well as temporal data for single or multiple species; 5) employs high performance computing solutions to speed up modelling and simulations, and finally; 6) uses flexible and easy-to-use GUI interface. For more information, check the published paper by Naimi and Araujo (2016) in the journal of Ecography.
+
+This document provides a very quick demonstration on the package followed by some examples, that would be helpful to get a guick start with the package.
+
+## Installing sdm and all the required packages
+
+sdm can simply be installed using the standard install.packages function as:
+
+install.packages('sdm')
+
+Depending on the methods are selected through the modelling and using the package, several packages may be needed, and therefore, should be installed on your machine. A quick way to install all the required packages (to guarantee having full functionaliy of sdm), is to simply use the function **installAll** offered by the sdm package. You can simply call it without any argument:
+
+installAll()
+
+## A brief overview:
+
+There are three main functions provide the main steps of developing/using species distibution models. The three steps include data preparation, model fitting/ evaluation, and prediction. The functions used for these steps:
+
+* \textbf{sdmData}: to read data from different formats, and prepare a data object. Both species (single or multiple) and explanatory variables can be introduced to the function, as well as other information such as spatial coordinates, time, grouping variables, etc.
+
+* \textbf{sdm}: to fit and evaluate species distribution models (multiple algorithms can be used)
+
+* \textbf{predict}: when models are fitted, they can be used to predict/project given a new dataset.
+
+
+## Example Dataset:
+
+The package is followed by several datasets that are used in the help pages. We also use one of those examples here for our demonstration:
+
+We use a shapefile containing presence=absence records for a species as spatial points (species.shp), and four raster datasets (in Ascii format) as explanatory variables (predictors). The files are in the sdm library, so we can directly read them from the library folder. We use rgdal to read raster data (it supports different common formats), and raster package to handle the raster data.
+
+```{r,  echo=FALSE, results='hide',message=FALSE}
+library(sdm)
+
+library(raster)
+library(rgdal)
+
+sdm:::.addMethods()
+
+```
+```{r, fig.width = 6, fig.height = 6}
+library(sdm)
+
+library(raster)
+library(rgdal)
+
+file <- system.file("external/species.shp", package="sdm") # get the location of the species shapefile in the sdm package
+
+# so, file is simply a filename (with path):
+file
+# read the species shapefile using the function shapefile:
+
+species <- shapefile(file)
+
+class(species) # it is a SpatialPointsDataFrame
+
+plot(species)
+# we can take a look at the head of attribute table in the species dataset:
+
+head(species)
+
+# you can see that there is a column has presence-absence records (name of column is important to know: Occurrence)
+
+#--- we can plot presence and absence points separately with different colours:
+
+plot(species[species$Occurrence == 1,],col='blue',pch=16)
+
+points(species[species$Occurrence == 0,],col='red',pch=16)
+
+##########
+# Let's read predictor variables (raster datasets)
+# We have four Ascii-Grids, so, let's just take the name of all files ending to '.asc' to be able to read them together. list.files function can be used to get a list of files in a given path:
+
+path <- system.file("external", package="sdm") # path to the folder contains the data
+lst <- list.files(path=path,pattern='asc$',full.names = T) # list the name of files in the specified path, match the pattern (means all files with a name ending to asc). We asked to generate full names (i.e., names with the path)
+
+lst # this is the name of raster files we want to use as predictor variables
+
+# stack is a function in the raster package, to read/create a multi-layers raster dataset
+preds <- stack(lst) # making a raster object
+
+preds # see the specification of the raster layers (e.g., cell size, extent, etc.)
+
+plot(preds)
+
+plot(preds[[4]]) # only plot the 4th layer
+
+plot(species,add=T) # let's add the species point on the previous plot
+
+
+```
+
+## Data preparation
+So far, we used other packages to just read the data we need to use in our study. Now, we can use the sdm package. First, we need to read and put data in the package that creates a data object. This is very simple and efficient using the function \textbf{sdmData}. 
+
+In this function, we can specify the train dataset (can be spatial points or simply a data.frame), and predictors (if available separately as a raster object). In addition, if there is an independent dataset available to be used for measuring model performance (evaluation/validation), we can provide it through the test arguement. A formula can also be used to specify the response and explanatory variables (and in case if you have data.frame as input which contains coordinates, you can specify the coordinates in the formula as well, + more information). If the formula is not specified, the function tries to detect the species and predictor variables.
+
+
+```{r}
+library(sdm)
+
+d <- sdmData(formula=Occurrence~., train=species, predictors=preds)
+
+d
+
+
+# we didn't really need the formula in this example, as it would be easy for the function to guess which dataset is species, and which are predictors. So, it could be like this:
+d <- sdmData(train=species, predictors=preds)
+
+d
+
+# However, formula makes it so flexible to handle the variables, specifally if there are several other information (e.g., time). If you have multiple species, you can have their names in the left hand side (e.g., sp1+sp2+sp3~.)
+
+# You may also want to take part of variables:
+d <- sdmData(formula=Occurrence~precipitation+temperature, train=species, predictors=preds)
+
+d
+
+d <- sdmData(formula= ~., train=species, predictors=preds)
+
+
+#---
+
+
+```
+## Model Fitting and Evaluation
+
+
+When you create the data object (d in the above example), you would be able to fit the models. To do so, you are going to use the function \textbf{sdm}. In this function, you can specify the variables and the type of features can be generated based on, through a formula. In addition, the name of methods can be specifies as well as settings.
+
+```{r, fig.width = 6, fig.height = 4}
+# in the following example, we use 3 different methods to fit the models.
+
+m1 <- sdm(Occurrence~.,data=d,methods=c('glm','gam','brt'))
+
+m1
+# as you can see, a report is generates shows how many percent of models were successful, and their performance
+#-------------------
+
+# in the above example, the performance statistics were calculated based on the training dataset (the data that were used to fit the mdoel). It is a better idea to have an independent dataset (if so, we would specify in the test argument of sdmData). However, for most of cases, there is no such data available, therefore, we can split the dataset as an alternative solution. Splitting (partitioning) can be one time or several times (several replicates). There are also several methods to do that (i.e., subsampling, cross-validation, bootsrapping)
+
+# Here we are going to fit 5 models and evaluate them through 2 runs of subsampling, each draw 30 percent of training data as test dataset:
+
+m2 <- sdm(Occurrence~.,data=d,methods=c('rf','tree','fda','mars','svm'),replicatin='sub',test.percent=30,n=2)
+
+m2
+
+getModelInfo(m2) # info on runs including modelID, whether they are successfully fitted and evaluated, etc.
+
+
+# We can generate the roc curve and compare the results for all models:
+roc(m2)
+
+# the plots can be smoothes:
+roc(m2,smooth=T)
+```
+
+
+## Prediction
+
+We can use the output of fitting, to predict into the study area, or project into a new location or a new time. 
+
+The predict function can be used for this purpose:
+
+```{r, fig.width = 6, fig.height = 6}
+# in the following, we just predict the habitat suitability into the whole study area
+# since the newdata is a raster object, the output is also a raster object
+
+p1 <- predict(m1,newdata=preds,filename='p1.img') # many commonly used raster format is supported (through the package rgdal)
+
+plot(p1)
+
+p2 <- predict(m2,newdata=preds,filename='p2.img')
+
+p2
+
+nlayers(p2)
+
+plot(p2[[1:4]]) # plot the first 12 rasters
+
+# we can take the mean of raster over different runs for each method and species:
+p2m <- predict(m2,newdata=preds,filename='p2m.img',mean=T)
+
+p2m
+
+plot(p2m)
+
+# full names of rasters:
+getZ(p2m)
+
+```
+
+## Reference
+
+Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for species distribution modelling, Ecography, 39:368-375, DOI: 10.1111/ecog.01881

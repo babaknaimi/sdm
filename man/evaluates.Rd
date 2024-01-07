@@ -5,6 +5,7 @@
 \alias{getReplication}
 \alias{evaluates,vector,vector-method}
 \alias{evaluates,sdmdata,RasterLayer-method}
+\alias{evaluates,sdmdata,SpatRaster-method}
 \alias{getEvaluation,sdmModels-method}
 \alias{getReplication,sdmModels-method}
 
@@ -17,7 +18,7 @@ evaluates for accuracy
 \usage{
 evaluates(x,p,...)
 
-getEvaluation(x,w,wtest,stat,opt,...)
+getEvaluation(x,id,wtest,stat,opt,...)
 
 getReplication(x,id,replication,species,run,index,test)
 }
@@ -25,11 +26,10 @@ getReplication(x,id,replication,species,run,index,test)
 \arguments{
   \item{x}{a numeric vector or a \code{sdmdata} object including the observed values; a \code{sdmModels} object in \code{getEvaluation}}
   \item{p}{a numeric vector or a \code{RasterLayer} including the predicted values}
-  \item{w}{a numeric vector indicates model IDs}
+  \item{id}{a single numeric value indicates the modelID}
   \item{wtest}{which test data should be used: "training", "test.dep", or "test.indep"?}
   \item{stat}{statistics that should be extracted from the \code{sdmEvaluate} object}
   \item{opt}{a numeric value indicates which threshold optimisation criteria should be considered if a threshold-based statistic is selected in stat}
-  \item{id}{a single numeric value indicates the modelID}
   \item{species}{optional; a character vector specifies the name of species for which the replication is returned (default is NULL)}
   \item{replication}{a character specifies the name of the replication method}
   \item{run}{a single numeric value specifies the replication ID}
@@ -43,7 +43,7 @@ Evaluates the preformance (accuracy) given the obsetved values, and the predicte
 \code{getEvaluation} can be used to get the evaluation results from a fitted model (\code{sdmModels} object that is output of the \code{sdm} function). Each model in \code{sdmModels} has a modelID, that can be specified in \code{w} argument. If \code{w} is not specified or more than a modelID is specified, then a data.frame is generated that contains the statistics specified in \code{stat}. For a single model (if length \code{w} is 1), \code{stat} can be 1 (threhold_independent statistics), or 2 (threshold_based statistics) or NULL (both groups). If more than a model is specified (\code{w} is either NULL or has a length greater than 1), stat can be the name of statistics such as \code{'AUC', 'COR', 'Deviance', 'obs.prevalence', 'threshold', 'sensitivity', 'specificity', 'TSS', 'Kappa', 'NMI', 'phi', 'ppv', 'npv', 'ccr', 'prevalence'}. 
 If either of the thershold_based stats are selected, \code{opt} can be also specified to select one of the criteria for optimising the threshold. The possible value can be between 1 to 10 for \code{"sp=se", "max(se+sp)", "min(cost)", "minROCdist", "max(kappa)", "max(ppv+npv)", "ppv=npv", "max(NMI)", "max(ccr)", "prevalence"} criteria, respectively.
 
-\code{getReplication} can return the portion of records randonly selected through data partitioning using one of the replication methods (e.g., 'cv', 'boot', 'sub').
+\code{getReplication} returns portion of records randomly selected through data partitioning using one of the replication methods (e.g., 'cv', 'boot', 'sub').
 }
 
 \value{
@@ -60,7 +60,7 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 \url{https://www.r-gis.net/}
 
-\url{https://www.biogeoinformatics.org}
+\url{https://www.biogeoinformatics.org/}
 
 }
 

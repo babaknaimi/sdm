@@ -1,11 +1,11 @@
-\name{coordinates}
+\name{coords}
 
 
-\alias{coordinates}
-\alias{coordinates<-}
-\alias{coordinates,sdmdata-method}
-\alias{coordinates,sdmModels-method}
-\alias{coordinates<-,sdmdata-method}
+\alias{coords}
+\alias{coords<-}
+\alias{coords,sdmdata-method}
+\alias{coords,sdmModels-method}
+\alias{coords<-,sdmdata-method}
   
 \title{get or set spatial coordinates of species data}
 
@@ -14,16 +14,16 @@ Get or set spatial coordiates of a \code{sdmdata} object.
 }
 
 \usage{
-\S4method{coordinates}{sdmdata}(obj,...)
+\S4method{coords}{sdmdata}(obj,...)
 
-\S4method{coordinates}{sdmdata}(object)<-value
+\S4method{coords}{sdmdata}(object)<-value
 
 }
 
 \arguments{
   \item{obj}{speciesData (either of singleSpecies, multiple Species or SpeciesDataList) object}
   \item{object}{same as obj}
-  \item{value}{spatial coordinates either a matrix, or data.frame, or column name as character, or a formula (e.g., ~x+y, or ~coords(x+y))}
+  \item{value}{spatial coordinates either a matrix, or data.frame, or as character to change the names of coordinates}
   \item{...}{Additional arguments}
 }
 
@@ -40,7 +40,7 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 \url{https://www.r-gis.net/}
 
-\url{https://www.biogeoinformatics.org}
+\url{https://www.biogeoinformatics.org/}
 }
 
 
@@ -50,7 +50,7 @@ d <- read.sdm(file)
 
 d # a sdmdata object
 
-coordinates(d)
+coords(d)
 
 }
 

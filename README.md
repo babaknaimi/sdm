@@ -32,15 +32,15 @@ There is a Google group/forum for the users of the package where the questions c
 https://groups.google.com/d/forum/rsdm
 
 
-The authors of the package (Miguel Araujo & Babak Naimi) organise a summer school (usually for PhDs and Postdocs) every year, where both the conceptual theories and practices of species distribution modelling are well discussed. If you are interested, you can find more information on the next course at http://www.maraujolab.com; see for example: 
+The authors of the package (Miguel Araujo & Babak Naimi) organise a summer school (usually for PhDs and Postdocs) every year, where both the conceptual theories and practices of species distribution modelling are well discussed. If you are interested, you can find more information on the next course at https://www.maraujolab.eu; see for example: 
 
-http://www.maraujolab.com/3967-2/
+https://www.maraujolab.eu/9th-edition-of-the-sdm-course/
 
 ### More information about the authors of the package:
 
-Babak Naimi: http://www.biogeoinformatics.org/about-me/
+Babak Naimi: https://www.biogeoinformatics.org/about-me/
 
-Miguel Araujo: http://www.maraujolab.com/people/miguel-araujo/
+Miguel Araujo: https://www.maraujolab.eu/people/miguel-araujo/
 
 
-There is another website of the package developer (Babak Naimi) where you can find some articles about his research: http://r-gis.net
+There is another website of the package developer (Babak Naimi) where you can find some articles about his research: https://r-gis.net

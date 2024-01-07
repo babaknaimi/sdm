@@ -13,7 +13,7 @@ Creates sdmSetting object that holds settings to fit and evaluate the models. It
 \usage{
 sdmSetting(formula,data,methods,interaction.depth=1,n=1,replication=NULL,cv.folds=NULL,
      test.percent=NULL,bg=NULL,bg.n=NULL,var.importance=NULL,response.curve=TRUE,
-     var.selection=FALSE,ncore=1L,modelSettings=NULL,seed=NULL,parallelSettings=NULL,...)
+     var.selection=FALSE,modelSettings=NULL,seed=NULL,parallelSetting=NULL,...)
 
 
 }
@@ -32,10 +32,9 @@ sdmSetting(formula,data,methods,interaction.depth=1,n=1,replication=NULL,cv.fold
   \item{var.importance}{logical, whether variable importance should be calculated}
   \item{response.curve}{method to calculate variable importance}
   \item{var.selection}{logical, whether variable selection should be considered}
-  \item{ncore}{number of cores to parallelize processing}
   \item{modelSettings}{optional list; settings for modelling methods can be specified by users}
   \item{seed}{default is NULL; either logical specify whether a seed for random number generator should be considered, or a numerical to specify the exact seed number}
-  \item{parallelSettings}{default is NULL; a list include settings items for parallel processing. The parallel setting items include ncore, method, type, hosts, doParallel, and fork; see details for more information.}
+  \item{parallelSetting}{default is NULL; a list include setting items for parallel processing. The items in parallel setting include: ncore, method, type, hosts, doParallel, and fork; see details for more information.}
   \item{...}{additional arguments}
   }
 \details{
@@ -43,20 +42,26 @@ using sdmSetting, the feature types, interaction.depth and all settings of the m
 
 If a user aims to reproduce the same results for every time the code is running with the same data and settings, a seed number should be specified. Through the \code{seed} argument, a user can specify \code{NULL}, means a seed should not be set (if a random sampling is incorporated in the modelling procedure, for different runs the results would be different); \code{TRUE}, means a seed should be set (the seed number is randomly selected and used everytime the same setting is incorporated); \code{a number}, means the seed will be set to the number specified by the user. 
 
-For parallel processing, a list of items can be passed to \code{parallelSettings}, include:
+For parallel processing, a list of items can be passed to \code{parallelSetting}, including:
 
-\code{ncore}: defines the number of cores (it can also be specified outside of this list, but will be removed in future)
+\code{ncore}: defines the number of cores (it can also be specified outside of this list
 
-\code{method}: defines the platform/set of functions to run the parallelisation. Currently, two options of 'parallel', and 'foreach' is implemented. default is 'parallel'
+\code{method}: defines the parallelising engine. Currently, three options are available including 'parallel', 'foreach', and 'future'. default is 'parallel'
 
-\code{doParallel}: Optional, definition to register for a backend for parallel processing (currently when method='foreach'). It should be provided as an R expression.
+\code{doParallel}: Optional, definition to register for a backend for parallel processing (needed when method='foreach'). It should be provided as an R expression like the following example:
 
-\code{cluster}: Optional, if a cluster is already created and started, it can be introduced through this item to be used as the parallel processing platform (currently when method='parallel')
+expression(registerDoParallel(parallelSetting@cl))
 
-\code{hosts}: A list of addresses for the accessible hosts (remote clusters) to be registered and used in parallel processing (may not work appropriately as it is still under development!)
+The above example is based on the function available in doParallel package. Other packages can also be used to provide and register backend technologies (e.g., doMC)
 
-\code{fork}: Logical, Available for non-windows operating system and specifies whether a fork solution should be used for the parallelisation. Default is TRUE.
+\code{cluster}: Optional; in case a cluster is created and available (e.g., using cl <- parallel::makeCluster(2)), the cluster object can be introduced here to be used as the parallel processing engine, otherwise, it is handled by the sdm package.
 
+\code{hosts}: Optional; To use remote machines/clusters in the parallel processing, a character vector with the addresses (names or IPs) of the accessible (on the network) remote clusters can be provided here to be registered and used in parallel processing (still under development so it may not work appropriately!)
+
+\code{fork}: Logical, Available for non-windows operating system and specifies whether a fork solution should be used for the parallelisation. Default is TRUE for non-windows OS and FALSE for windows.
+
+
+NOTE: Only use parallelSetting when you deal with a big dataset or large number of models otherwise, it make the procedure slower rather than faster if the procedure is quick without parallelising!
 
 }
 
@@ -73,7 +78,7 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 \url{https://www.r-gis.net/}
 
-\url{https://www.biogeoinformatics.org}
+\url{https://www.biogeoinformatics.org/}
 }
 
 \examples{

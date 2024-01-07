@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  February 2020
-# Version 2.9
+# Date (last update):  Jan 2024
+# Version 3.6
 # Licence GPL v3
 
 
@@ -128,11 +128,8 @@ if (!isGeneric("predict")) {
 # }
 
 
-
-
-.generateWLP <- function(x,newdata,w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,ncore=NULL) {
+.generateWLP <- function(x,newdata,w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,parallelSetting=NULL) {
   
-  if (missing(ncore) || is.null(ncore)) ncore <- 1
   
   mi <- .getModel.info(x,w=w,species=species,method=method,replication=replication,run=run)
   
@@ -141,9 +138,9 @@ if (!isGeneric("predict")) {
   if (!all(s)) {
     if (!any(s)) stop('There is no model objects that were successfully fitted!')
     if (length(which(!s)) == 1) {
-      warning(paste('1 model from the total',length(s),'models was NOT successfully fitted, so it is excluded in prediction!'))
+      warning(paste('1 model from the total of',length(s),'models was NOT successfully fitted, so it is excluded in prediction!'))
     } else {
-      warning(paste(length(which(!s)),'models from the total',length(s),'models were NOT successfully fitted, so they are excluded in prediction!'))
+      warning(paste(length(which(!s)),'models from the total of',length(s),'models were NOT successfully fitted, so they are excluded in prediction!'))
     }
     
     mi <- mi[s,]
@@ -157,44 +154,20 @@ if (!isGeneric("predict")) {
   
   m <- unique(as.character(mi[,3]))
   #----
-  w <- new('.workloadP',runTasks=mi)
+  w <- new('.workloadPredict',runTasks=mi,parallelSetting=parallelSetting)
   
-  if (is.null(ncore)) w$ncore <- 1
-  else {
-    #w$ncore <- parallel::detectCores()
-    w$ncore <- ncore
-    # temporary until the HPC for windows is implemented:
-    if (.is.windows()) w$ncore <- 1
-  }
   
-  w$newdata$raster <- NULL
-  nf <- nFact <- NULL
-  
-  nf <- .getFeatureNamesTypes(x@setting@featuresFrame)
-  if (!is.null(nf) && 'factor' %in% nf[,2]) {
-    nFact <- as.character(nf[nf[,2] == 'factor',1])
-    nf <- nf$name
-    nf <- .excludeVector(nf,nFact)
-  } else nf <- nf$name
+  #w$newdata$raster <- NULL
   
   if (inherits(newdata,'data.frame')) {
     n <- colnames(newdata)
-    if (!all(x@setting@featuresFrame@vars %in% n)) stop('the data does not contain some or all of the variables that the model needs...')
-    w$newdata$data.frame <- newdata
-    w$modelFrame <- .getModelFrame(x@setting@featuresFrame,w$newdata$data.frame,response=species)
-  } else if (inherits(newdata,'Raster')) {
+    if (!all(x@setting@featureFrame@predictors %in% n)) stop('the newdata does not contain some or all of the predictor variables required by the model...!')
+    
+  } else if (inherits(newdata,'Raster') || inherits(newdata,'SpatRaster')) {
     n <- names(newdata)
-    if (!all(x@setting@featuresFrame@vars %in% n)) stop('the data does not contain some or all of the variables that the model needs...')
-    w$newdata$raster <- newdata
-    #w$newdata$data.frame <- .raster2df(newdata,nFact)
-    w$newdata$data.frame <- .raster2df(newdata,.getlevels(x@data)[nFact])
+    if (!all(x@setting@featureFrame@predictors %in% n)) stop('the newdata does not contain some or all of the predictor variables required by the model...!')
     
-    w$modelFrame <- .getModelFrame(x@setting@featuresFrame,w$newdata$data.frame,response=species)
-    
-    #b <- brick(raster(newdata))
-    #mr <- rep(NA,ncell(b))
-    
-  } else stop('newdata should be a Raster* object or a data.frame...!')
+  } else stop('newdata should be a Raster* (or SpatRaster) object or a data.frame...!')
   
   
   w$funs <- .sdmMethods$getPredictFunctions(m)
@@ -214,93 +187,27 @@ if (!isGeneric("predict")) {
   }
   
   #######
-  #nf <- .getFeatureNamesTypes(x@setting@featuresFrame)
-  #if ('factor' %in% nf) {
-  if (!is.null(nFact)) {
-    #nFact <- names(nf)[nf == 'factor']
-    #nf <- .excludeVector(names(nf),nFact)
-    id <- mi[,1]
-    dd <- as.data.frame(x@data)
-    ddf <- .getModelFrame(x@setting@featuresFrame,dd,response=species)
-    dd <- dd$rID
-    for (sp in species) {
-      mj <- mi[which(mi[,2] == sp),]
-      r <- mj[,5]
-      
-      if (!is.null(ddf$specis_specific)) {
-        d1 <- cbind(ddf$features,ddf$specis_specific[[sp]])
-        d2 <- cbind(w$modelFrame$features,w$modelFrame$specis_specific[[sp]])
-        nf1 <- colnames(w$modelFrame$features)
-        nf2 <- colnames(w$modelFrame$specis_specific[[sp]])
-      } else {
-        d1 <- ddf$features
-        d2 <- w$modelFrame$features
-        nf1 <- colnames(w$modelFrame$features)
-        nf2 <- NULL
-      }
-      
-      if (!all(is.na(r))) {
-        r <- unique(r)
-        o <- data.frame(matrix(ncol=3,nrow=0))
-        for (j in r) {
-          ddd <- .factorFixW(d1[dd %in% .getRecordID(x@recordIDs,x@replicates[[sp]][[j]]$train,sp=sp,train=TRUE),,drop=FALSE],d2,nf = nf,nFact=nFact)
-          
-          if (length(ddd) > 0) {
-            for (i in seq_along(ddd)) {
-              o <- rbind(o,data.frame(f=ddd[[i]][[1]],old=ddd[[i]][[2]],new=ddd[[i]][[3]]))
-            }
-          }
-        }
-      } else {
-        ddd <- .factorFixW(d1,d2,nf = nf,nFact=nFact)
-        o <- data.frame(matrix(ncol=3,nrow=0))
-        if (length(ddd) > 0) {
-          for (i in seq_along(ddd)) {
-            o <- rbind(o,data.frame(f=ddd[[i]][[1]],old=ddd[[i]][[2]],new=ddd[[i]][[3]]))
-          }
-        }
-      }
-      
-      if (nrow(o) > 0) {
-        for (n in as.character(unique(o[,1]))) {
-          wn <- which(o$f == n)
-          oc <- o[wn,]
-          u <- as.character(unique(oc[,2]))
-          un <- as.character(unique(o[wn,3]))
-          for (uu in u) {
-            wc <- which(oc$old == uu)
-            nc <- .domClass(as.character(oc$new[wc]))
-            if (nc[1] %in% u && length(nc) > 1) nc <- nc[2]
-            else nc <- nc[1]
-            ww <- which(w$modelFrame$features[,n] == uu)
-            w$modelFrame$features[ww,n] <- nc
-          }
-          w$modelFrame$features[,n] <- factor(w$modelFrame$features[,n])
-        }
-      }
-    }
-  }
-  #--------
   w$obj <- x@models
   w$runTasks$species <- as.character(w$runTasks$species)
   w$runTasks$method <- as.character(w$runTasks$method)
   sp <- as.character(mi[,2])
   nw <- unique(sp)
-  w$runTasks$speciesID <- unlist(lapply(sp,function(x) {which(nw == x)}))
+  #w$runTasks$speciesID <- unlist(lapply(sp,function(x) {which(nw == x)}))
   
   m <- as.character(mi[,3])
   nw <- names(w$funs)
-  w$runTasks$methodID <- unlist(lapply(m,function(x) {which(nw == x)}))
+  #w$runTasks$methodID <- unlist(lapply(m,function(x) {which(nw == x)}))
   w$runTasks$mIDChar <- as.character(mi[,1])
   w
 }
 
-
 setMethod('predict', signature(object='sdmModels'), 
-          function(object, newdata, filename="",w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,mean=FALSE,control=NULL,overwrite=FALSE,nc=1,obj.size=1,err=FALSE,...) {
+          function(object, newdata, filename="",id=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,mean=FALSE,overwrite=FALSE,parallelSetting=NULL,err=FALSE,...) {
             if (missing(newdata)) stop('mewdata is missing...')
+            if (missing(overwrite)) overwrite <- FALSE
+            if (missing(filename)) filename <- ""
             
-            if (missing(nc) || is.null(nc)) nc <- 1
+            if (missing(parallelSetting)) parallelSetting <- NULL
             #---
             if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
             #---
@@ -345,232 +252,550 @@ setMethod('predict', signature(object='sdmModels'),
               }
             }
             
-            
-            b <- NULL
-            w <- .generateWLP(x = object,newdata=newdata,w=w,species=species,method=method,replication=replication,run=run,ncore=nc)
-            #w <- sdm:::.generateWLP(x = object,newdata=newdata,w=NULL,species=NULL,method=NULL,replication=NULL,run=NULL,ncore=1)
-            
-            if (!is.null(w$newdata$raster)) {
-              if (filename == '') filename <- .generateName('sdm_prediction')
-              if (extension(filename) == '') filename <- paste(filename,'.grd',sep='')
-              b <- brick(raster(w$newdata$raster))
-              mr <- rep(NA,ncell(b))
+            if (filename != "") {
+              
+              if (file.exists(filename) && !overwrite) stop('filename exists... (use overwrite=TRUE or use a different filename!)')
             }
+            #----
+            if (!missing(parallelSetting) && is.list(parallelSetting)) {
+              nparallel <- names(parallelSetting)
+              a <- c('ncore','doParallel','method','cluster','hosts','fork','type','strategy')
+              nparallel <- .pmatch(nparallel,a)
+              w <- which(!is.na(nparallel))
+              if (length(w) > 0) {
+                parallelSetting <- parallelSetting[w]
+                nparallel <- nparallel[w]
+                names(parallelSetting) <- nparallel
+              }
+              #--
+              if ('cluster' %in% nparallel && inherits(parallelSetting$cluster,'cluster')) .parSetting@cl <- parallelSetting$cluster
+              #--
+              .parSetting <- new('.parallelSetting')
+              if ('ncore' %in% nparallel) .parSetting@ncore <- min(c(parallelSetting$ncore,parallel::detectCores()))
+              else {
+                if (!is.null(.parSetting@cl)) .parSetting@ncore <- length(.parSetting@cl)
+                else .parSetting@ncore <- max(c(floor(parallel::detectCores() * 0.5),1))
+              }
+              #--
+              if ('method' %in% nparallel) {
+                if (!parallelSetting$method %in% c('parallel','foreach','future')) {
+                  warning('The parallel method is not recognised; the default value ("parallel") is used!')
+                  .parSetting@method <- 'parallel'
+                } else .parSetting@method <- 'parallel'
+              } else .parSetting@method <- 'parallel'
+              #--
+              if ('type' %in% nparallel) .parSetting@type <- parallelSetting$type
+              #--
+              if ('strategy' %in% nparallel) {
+                parallelSetting$strategy <- tolower(parallelSetting$strategy)[1]
+                if (!parallelSetting$strategy %in% c('data','model','auto')) {
+                  warning('The parallel strategy is not recognised (should be one of c("auto","data","model")); the default, "auto", is used!')
+                  .parSetting@strategy <- 'auto'
+                } else .parSetting@strategy <- parallelSetting$strategy
+              } else .parSetting@strategy <- 'auto'
+              #--
+              if ('doParallel' %in% nparallel && is.expression(parallelSetting$doParallel)) .parSetting@doParallel <- parallelSetting$doParallel
+              #--
+              
+              if ('hosts' %in% nparallel && is.character(parallelSetting$hosts)) .parSetting@hosts <- parallelSetting$hosts
+              
+              #----
+              if ('fork' %in% nparallel) {
+                if (is.logical(parallelSetting$fork)) {
+                  .parSetting@fork <- parallelSetting$fork
+                  if (parallelSetting$fork && .is.windows()) {
+                    warning('"fork" in the parallel setting cannot be TRUE on Windows Operating Systems; It is changed to FALSE!')
+                    .parSetting@fork <- FALSE
+                  }
+                } else {
+                  if (is.null(parallelSetting$fork)) .parSetting@fork <- !.is.windows()
+                  else {
+                    warning('"fork" in parallel setting should be logical; the default value is used!')
+                    .parSetting@fork <- !.is.windows()
+                  }
+                }
+              } else .parSetting@fork <- !.is.windows()
+              #--
+              parallelSetting <- .parSetting
+            } else {
+              if (!is.null(parallelSetting)) {
+                if (!inherits(parallelSetting,'.parallelSetting')) {
+                  warning('parallelSetting should be provided as a list (it is ignored)!')
+                  parallelSetting <- NULL
+                }
+              }
+            }
+            #----
+            if (inherits(newdata,'Raster')) newdata <- rast(newdata)
+            #-----
+            w <- .generateWLP(x = object,newdata=newdata,w=id,species=species,method=method,replication=replication,run=run,parallelSetting=parallelSetting)
             
             mid <- w$runTasks$modelID
             #----
             nr <- nrow(w$runTasks)
+            ###############################
             
-            obj.size <- obj.size * 1073741824 # Gb to byte
-            #--------------
-            success <- rep(TRUE,nr)
+            if (!is.null(parallelSetting) && parallelSetting@ncore > 1) {
+              .require('parallel')
+              
+              if (parallelSetting@method == 'future') {
+                if (!.require('future.apply')) {
+                  warning('To use "future" as the parallel method, packages of "future" and "future.apply" are needed but they are not available, so the method is changed to "parallel"')
+                  parallelSetting@method <- "parallel"
+                }
+              } else if (parallelSetting@method == 'foreach') {
+                if (!.require('foreach')) {
+                  warning('To use "foreach" as the parallel method, the "foreach" package is needed but it is not available, so the method is changed to "parallel"')
+                  parallelSetting@method <- "parallel"
+                }
+              }
+              
+              
+              if (parallelSetting@method == 'future') {
+                if (parallelSetting@fork && !.is.windows()) {
+                  if (!is.null(parallelSetting@cl)) {
+                    .eval('plan(cluster,workers=parallelSetting@cl,gc=TRUE)',environment())
+                  } else {
+                    .eval('plan(multicore,workers=parallelSetting@ncore,gc=TRUE)',environment())
+                  }
+                  
+                } else {
+                  if (!is.null(parallelSetting@cl)) {
+                    .eval('plan(cluster,workers=parallelSetting@cl,gc=TRUE)',environment())
+                  } else {
+                    .eval('plan(multisession,workers=parallelSetting@ncore,gc=TRUE)',environment())
+                  }
+                  
+                }
+                .lapply <- .fuLapply
+                .cl <- NULL
+                #on.exit({.eval('plan(sequential,gc=TRUE)',environment());gc()}, add=TRUE)
+              } else {
+                if (!is.null(parallelSetting@cl)) {
+                  .cl <- parallelSetting@cl
+                  clusterExport(parallelSetting@cl,c('w','mid'),envir = environment())
+                  
+                  .cle <- try(clusterEvalQ(parallelSetting@cl,{
+                    library(sdm)
+                    sdm:::.addMethods()
+                    sdm:::.pkgLoad(names(w$funs))
+                    
+                  }),silent = TRUE)
+                  
+                  if (inherits(.cle,'try-error')) {
+                    parallelSetting@ncore
+                    warning('parallelising is not working for the predict function (it is ignored)!')
+                    cat('\n ncore is changed to 1!')
+                    .lapply <- .Lapply
+                  } else {
+                    .lapply <- .parLapply
+                  }
+                  
+                  
+                } else {
+                  if (parallelSetting@fork && !.is.windows()) {
+                    .cl <- makeForkCluster(parallelSetting@ncore)
+                  } else {
+                    if (!is.null(parallelSetting@hosts)) {
+                      .cl <- try(makePSOCKcluster(parallelSetting@hosts),silent = TRUE)
+                      # it should be updated given settings for remote connections
+                      # https://parallelly.futureverse.org/reference/makeClusterPSOCK.html
+                      if (inherits(.cl,'try-error')) {
+                        cat('\n Error in connecting to remote servers:' ,print(.cl))
+                        cat('\n cores on the local machine is considered!')
+                        .cl <- makePSOCKcluster(parallelSetting@ncore)
+                      }
+                    } else .cl <- makePSOCKcluster(parallelSetting@ncore)
+                    #-----------
+                    clusterExport(.cl,c('w','mid'),envir = environment())
+                    
+                    .cle <- try(clusterEvalQ(.cl,{
+                      library(sdm)
+                      sdm:::.addMethods()
+                      sdm:::.pkgLoad(names(w$funs))
+                      
+                    }),silent = TRUE)
+                    
+                    if (inherits(.cle,'try-error')) {
+                      parallelSetting@ncore
+                      stopCluster(.cl)
+                      warning('parallelising is not working for the predict function (it is ignored)!')
+                      cat('\n ncore is changed to 1!')
+                      .lapply <- .Lapply
+                    } else .lapply <- .parLapply
+                    
+                  }
+                  parallelSetting@cl <- .cl
+                }
+                
+                #on.exit({stopCluster(.cl);gc()}, add=TRUE)
+              }
+              #----------
+              if (parallelSetting@method == 'foreach' && .require('foreach') && (.require('doParallel') | .eval('getDoParRegistered()',environment()))) {
+                if (!.eval('getDoParRegistered()',environment())) {
+                  if (!is.null(parallelSetting@doParallel) && is.expression(parallelSetting@doParallel)) {
+                    .tmp <- try(eval(parallelSetting@doParallel),silent = TRUE)
+                    if (inherits(.tmp,'try-error') || !.eval('getDoParRegistered()',environment())) {
+                      eval(expression({registerDoParallel(parallelSetting@cl)}))
+                    }
+                  } else eval(expression({registerDoParallel(parallelSetting@cl)}))
+                }
+                .lapply <- .feLapply
+              }
+            }
+            ###############################
+            success <- rep(FALSE,nr)
             rnames <- fullnames <- c()
             errLog <- list()
             
-            options(warn=-1)
-            
-            if (inherits(b,'Raster')) {
-              if (nr > 1) {
-                b <- brick(b,nl=nr)
-                writeRaster(b,filename=filename,overwrite=overwrite)
-                b <- brick(filename)
-              } else {
-                b <- raster(b)
-                writeRaster(b,filename=filename,overwrite=overwrite)
-                b <- raster(filename)
+            if (nr > 1 && mean && !is.na(w$runTasks$replication[1]) && length(unique(w$runTasks$replicationID)) > 1) {
+              .mi <- w$runTasks[0,c(2:4)]
+              for (.sp in unique(w$runTasks$species)) {
+                .tmp <- w$runTasks[w$runTasks$species == .sp,]
+                for (.me in unique(.tmp$method)) {
+                  .tmp2 <- .tmp[.tmp$method == .me,]
+                  .mi <- rbind(.mi,data.frame(species=.sp,method=.me,replication=unique(.tmp2$replication)))
+                }
               }
+              nr <- nrow(.mi)
               
+              for (j in 1:nr) {
+                rnames <- c(rnames,paste0('sp_',.mi$species[j],'__m_',.mi$method[j],paste0('__re_',paste(strsplit(.mi$replication[j],'')[[1]][1:4],collapse=''))))
+                fullnames <- c(fullnames,paste0('species_',.mi$species[j],'-method_',.mi$method[j],paste0('-replication (Mean)_',.mi$replication[j])))
+              }
+              success <- rep(FALSE,nr)
             } else {
-              mtx <- matrix(NA,nrow=nrow(w$newdata$data.frame),ncol=0)
+              mean <- FALSE
+              for (j in 1:nr) {
+                rnames <- c(rnames,paste('id_',w$runTasks$modelID[j],'__sp_',w$runTasks$species[j],'__m_',w$runTasks$method[j],if (!is.na(w$runTasks$replication[j])) paste('__re_',paste(strsplit(w$runTasks$replication[j],'')[[1]][1:4],collapse=''),sep=''),sep=''))
+                fullnames <- c(fullnames,paste('id_',w$runTasks$modelID[j],'-species_',w$runTasks$species[j],'-method_',w$runTasks$method[j],if (!is.na(w$runTasks$replication[j])) paste('-replication_',w$runTasks$replication[j],sep=''),sep=''))
+              }
             }
-            #-------
-            memreq <- (object.size(w$newdata$data.frame)[[1]] / ncol(w$newdata$data.frame))*nr
-            co <- 1
+            #---------
             
-            if (memreq <= obj.size) {
-              o <- parallel::mclapply(w$runTasks$modelID,function(i,...) w$predictID(i),mc.cores = w$ncore,w=w)
-              if (inherits(b,'Raster')) {
-                if (length(o) > 1) {
-                  for (j in seq_along(o)) {
-                    if (!inherits(o[[j]],'try-error')) {
-                      mr[w$newdata$data.frame$cellnr] <- o[[j]]
-                      b <- update(b,mr,cell=1,band=co)
-                      co <- co+1
-                      rnames <- c(rnames,paste('id_',w$runTasks$modelID[j],'-sp_',w$runTasks$speciesID[j],'-m_',w$runTasks$method[j],if (!is.na(w$runTasks$replication[j])) paste('-re_',paste(strsplit(w$runTasks$replication[j],'')[[1]][1:4],collapse=''),sep=''),sep=''))
-                      fullnames <- c(fullnames,paste('id_',w$runTasks$modelID[j],'-species_',w$runTasks$species[j],'-method_',w$runTasks$method[j],if (!is.na(w$runTasks$replication[j])) paste('-replication_',w$runTasks$replication[j],sep=''),sep=''))
+            #options(warn=-1)
+            
+            if (inherits(newdata,'SpatRaster')) {
+              .out <- rast(newdata,nlyrs=nr)
+              .nc <- ncol(newdata)
+              names(.out) <- rnames
+              metags(.out) <- cbind(rnames,fullnames)
+              
+              if (filename == "" && .canProcessInMemory(.out[[1]],max(nlyr(.out), nlyr(newdata))*3)) {
+                .d <- as.data.frame(newdata,cells=TRUE,na.rm=TRUE)
+                .c <- .d$cell
+                .d <- object@setting@featureFrame@featureGenerator(.d) # features
+                #---
+                if (!is.null(parallelSetting) && parallelSetting@ncore > 1) {
+                  if (parallelSetting@strategy == 'auto') {
+                    if (length(unique(w$runTasks$method)) >= parallelSetting@ncore &&  (nrow(.d) / parallelSetting@ncore) < 20000) parallelSetting@strategy <- 'model'
+                    else parallelSetting@strategy <- 'data'
+                  }
+                  #---------
+                  if (parallelSetting@strategy == 'data') {
+                    .ds <- split(.d, rep(1:parallelSetting@ncore, each=ceiling(nrow(.d)/parallelSetting@ncore), length.out=nrow(.d)))
+                    .ds <- try(.lapply(.ds,function(x) w$predictMID(mid,.frame = x),cl = .cl),silent = TRUE)
+                    
+                    if (!inherits(.ds,'try-error')) {
+                      .d <- vector('list',length(mid))
+                      for (j in 1:length(.ds[[1]])) {
+                        for (k in 1:length(.ds)) {
+                          .d[[j]] <- c(.d[[j]],.ds[[k]][[j]])
+                        }
+                      }
                     } else {
-                      success[j] <- FALSE
-                      errLog <- c(errLog,o[[j]])
+                      warning('error in parallelized procedure (non-parallel predict is re-executed...)!')
+                      .d <- w$predictMID(IDs = mid,.frame = .d)
+                    }
+                    rm(.ds); gc()
+                  } else {
+                    .ds <- try(.lapply(mid,function(i,.d) w$predictID(i,.frame = .d),cl=.cl,.d=.d),silent = TRUE)
+                    if (!inherits(.ds,'try-error')) .d <- .ds
+                    else {
+                      warning('error in parallelized procedure (non-parallel predict is re-executed...)!')
+                      .d <- w$predictMID(IDs = mid,.frame = .d)
                     }
                   }
                 } else {
-                  if (!inherits(o[[1]],'try-error')) {
-                    mr[w$newdata$data.frame$cellnr] <- o[[1]]
-                    b <- update(b,mr,cell=1)
-                    rnames <- paste('id_',w$runTasks$modelID[1],'-sp_',w$runTasks$speciesID[1],'-m_',w$runTasks$method[1],sep='')
-                    fullnames <- paste('id_',w$runTasks$modelID[1],'-species_',w$runTasks$species[1],'-method_',w$runTasks$method[1],if (!is.na(w$runTasks$replication[1])) paste('-replication_',w$runTasks$replication[1],sep=''),sep='')
-                  } else {
-                    success[1] <- FALSE
-                    errLog <- c(errLog,o[[1]])
-                  }
+                  .d <- w$predictMID(IDs = mid,.frame = .d)
                 }
-              } else {
-                for (j in seq_along(o)) {
-                  if (!inherits(o[[j]],'try-error')) {
-                    mtx <- cbind(mtx,o[[j]])
-                    co <- co+1
-                    rnames <- c(rnames,paste('id_',w$runTasks$modelID[j],'-sp_',w$runTasks$speciesID[j],'-m_',w$runTasks$method[j],if (!is.na(w$runTasks$replication[j])) paste('-re_',paste(strsplit(w$runTasks$replication[j],'')[[1]][1:4],collapse=''),sep=''),sep=''))
-                  } else {
-                    success[j] <- FALSE
-                    errLog <- c(errLog,o[[j]])
-                  }
-                } 
-              }
-            } else {
-              memdiv <- ceiling(obj.size / (memreq /  nr))
-              ii <- ceiling(nr/memdiv)
-              for (i in 1:ii) {
-                id <- (i-1) * memdiv + c(1:memdiv)
-                id <- id[id %in% 1:nr]
-                o <- parallel::mclapply(w$runTasks$modelID[id],function(i,...) w$predictID(i),mc.cores = w$ncore,w=w)
-                
-                if (inherits(b,'RasterBrick')) {
-                  for (j in seq_along(o)) {
-                    if (!inherits(o[[j]],'try-error')) {
-                      mr[w$newdata$data.frame$cellnr] <- o[[j]]
-                      b <- update(b,mr,cell=1,band=co)
-                      co <- co+1
-                      rnames <- c(rnames,paste('id_',w$runTasks$modelID[id[j]],'-sp_',w$runTasks$speciesID[id[j]],'-m_',w$runTasks$method[id[j]],if (!is.na(w$runTasks$replication[id[j]])) paste('-re_',paste(strsplit(w$runTasks$replication[id[j]],'')[[1]][1:4],collapse=''),sep=''),sep=''))
-                      fullnames <- c(fullnames,paste('id_',w$runTasks$modelID[id[j]],'-species_',w$runTasks$species[id[j]],'-method_',w$runTasks$method[id[j]],if (!is.na(w$runTasks$replication[id[j]])) paste('-replication_',w$runTasks$replication[id[j]],sep=''),sep=''))
+                #----
+                .success <- sapply(.d, function(x) !inherits(x,'try-error'))
+                names(.d) <- names(.success) <- mid
+                #---
+                if (mean) {
+                  for (j in 1:nrow(.mi)) {
+                    .w <- as.character(mid[w$runTasks$species == .mi$species[j] & w$runTasks$method == .mi$method[j] & w$runTasks$replication == .mi$replication[j]])
+                    
+                    if (length(which(.success[.w])) > 1) {
+                      set.values(.out,.c,rowMeans(data.frame(.d[.success[.w]])),layer=j)
+                      success[j] <- TRUE
+                    } else if (length(which(.success[.w])) == 1) {
+                      set.values(.out,.c,.d[[.w[.success[.w]]]],layer=j)
+                      success[j] <- TRUE
                     } else {
-                      success[id[j]] <- FALSE
-                      errLog <- c(errLog,o[[id[j]]])
+                      errLog <- c(errLog,paste0('Error in predictions for method ',.mi$method[j],' and replication ',.mi$replication[j]))
                     }
-                  }
-                } else if (inherits(b,'RasterLayer')) {
-                  if (!inherits(o[[1]],'try-error')) {
-                    mr[w$newdata$data.frame$cellnr] <- o[[1]]
-                    b <- update(b,mr,cell=1)
-                    rnames <- paste('id_',w$runTasks$modelID[1],'-sp_',w$runTasks$speciesID[1],'-m_',w$runTasks$method[1],sep='')
-                    fullnames <- paste('id_',w$runTasks$modelID[1],'-species_',w$runTasks$species[1],'-method_',w$runTasks$method[1],if (!is.na(w$runTasks$replication[1])) paste('-replication_',w$runTasks$replication[1],sep=''),sep='')
-                  } else {
-                    success[1] <- FALSE
-                    errLog <- c(errLog,o[[1]])
                   }
                 } else {
-                  for (j in seq_along(o)) {
-                    if (!inherits(o[[j]],'try-error')) {
-                      mtx <- cbind(mtx,o[[j]])
-                      co <- co+1
-                      rnames <- c(rnames,paste('id_',w$runTasks$modelID[id[j]],'-sp_',w$runTasks$speciesID[id[j]],'-m_',w$runTasks$method[id[j]],if (!is.na(w$runTasks$replication[id[j]])) paste('-re_',paste(strsplit(w$runTasks$replication[id[j]],'')[[1]][1:4],collapse=''),sep=''),sep=''))
+                  for (j in 1:length(.d)) {
+                    if (.success[j]) {
+                      set.values(.out,.c,.d[[j]],layer=j)
+                      success[j] <- TRUE
                     } else {
-                      success[id[j]] <- FALSE
-                      errLog <- c(errLog,o[[id[j]]])
+                      errLog <- c(errLog,.d[[j]])
                     }
                   }
                 }
-              }
-            }
-            #------------
-            options(warn=0)
-            if (!any(success)) {
-              if (inherits(b,'Raster')) {
-                rm(b)
-                unlink(filename)
-                stop('Error in prediction....!')
-              } else {
-                rm(mtx)
-                stop('Error in prediction....!')
-              }
-            }
-            
-            if (!all(success)) {
-              warning(paste(length(which(!success)),' models (out of ',length(success),') failed in the prediction!',sep=''))
-              b <- b[[1:length(which(success))]]
-              mid <- mid[success]
-              w$runTasks <-  w$runTasks[success,]
-            }
-            
-            #----------
-            
-            
-            if (nr > 1 & mean & !is.na(w$runTasks$replication[1])) {
-              species <- unique(as.character(w$runTasks$species))
-              m <- unique(as.character(w$runTasks$method))
-              
-              if (inherits(b,'Raster')) {
-                rnames <- c()
-                newfullnames <- c()
-                newr <- raster(b)
                 
-                for (sp in species) {
-                  m1 <- w$runTasks[which(w$runTasks$species == sp),]
-                  for (mo in m) {
-                    m2 <- m1[which(m1$method == mo),]
-                    re <- unique(as.character(m2$replication))
-                    for (r in re) {
-                      m3 <- m2[which(m2$replication == r),]
-                      .w <- which(mid %in% m3$modelID)
-                      
-                      if (length(.w) > 1) {
-                        temp <- calc(b[[.w]],function(x) mean(x,na.rm=TRUE))
-                        newr <- addLayer(newr,temp)
-                      } else newr <- addLayer(newr,b[[.w]])
-                      rnames <- c(rnames,paste('sp_',m3$speciesID[1],'-m_',mo,paste('-re_',paste(strsplit(r,'')[[1]][1:4],collapse=''),sep=''),sep=''))
-                      newfullnames <- c(newfullnames,paste('species_',sp,'-method_',mo,paste('-replication (Mean)_',m3$replication[1],sep=''),sep=''))
-                    }
-                  }
-                }
-                rm(b)
-                #unlink(filename)
-                b <- brick(newr,filename=filename,values=TRUE,overwrite=TRUE) 
-                fullnames <- newfullnames
-                rm(newr,newfullnames)
+                
               } else {
-                newmtx <- matrix(NA,nrow=nrow(w$newdata$data.frame),ncol=0)
-                rnames <- c()
-                fullnames <- c()
-                for (sp in species) {
-                  m1 <- w$runTasks[which(w$runTasks$species == sp),]
-                  for (mo in m) {
-                    m2 <- m1[which(m1$method == mo),]
-                    re <- unique(as.character(m2$replication))
-                    for (r in re) {
-                      m3 <- m2[which(m2$replication == r),]
-                      .w <- which(mid %in% m3$modelID)
+                readStart(newdata)
+                on.exit(readStop(newdata))
+                
+                b <- writeStart(.out, filename=filename, overwrite=overwrite, n=max(nlyr(.out), nlyr(newdata))*2, sources=sources(newdata),...)
+                for (i in 1:b$n) {
+                  .d <- readValues(newdata, b$row[i], b$nrows[i], 1, .nc, TRUE, TRUE)
+                  .c <- .getCells(.nc,b$row[i], b$nrows[i])
+                  .wna <- which(!apply(.d,1,function(x) any(is.na(x))))
+                  
+                  .d <- object@setting@featureFrame@featureGenerator(.d[.wna,]) # features
+                  if (!is.null(parallelSetting) && parallelSetting@ncore > 1) {
+                    if (parallelSetting@strategy == 'auto') {
+                      if (length(unique(w$runTasks$method)) >= parallelSetting@ncore &&  (nrow(.d) / parallelSetting@ncore) < 20000) parallelSetting@strategy <- 'model'
+                      else parallelSetting@strategy <- 'data'
+                    }
+                    #---------
+                    if (parallelSetting@strategy == 'data') {
+                      .ds <- split(.d, rep(1:parallelSetting@ncore, each=ceiling(nrow(.d)/parallelSetting@ncore), length.out=nrow(.d)))
+                      .ds <- try(.lapply(.ds,function(x) w$predictMID(mid,.frame = x),cl = .cl),silent = TRUE)
                       
-                      if (length(.w) > 1) {
-                        temp <- apply(mtx[,.w],1,function(x) mean(x,na.rm=TRUE))
-                        newmtx <- cbind(newmtx,temp)
-                      } else newmtx <- cbind(newmtx,mtx[,.w])
-                      rnames <- c(rnames,paste('sp_',m3$speciesID[1],'-m_',mo,paste('-re_',paste(strsplit(r,'')[[1]][1:4],collapse=''),sep=''),sep=''))
-                      #fullnames <- c(fullnames,paste('species_',sp,'-method_',mo,paste('-replication (Mean)_',m3$replication[1],sep=''),sep=''))
+                      if (!inherits(.ds,'try-error')) {
+                        .d <- vector('list',length(mid))
+                        for (j in 1:length(.ds[[1]])) {
+                          for (k in 1:length(.ds)) {
+                            .d[[j]] <- c(.d[[j]],.ds[[k]][[j]])
+                          }
+                        }
+                      } else {
+                        warning('error in parallelized procedure (non-parallel predict is re-executed...)!')
+                        .d <- w$predictMID(IDs = mid,.frame = .d)
+                      }
+                      rm(.ds); gc()
+                    } else {
+                      .ds <- try(.lapply(mid,function(i,.d) w$predictID(i,.frame = .d),cl=.cl,.d=.d),silent = TRUE)
+                      if (!inherits(.ds,'try-error')) .d <- .ds
+                      else {
+                        warning('error in parallelized procedure (non-parallel predict is re-executed...)!')
+                        .d <- w$predictMID(IDs = mid,.frame = .d)
+                      }
+                    }
+                  } else {
+                    .d <- w$predictMID(IDs = mid,.frame = .d)
+                  }
+                  
+                  .tmp <- rep(NA,length(.c))
+                  .v <- c()
+                  
+                  .success <- sapply(.d, function(x) !inherits(x,'try-error'))
+                  names(.d) <- names(.success) <- mid
+                  
+                  if (mean) {
+                    for (j in 1:nrow(.mi)) {
+                      .vtmp <- NULL
+                      .w <- as.character(mid[w$runTasks$species == .mi$species[j] & w$runTasks$method == .mi$method[j] & w$runTasks$replication == .mi$replication[j]])
+                      
+                      if (length(which(.success[.w])) > 1) {
+                        .vtmp <- .tmp
+                        .vtmp[.wna] <- rowMeans(data.frame(.d[.success[.w]]))
+                        .v <- c(.v,.vtmp)
+                        success[j] <- TRUE
+                      } else if (length(which(.success[.w])) == 1) {
+                        .vtmp <- .tmp
+                        .vtmp[.wna] <- .d[[.w[.success[.w]]]]
+                        .v <- c(.v,.vtmp)
+                        success[j] <- TRUE
+                      } else {
+                        .v <- c(.v,.tmp)
+                        errLog <- c(errLog,paste0('Error in predictions for method ',.mi$method[j],' and replication ',.mi$replication[j]))
+                      }
+                    }
+                    
+                  } else {
+                    .vtmp <- NULL
+                    for (j in 1:length(.d)) {
+                      if (.success[j]) {
+                        .vtmp <- .tmp
+                        .vtmp[.wna] <- .d[[j]]
+                        .v <- c(.v,.vtmp)
+                        success[j] <- TRUE
+                      } else {
+                        .v <- c(.v,.tmp)
+                        errLog <- c(errLog,.d[[j]])
+                      }
                     }
                   }
+                  #---
+                  if (length(.v) != prod(b$nrows[i], .nc, nr)) {
+                    msg <- "the number of values returned by the predict does not match the number of cells in newdata!"
+                    writeStop(.out)
+                    rm(.out)
+                    if (filename != "") unlink(filename)
+                    gc()
+                    stop(paste("predict", msg))
+                  }
+                  writeValues(.out, .v, b$row[i], b$nrows[i])
+                  rm(.tmp,.vtmp,.d,.wna,.c,.v); gc()
                 }
-                mtx <- newmtx
+                
+                writeStop(.out)
+                
               }
+              #----
+              if (!all(success)) {
+                if (!any(success)) {
+                  rm(.out)
+                  if (filename != "") unlink(filename)
+                  gc()
+                  stop('Error in prediction....!')
+                }
+                warning(paste0('Failed prediction for ',length(which(!success)),' models (out of ',length(success),')...!'))
+                .out <- subset(.out,which(success),filename=filename,overwrite=TRUE)
+                mid <- mid[success]
+                w$runTasks <-  w$runTasks[success,]
+              }
+              #----------
+            } else if (inherits(newdata,'data.frame')) {
+              .out <- matrix(NA,nrow=nrow(newdata),ncol=0)
+              #----
+              .d <- object@setting@featureFrame@featureGenerator(newdata) # features
+              #############
+              # parallel:
+              if (!is.null(parallelSetting) && parallelSetting@ncore > 1) {
+                if (parallelSetting@strategy == 'auto') {
+                  if (length(unique(w$runTasks$method)) >= parallelSetting@ncore &&  (nrow(.d) / parallelSetting@ncore) < 20000) parallelSetting@strategy <- 'model'
+                  else parallelSetting@strategy <- 'data'
+                }
+                #---------
+                if (parallelSetting@strategy == 'data') {
+                  .ds <- split(.d, rep(1:parallelSetting@ncore, each=ceiling(nrow(.d)/parallelSetting@ncore), length.out=nrow(.d)))
+                  .ds <- try(.lapply(.ds,function(x) w$predictMID(mid,.frame = x),cl = .cl),silent = TRUE)
+                  
+                  if (!inherits(.ds,'try-error')) {
+                    .d <- vector('list',length(mid))
+                    for (j in 1:length(.ds[[1]])) {
+                      for (k in 1:length(.ds)) {
+                        .d[[j]] <- c(.d[[j]],.ds[[k]][[j]])
+                      }
+                    }
+                  } else {
+                    warning('error in parallelized procedure (non-parallel predict is re-executed...)!')
+                    .d <- w$predictMID(IDs = mid,.frame = .d)
+                  }
+                  rm(.ds); gc()
+                } else {
+                  .ds <- try(.lapply(mid,function(i,.d) w$predictID(i,.frame = .d),cl=.cl,.d=.d),silent = TRUE)
+                  if (!inherits(.ds,'try-error')) .d <- .ds
+                  else {
+                    warning('error in parallelized procedure (non-parallel predict is re-executed...)!')
+                    .d <- w$predictMID(IDs = mid,.frame = .d)
+                  }
+                }
+              } else {
+                .d <- w$predictMID(IDs = mid,.frame = .d)
+              }
+              ##############
+              
+              .success <- sapply(.d, function(x) !inherits(x,'try-error'))
+              
+              if (mean) {
+                for (j in 1:nrow(.mi)) {
+                  .vtmp <- NULL
+                  .w <- mid[w$runTasks$species == .mi$species[j] & w$runTasks$method == .mi$method[j] & w$runTasks$replication == .mi$replication[j]]
+                  
+                  if (length(which(.success[.w])) > 1) {
+                    .vtmp <- rowMeans(data.frame(.d[.success[.w]]))
+                    .out <- cbind(.out,.vtmp)
+                    success[j] <- TRUE
+                  } else if (length(which(.success[.w])) == 1) {
+                    .vtmp <- .d[[.w[.success[.w]]]]
+                    .out <- cbind(.out,.vtmp)
+                    success[j] <- TRUE
+                  } else {
+                    errLog <- c(errLog,paste0('Error in predictions for method ',.mi$method[j],' and replication ',.mi$replication[j]))
+                  }
+                  
+                  
+                  
+                  for (k in 1:length(.w)) {
+                    if (.success[.w[k]]) {
+                      if (is.null(.vtmp)) .vtmp <- .d[[.w[k]]]
+                      else .vtmp <- .vtmp + .d[[.w[k]]]
+                    }
+                  }
+                  #---
+                  if (!is.null(.vtmp)) {
+                    .vtmp <- .vtmp / length(.w[.success[.w]])
+                    .out <- cbind(.out,.vtmp)
+                    success[j] <- TRUE
+                  } else {
+                    errLog <- c(errLog,paste0('Error in predictions for method ',.mi$method[j],' and replication ',.mi$replication[j]))
+                  }
+                }
+                #---
+                
+              } else {
+                for (j in 1:length(.d)) {
+                  if (.success[j]) {
+                    .out <- cbind(.out,.d[[j]])
+                    success[j] <- TRUE
+                  } else {
+                    errLog <- c(errLog,.d[[j]])
+                  }
+                }
+              }
+              #---
+              if (!all(success)) {
+                if (!any(success)) {
+                  rm(.out)
+                  stop('Error in prediction....!')
+                }
+                warning(paste0('Failed prediction for ',length(which(!success)),' models (out of ',length(success),')...!'))
+                rnames <- rnames[success]
+                
+                mid <- mid[success]
+                w$runTasks <-  w$runTasks[success,]
+              }
+              #---
+              colnames(.out) <- rnames
+              .out <- data.frame(.out)
+              if (filename != "") write.csv(.out,filename,row.names = FALSE)
             }
+            
+            
             #------------
+            
             if (err && length(errLog) > 0) {
               for (i in seq_along(errLog)) cat(errLog[[i]],'\n')
             }
             
             if (".sdm...temp" %in% ls(pattern='^.sdm..',pos=1,all.names = TRUE)) {
-              w <- ls(.sdmMethods$userFunctions)
-              rm(list=w,pos=1)
+              .w <- ls(.sdmMethods$userFunctions)
+              rm(list=.w,pos=1)
               rm(.sdm...temp,pos=1)
             }
-            #if (".sdmMethods$userFunctions" %in% search()) detach('.sdmMethods$userFunctions')
+            #---
             
-            if (!inherits(b,'Raster')) {
-              colnames(mtx) <- rnames
-              return(mtx)
-            } else {
-              names(b) <- rnames
-              b <- setZ(b,fullnames,name='fullname')
-              return(b)
+            
+            if (!is.null(parallelSetting)) {
+              if (parallelSetting@method == 'future')  {
+                .w <- try(.eval('plan(sequential,gc=TRUE)',environment()),silent = TRUE)
+              } else  {
+                .w <- try(stopCluster(.cl),silent = TRUE)
+              }
             }
+            gc()
+            
+            return(.out)
           }
 )
-

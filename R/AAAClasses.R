@@ -1,22 +1,26 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Oct. 2021
-# Version 5.0
+# Date (last update):  Jan 2024
+# Version 6.5
 # Licence GPL v3
 
 
 setClassUnion("listORcharacter", c("list","character")) 
 setClassUnion("characterORnull", c("character", "NULL"))
-setClassUnion("CRSorNULL", c("CRS", "NULL"))
+#setClassUnion("CRSorNULL", c("CRS", "NULL"))
 setClassUnion("formulaORnull", c("formula", "NULL"))
 setClassUnion("numericORnull", c("numeric", "NULL"))
 setClassUnion("characterORmissing", c("character", "missing"))
 setClassUnion("listORnull", c("list", "NULL"))
+setClassUnion("integerORnull", c("integer", "NULL"))
 setClassUnion("functionORnull", c("function", "NULL"))
 setClassUnion("matrixORnull", c("matrix", "NULL"))
 setClassUnion("data.frameORnull", c("data.frame", "NULL"))
+setClassUnion("data.frameORmatrix", c("data.frame", "matrix"))
 setClassUnion("functionORcharacter", c("function", "character"))
 setClassUnion("environmentORnull", c("environment", "NULL"))
 setClassUnion("expressionORnull", c("expression", "NULL"))
+
+
 
 
 setClass(".Metadata",
@@ -50,26 +54,27 @@ setClass(".methodTemplate",
 )
 #----------
 #--- variable parameters 
-#------- params keeps min, max, mean, sd for each variable
-#------- groups.params is the same as params but stratified based on response variable (e.g., for presence/absence)
+#------- numeric keeps params like min, max, mean, sd for continuous variable
+#------- categorical keeps keeps params for categorical variables (levels, count)
+#------- others is a data.frame with list of other variables (time, group, info, xy)
 setClass('.variables',
          representation(
            names='character',
-           params='data.frame',
-           groups.params="listORnull"
+           species='characterORnull',
+           numeric='data.frameORnull',
+           categorical='listORnull',
+           others='data.frameORnull'
          )
 )
 
 
 ################################
-
 setClass('sdmFormula',
          representation(
            formula='formula',
            vars='.variables',
-           species='characterORnull',
-           model.terms='listORnull',
-           data.terms='listORnull'
+           data.terms='listORnull',
+           model.terms='listORnull'
          )
 )
 
@@ -77,14 +82,43 @@ setClass('sdmFormula',
 
 #########----- terms in a formula are converted to appropriate classes:
 
+# setClass('.pcaSetting',
+#          representation(
+#            vars='character',
+#            scale='logical',
+#            n='numericORnull'
+#          )
+# )
+#----
+
+setClass('.pcaSetting',
+         representation(
+           vars='character',
+           n='ANY',
+           term="call"
+         )
+)
+#----
+
+setClass('.scaleSetting',
+         representation(
+           vars='character',
+           method='character',
+           term='call'
+         )
+)
+#----
+
 # if a model in the formula is used as a term:
 # ----- m and r function in formula returns model with .prediction and .residual as output
 setClass('.nestedModel',
          representation(response='character',
-                        terms='list',
-                        method='character',
-                        setting='list',
-                        output='character'
+                        predictors='character',
+                        method='characterORnull',
+                        distribution='character',
+                        setting='listORnull',
+                        output='character',
+                        term='call'
          )
 )
 #-------
@@ -96,10 +130,17 @@ setClass('.var',
 )
 
 # select function
+# vars: variables to which the selection is applied
+# keep: variables that are excluded from the selection procedure (should be kept in model)
+# n: number to keep
+# stat: selection method (either based on collinearity test, or cross-entropy, or ... )
+
 setClass('.selectFrame',
-         representation(vars='character',
-                        n='integer',
-                        stat='character'
+         representation(vars='characterORnull',
+                        method='character',
+                        th='numericORnull',
+                        keep='characterORnull',
+                        term='call'
          )
 )
 
@@ -216,6 +257,16 @@ setRefClass('.formulaFunctions',
             )
 )
 #-----------
+setOldClass("princomp")
+
+setClass(".pcaObject",
+         representation(
+           data='ANY',
+           pcaObject='princomp',
+           scaled='logical'
+         )
+)
+#------
 #------------
 
 
@@ -235,13 +286,23 @@ setClass('featuresFrame',
 #          )
 # )
 
-setClass('.featureFrame',
+# setClass('.featureFrame',
+#          representation(
+#            var='character',
+#            feature.name='character',
+#            type='character',
+#            params='listORnull',
+#            response='characterORnull'
+#          )
+# )
+setClass(".featureFrame",
          representation(
-           var='character',
-           feature.name='character',
-           type='character',
-           params='listORnull',
-           response='characterORnull'
+           responses='character',
+           predictors='character',
+           numeric='data.frameORnull',
+           categorical='listORnull',
+           transformers = 'functionORnull', # list of functions for data transform (scale, pca, etc.)
+           featureGenerator='functionORnull'
          )
 )
 ###########################
@@ -262,7 +323,7 @@ setClass(".info",
            info='data.frameORnull',
            time='data.frameORnull',
            coords='matrixORnull',
-           crs='CRSorNULL',
+           crs='ANY',
            metadata='.MetadataORnull'
          )
 )
@@ -277,6 +338,7 @@ setClass('.species.data',
            absence='numericORnull',
            background='numericORnull',
            abundance='data.frameORnull',
+           numerical='data.frameORnull',
            Multinomial='data.frameORnull'
          )
 )
@@ -716,7 +778,7 @@ setClass('.sdmCorModel',
 )
 #-------
 
-setClass('.parallelSettings',
+setClass('.parallelSetting',
          representation(
            cl='ANY',
            hosts='characterORnull',
@@ -724,16 +786,41 @@ setClass('.parallelSettings',
            fork='logical',
            doParallel='expressionORnull',
            type='characterORnull',
-           method='character'
+           method='character',
+           strategy='characterORnull'
          )
 )
+#----
+setClassUnion(".parallelSettingORnull", c(".parallelSetting", "NULL"))
 #------------
-
+# 
+# setClass('.sdmCorSetting',
+#          representation(
+#            methods='character',
+#            sdmFormula='sdmFormula',
+#            featuresFrame='featuresFrame',
+#            distribution='character',
+#            interaction.depth='numericORnull',
+#            test.percentage='numericORnull',
+#            replicate='characterORnull',
+#            n.replicates='numericORnull',
+#            cv.folds='numericORnull',
+#            pseudo.absence.methods='characterORnull',
+#            n.pseudo.absence='numericORnull',
+#            varImportance.methods='characterORnull',
+#            var.selection='logical',
+#            response.curve='logical',
+#            modelSettings='listORnull',
+#            seed='numericORnull',
+#            parallelSettings='.parallelSettings',
+#            errorLog='list'
+#          )
+# )
 setClass('.sdmCorSetting',
          representation(
            methods='character',
            sdmFormula='sdmFormula',
-           featuresFrame='featuresFrame',
+           featureFrame='.featureFrame',
            distribution='character',
            interaction.depth='numericORnull',
            test.percentage='numericORnull',
@@ -747,7 +834,7 @@ setClass('.sdmCorSetting',
            response.curve='logical',
            modelSettings='listORnull',
            seed='numericORnull',
-           parallelSettings='.parallelSettings',
+           parallelSetting='.parallelSetting',
            errorLog='list'
          )
 )
@@ -758,7 +845,8 @@ setClass('.sdmVariables',
            distribution='character',
            features.numeric='characterORnull',
            features.factor='characterORnull',
-           number.of.records='numeric'
+           number.of.records='numeric',
+           n.presence='numericORnull'
          )
 )
 #-------------------
@@ -779,7 +867,7 @@ setRefClass(".workload",
             fields=list(
               data='sdmdata',
               setting='.sdmCorSetting',
-              frame="featuresFrame",
+              frame=".featureFrame",
               train='list',
               test='listORnull',
               sdmVariables='list',
@@ -796,23 +884,23 @@ setRefClass(".workload",
               filename='characterORnull'
             ),
             methods=list(
-              fit=function(woL=.self,species,models,runs,hasTest,.parMethod=.self$setting@parallelSettings@method,.hostnames=.self$setting@parallelSettings@hosts,.fork=.self$setting@parallelSettings@fork,filename=.self$filename) {
+              fit=function(woL=.self,species,models,runs,hasTest,.parMethod=.self$setting@parallelSetting@method,.hostnames=.self$setting@parallelSetting@hosts,.fork=.self$setting@parallelSetting@fork,filename=.self$filename) {
                 .fit(woL=woL,species=species,runs=runs,hasTest = hasTest,.parMethod=.parMethod,.hostnames = .hostnames,.fork = .fork,filename = filename)
               },
               getSdmVariables=function(sp,nf,nFact) {
                 if (length(.self$sdmVariables) > 0 && !is.null(.self$sdmVariables[[sp]])) .self$sdmVariables[[sp]]
                 else {
-                  if (missing(nFact)) {
-                    nFact <- .where(is.factor,.self$train[[sp]]$sdmDataFrame)
-                    nFact <- names(nFact)[which(nFact)]
-                    if (length(nFact) == 0) nFact <- NULL
-                  } else nFact=NULL
-                  
-                  if (missing(nf)) {
-                    nf <- .excludeVector(.self$setting@sdmFormula@vars,nFact)
+                  if (missing(nFact) || is.null(nFact)) {
+                    nFact <- .self$setting@sdmFormula@vars@categorical
                   }
                   
-                  .self$sdmVariables[[sp]] <- new('.sdmVariables',response=sp,variables=list(numeric=nf,factors=nFact),distribution=.self$setting@distribution[[sp]],features.numeric=.excludeVector(colnames(.self$train[[sp]]$sdmDataFrame),c(sp,nFact)),features.factor=nFact,number.of.records=if (is.null(.self$test)) nrow(.self$train[[sp]]$sdmDataFrame) else c(train=nrow(.self$train[[sp]]$sdmDataFrame),test=nrow(.self$test[[sp]]$sdmDataFrame)))
+                  if (missing(nf) || is.null(nFact)) {
+                    nf <- .self$setting@sdmFormula@vars@numeric$names
+                  }
+                  
+                  .self$sdmVariables[[sp]] <- new('.sdmVariables',response=sp,variables=list(numeric=nf,factors=nFact),distribution=.self$setting@distribution[[sp]],features.numeric=.excludeVector(colnames(.self$train[[sp]]$sdmDataFrame),c(sp,nFact)),features.factor=nFact,
+                                                  number.of.records=if (is.null(.self$test)) nrow(.self$train[[sp]]$sdmDataFrame) else c(train=nrow(.self$train[[sp]]$sdmDataFrame),test=nrow(.self$test[[sp]]$sdmDataFrame)),
+                                                  n.presence=if (.self$setting@distribution[[sp]] == 'binomial') length(which(.self$train[[sp]]$sdmDataFrame[,1] == 0)) else NULL)
                   .self$sdmVariables[[sp]]
                 }
               },
@@ -944,7 +1032,7 @@ setRefClass(".workload",
               },
               setRules=function(mo,sp) {
                 se <- .self$settingRules[[mo]]
-                if (class(se) == 'function') {
+                if (inherits(se,'function')) {
                   fo <- as.list(formals(se))
                   n <- names(fo)
                   if (any(n == '...')) {
@@ -969,6 +1057,15 @@ setRefClass(".workload",
                     do.call(se,fo)
                   } else NULL
                 } else NULL
+              },
+              show=function(...) {
+                cat('container class                 :' , class(.self), '\n')
+                cat('=====================================================','\n')
+                cat('species name                    : ' ,paste(names(.self$data),collapse=', '),'\n')
+                cat('number of methods               : ' ,length(.self$setting@methods), '\n')
+                cat('name of methods                 : ' , paste(.self$setting@methods,collapse=', '),'\n')
+                cat('-----------------------------------------------------\n')
+                
               }
               
             )
@@ -978,13 +1075,216 @@ setRefClass(".workload",
 
 
 
+# 
+# setRefClass(".workloadP",
+#             fields=list(
+#               obj='list', # list of models (@models) from sdmModels
+#               #data='data.frame', # data used to fit the models
+#               newdata='list',
+#               modelFrame='data.frameORnull',
+#               params='list',
+#               arguments='list',
+#               dataObject.names='character',
+#               funs='list',
+#               settingRules='list',
+#               runTasks='data.frame',
+#               ncore='numericORnull'
+#             ),
+#             methods=list(
+#               predictMID=function(IDs) {
+#                 options(warn=-1)
+#                 IDs <- which(.self$runTasks$modelID %in% IDs)
+#                 m <- lapply(IDs,function(i) {
+#                   p <- .self$getPredictArgs(.self$runTasks$species[i],.self$runTasks$method[i])
+#                   p[[1]] <- .self$obj[[.self$runTasks$speciesID[i]]][[.self$runTasks$methodID[i]]][[.self$runTasks$mIDChar[i]]]@object
+#                   
+#                   if (is.null(.self$modelFrame$specis_specific)) p[[2]] <- .self$modelFrame$features
+#                   else p[[2]] <- cbind(.self$modelFrame$features,.self$modelFrame$specis_specific[[.self$runTasks$species[i]]])
+#                   
+#                   m <- try(.self$funs[[.self$runTasks$methodID[i]]](p),silent=TRUE)
+#                   m
+#                   
+#                 })
+#                 options(warn=0)
+#                 m
+#               },
+#               predictID=function(i) {
+#                 options(warn=-1)
+#                 i <- which(.self$runTasks$modelID == i)
+#                 p <- .self$getPredictArgs(.self$runTasks$species[i],.self$runTasks$method[i])
+#                 p[[1]] <- .self$obj[[.self$runTasks$species[i]]][[.self$runTasks$method[i]]][[.self$runTasks$mIDChar[i]]]@object
+#                 
+#                 if (is.null(.self$modelFrame$specis_specific)) p[[2]] <- .self$modelFrame$features
+#                 else p[[2]] <- cbind(.self$modelFrame$features,.self$modelFrame$specis_specific[[.self$runTasks$species[i]]])
+#                 
+#                 m <- try(.self$funs[[.self$runTasks$method[i]]](p),silent=TRUE)
+#                 options(warn=0)
+#                 m
+#               },
+#               getFeatures=function(sp) {
+#                 if (!is.null(.self$modelFrame$species_specific)) .self$modelFrame$features
+#                 else cbind(.self$modelFrame$features,.self$modelFrame$species_specific[[sp]])
+#               },
+#               generateParams=function(n,sp=NULL) {
+#                 if (n == 'sdmDataFrame') {
+#                   if (!is.null(.self$modelFrame$specis_specific)) {
+#                     if (is.null(sp)) stop('species should be specified!')
+#                     cbind(.self$modelFrame$features,.self$modelFrame$specis_specific[[sp]])
+#                   } else .self$modelFrame$features
+#                 } else if (n %in% c('newdata','data.frame')) {
+#                   .self$newdata$data.frame
+#                 } else if (n == 'standard.formula') {
+#                   .getFormula(c(sp,colnames(.self$generateParams('sdmDataFrame',sp))),env=parent.frame(2))
+#                 } else if (n == 'sdmX') {
+#                   #####
+#                   
+#                 } else if (n == 'sdmY') {
+#                   #####
+#                   
+#                 } else if (n == 'sdmRaster') {
+#                   #####
+#                   
+#                 } else if (n %in% names(.self$params)) {
+#                   do.call(.self$params[[n]],generateParams(.CharVector2List(names(formals(.self$params[[n]]))),sp)) 
+#                 }
+#               },
+#               getReseved.names=function() {
+#                 c('sdmDataFrame','sdmX','sdmY','sdmRaster','sdmVariables','standard.formula','gam.mgcv.furmula')
+#               },
+#               getPredictArgs=function(sp,mo) {
+#                 # return a list in which the first element is reserved for 'model'
+#                 # and the second element is reserved for data e.g., 'newdata'
+#                 # these two elements will be updated before putting in the predict function
+#                 o <- list()
+#                 pa <- .self$arguments[[mo]]$params
+#                 n <- names(pa)
+#                 ww <- which(pa == 'model')
+#                 o[[n[ww]]] <- 'model'
+#                 n <- n[-ww]
+#                 pa<- pa[-ww]
+#                 ww <- which(names(pa) %in% .self$dataObject.names)
+#                 if (length(ww) == 0) stop('data object required by the predict function is not recognised!')
+#                 o[[n[ww]]] <- pa[[ww]]
+#                 n <- n[-ww]
+#                 pa<- pa[-ww]
+#                 
+#                 if (length(n) > 0) {
+#                   for (nn in n) o[[nn]] <- .self$generateParams(pa[[nn]],sp)
+#                 }
+#                 
+#                 o <- c(o,.self$arguments[[mo]]$settings)
+#                 o
+#               },
+#               setRules=function() {
+#                 # check if any rule is defined as a function for each method,
+#                 # run the function to change the setting
+#                 
+#               }
+#             )
+# )
+
+
+setRefClass(".workloadPredict",
+            fields=list(
+              obj='list', # list of models (@models) from sdmModels
+              params='list',
+              arguments='list',
+              dataObject.names='character',
+              funs='list',
+              settingRules='list',
+              runTasks='data.frame',
+              parallelSetting='.parallelSettingORnull'
+            ),
+            methods=list(
+              predictMID=function(IDs,.frame) {
+                options(warn=-1)
+                IDs <- which(.self$runTasks$modelID %in% IDs)
+                m <- lapply(IDs,function(i) {
+                  p <- .self$getPredictArgs(.self$runTasks$species[i],.self$runTasks$method[i])
+                  p[[1]] <- .self$obj[[.self$runTasks$species[i]]][[.self$runTasks$method[i]]][[.self$runTasks$mIDChar[i]]]@object
+                  
+                  p[[2]] <- .frame
+                  
+                  m <- try(.self$funs[[.self$runTasks$method[i]]](p),silent=TRUE)
+                  m
+                })
+                options(warn=0)
+                m
+              },
+              predictID=function(i,.frame) {
+                options(warn=-1)
+                i <- which(.self$runTasks$modelID == i)
+                p <- .self$getPredictArgs(.self$runTasks$species[i],.self$runTasks$method[i])
+                p[[1]] <- .self$obj[[.self$runTasks$species[i]]][[.self$runTasks$method[i]]][[.self$runTasks$mIDChar[i]]]@object
+                
+                p[[2]] <- .frame
+                
+                m <- try(.self$funs[[.self$runTasks$method[i]]](p),silent=TRUE)
+                options(warn=0)
+                m
+              },
+              generateParams=function(n,sp=NULL) {
+                if (n == 'sdmDataFrame') {
+                  .self$modelFrame
+                } else if (n %in% c('newdata','data.frame')) {
+                  .self$newdata$data.frame
+                } else if (n == 'standard.formula') {
+                  .getFormula(c(sp,colnames(.self$generateParams('sdmDataFrame',sp))),env=parent.frame(2))
+                } else if (n == 'sdmX') {
+                  #####
+                  
+                } else if (n == 'sdmY') {
+                  #####
+                  
+                } else if (n == 'sdmRaster') {
+                  #####
+                  
+                } else if (n %in% names(.self$params)) {
+                  do.call(.self$params[[n]],generateParams(.CharVector2List(names(formals(.self$params[[n]]))),sp)) 
+                }
+              },
+              getReseved.names=function() {
+                c('sdmDataFrame','sdmX','sdmY','sdmRaster','sdmVariables','standard.formula','gam.mgcv.furmula')
+              },
+              getPredictArgs=function(sp,mo) {
+                # return a list in which the first element is reserved for 'model'
+                # and the second element is reserved for data e.g., 'newdata'
+                # these two elements will be updated before putting in the predict function
+                o <- list()
+                pa <- .self$arguments[[mo]]$params
+                n <- names(pa)
+                ww <- which(pa == 'model')
+                o[[n[ww]]] <- 'model'
+                n <- n[-ww]
+                pa<- pa[-ww]
+                ww <- which(names(pa) %in% .self$dataObject.names)
+                if (length(ww) == 0) stop('data object required by the predict function is not recognised!')
+                o[[n[ww]]] <- pa[[ww]]
+                n <- n[-ww]
+                pa<- pa[-ww]
+                
+                if (length(n) > 0) {
+                  for (nn in n) o[[nn]] <- .self$generateParams(pa[[nn]],sp)
+                }
+                
+                o <- c(o,.self$arguments[[mo]]$settings)
+                o
+              },
+              setRules=function() {
+                # check if any rule is defined as a function for each method,
+                # run the function to change the setting
+                
+              }
+            )
+)
+
 
 setRefClass(".workloadP",
             fields=list(
               obj='list', # list of models (@models) from sdmModels
               #data='data.frame', # data used to fit the models
               newdata='list',
-              modelFrame='list',
+              modelFrame='data.frameORnull',
               params='list',
               arguments='list',
               dataObject.names='character',
@@ -999,14 +1299,12 @@ setRefClass(".workloadP",
                 IDs <- which(.self$runTasks$modelID %in% IDs)
                 m <- lapply(IDs,function(i) {
                   p <- .self$getPredictArgs(.self$runTasks$species[i],.self$runTasks$method[i])
-                  p[[1]] <- .self$obj[[.self$runTasks$speciesID[i]]][[.self$runTasks$methodID[i]]][[.self$runTasks$mIDChar[i]]]@object
+                  p[[1]] <- .self$obj[[.self$runTasks$species[i]]][[.self$runTasks$method[i]]][[.self$runTasks$mIDChar[i]]]@object
                   
-                  if (is.null(.self$modelFrame$specis_specific)) p[[2]] <- .self$modelFrame$features
-                  else p[[2]] <- cbind(.self$modelFrame$features,.self$modelFrame$specis_specific[[.self$runTasks$species[i]]])
+                  p[[2]] <- .self$modelFrame
                   
-                  m <- try(.self$funs[[.self$runTasks$methodID[i]]](p),silent=TRUE)
+                  m <- try(.self$funs[[.self$runTasks$method[i]]](p),silent=TRUE)
                   m
-                  
                 })
                 options(warn=0)
                 m
@@ -1017,23 +1315,19 @@ setRefClass(".workloadP",
                 p <- .self$getPredictArgs(.self$runTasks$species[i],.self$runTasks$method[i])
                 p[[1]] <- .self$obj[[.self$runTasks$species[i]]][[.self$runTasks$method[i]]][[.self$runTasks$mIDChar[i]]]@object
                 
-                if (is.null(.self$modelFrame$specis_specific)) p[[2]] <- .self$modelFrame$features
-                else p[[2]] <- cbind(.self$modelFrame$features,.self$modelFrame$specis_specific[[.self$runTasks$species[i]]])
+                p[[2]] <- .self$modelFrame
                 
                 m <- try(.self$funs[[.self$runTasks$method[i]]](p),silent=TRUE)
                 options(warn=0)
                 m
               },
               getFeatures=function(sp) {
-                if (!is.null(.self$modelFrame$species_specific)) .self$modelFrame$features
-                else cbind(.self$modelFrame$features,.self$modelFrame$species_specific[[sp]])
+                .self$modelFrame
+                
               },
               generateParams=function(n,sp=NULL) {
                 if (n == 'sdmDataFrame') {
-                  if (!is.null(.self$modelFrame$specis_specific)) {
-                    if (is.null(sp)) stop('species should be specified!')
-                    cbind(.self$modelFrame$features,.self$modelFrame$specis_specific[[sp]])
-                  } else .self$modelFrame$features
+                  .self$modelFrame
                 } else if (n %in% c('newdata','data.frame')) {
                   .self$newdata$data.frame
                 } else if (n == 'standard.formula') {
@@ -1186,6 +1480,14 @@ setClass(".nicheRaster",
          )
 )
 #----------
+setClass(".nicheSpatRaster",
+         representation(
+           names='characterORnull',
+           nicheRaster='SpatRaster',
+           scaleParams='data.frame'
+         )
+)
+#-----
 setClass(".envSpace",
          representation(
            names='character',

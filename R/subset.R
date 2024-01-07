@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  Feb. 2015
-# Last update: Dec. 2020
-# Version 1.5
+# Last update: Jan. 2024
+# Version 1.6
 # Licence GPL v3
 
 .deleteRecords <- function(x,id) {
@@ -189,8 +189,8 @@
   if (length(id) > 0) {
     f <- .getSdmDataFrame(x,ind = id)
     if (!is.null(x@info) && !is.null(x@info@coords)) f <- cbind(f,data.frame(x@info@coords[match(id,x@info@coords[,1]),2:3]))
-    if (!is.null(x@info) && !is.null(x@info@time)) f <- cbind(f,x@info@time[match(id,x@info@time[,1]),2:ncol(x@info@time)])
-    if (!is.null(x@info) && !is.null(x@info@info)) f <- cbind(f,x@info@info[match(id,x@info@info[,1]),2:ncol(x@info@info)])
+    if (!is.null(x@info) && !is.null(x@info@time)) f <- cbind(f,x@info@time[match(id,x@info@time[,1]),2:ncol(x@info@time),drop=FALSE])
+    if (!is.null(x@info) && !is.null(x@info@info)) f <- cbind(f,x@info@info[match(id,x@info@info[,1]),2:ncol(x@info@info),drop=FALSE])
   }
   f
 }

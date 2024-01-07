@@ -149,7 +149,7 @@ setMethod('getmethodNames', signature(w='ANY'),
   }
   #-----
   
-  if (class(fitFunction) == "character") {
+  if (inherits(fitFunction,"character")) {
     if (length(strsplit(fitFunction,'::')[[1]]) == 2) fitFunction <- strsplit(fitFunction,'::')[[1]][2]
     
     if (exists(fitFunction,mode='function')) {
@@ -162,7 +162,7 @@ setMethod('getmethodNames', signature(w='ANY'),
         # when environment if attached, the conflict with the existing object in .GlobalEnv should be resolved!
       }
       m@fitFunction <- eval(parse(text=paste("function(params) {do.call(",fitFunction,",params)}")))
-    } else if (length(strsplit(fitFunction,':::')[[1]]) == 2 && class(eval(parse(text=fitFunction))) == 'function') {
+    } else if (length(strsplit(fitFunction,':::')[[1]]) == 2 && inherits(eval(parse(text=fitFunction)),'function')) {
       if (!exists(strsplit(fitFunction,':::')[[1]][2],mode='function')) {
         m@fitFunction <- eval(parse(text=paste("function(params) {do.call(",strsplit(fitFunction,':::')[[1]][2],",params)}")))
       } else {
@@ -176,7 +176,7 @@ setMethod('getmethodNames', signature(w='ANY'),
       m@fitFunction <- eval(parse(text=paste("function(params) {do.call(",fitFunction,",params)}")))
     } else stop('fitFunction cannot be identified!')
     
-  } else if (class(fitFunction) == 'function') {
+  } else if (inherits(fitFunction,'function')) {
     if (is.null(m@.temp.env)) m@.temp.env <- new.env()
     if (!paste(m@name,'_fit',sep='') %in% ls(envir=m@.temp.env)) fn <-paste(m@name,'_fit',sep='') ####
     else stop('the user defined function in fitFunction cannot be registered because an object with a similar name exists in the container!')
@@ -187,7 +187,7 @@ setMethod('getmethodNames', signature(w='ANY'),
   #---------
   
   if (!is.null(predictFunction)) {
-    if (class(predictFunction) == "character") {
+    if (inherits(predictFunction,"character")) {
       if (length(strsplit(predictFunction,'::')[[1]]) == 2) predictFunction <- strsplit(predictFunction,'::')[[1]][2]
       if (exists(predictFunction,mode='function')) {
         if (environmentName(environment(get(predictFunction))) == "R_GlobalEnv") {
@@ -198,7 +198,7 @@ setMethod('getmethodNames', signature(w='ANY'),
           # when environment if attached, the conflict with the existing object in .GlobalEnv should be resolved!
         }
         m@predictFunction <- eval(parse(text=paste("function(params) {do.call(",predictFunction,",params)}")))
-      } else if (length(strsplit(predictFunction,':::')[[1]]) == 2 && class(eval(parse(text=predictFunction))) == 'function') {
+      } else if (length(strsplit(predictFunction,':::')[[1]]) == 2 && inherits(eval(parse(text=predictFunction)),'function')) {
         if (!exists(strsplit(predictFunction,':::')[[1]][2],mode='function')) {
           m@predictFunction <- eval(parse(text=paste("function(params) {do.call(",strsplit(predictFunction,':::')[[1]][2],",params)}")))
         } else {
@@ -211,7 +211,7 @@ setMethod('getmethodNames', signature(w='ANY'),
       } else if (!Installed) {
         m@predictFunction <- eval(parse(text=paste("function(params) {do.call(",predictFunction,",params)}")))
       } else stop('predictFunction cannot be identified!')
-    } else if (class(predictFunction) == 'function') {
+    } else if (inherits(predictFunction,'function')) {
       if (is.null(m@.temp.env)) m@.temp.env <- new.env()
       if (!paste(m@name,'_predict',sep='') %in% ls(envir=m@.temp.env)) fn <-paste(m@name,'_predict',sep='') ####
       else stop('the user defined function in predictFunction cannot be registered because an object with a similar name exists in the container!')
@@ -480,7 +480,7 @@ setMethod('getmethodNames', signature(w='ANY'),
   }
   #-----
   
-  if (class(fitFunction) == "character") {
+  if (inherits(fitFunction,"character")) {
     if (length(strsplit(fitFunction,'::')[[1]]) == 2) fitFunction <- strsplit(fitFunction,'::')[[1]][2]
     
     if (exists(fitFunction,mode='function')) {
@@ -493,7 +493,7 @@ setMethod('getmethodNames', signature(w='ANY'),
         # when environment if attached, the conflict with the existing object in .GlobalEnv should be resolved!
       }
       m@fitFunction <- eval(parse(text=paste("function(params) {do.call(",fitFunction,",params)}")))
-    } else if (length(strsplit(fitFunction,':::')[[1]]) == 2 && class(eval(parse(text=fitFunction))) == 'function') {
+    } else if (length(strsplit(fitFunction,':::')[[1]]) == 2 && inherits(eval(parse(text=fitFunction)),'function')) {
       if (!exists(strsplit(fitFunction,':::')[[1]][2],mode='function')) {
         m@fitFunction <- eval(parse(text=paste("function(params) {do.call(",strsplit(fitFunction,':::')[[1]][2],",params)}")))
       } else {
@@ -507,7 +507,7 @@ setMethod('getmethodNames', signature(w='ANY'),
       m@fitFunction <- eval(parse(text=paste("function(params) {do.call(",fitFunction,",params)}")))
     } else stop('fitFunction cannot be identified!')
     
-  } else if (class(fitFunction) == 'function') {
+  } else if (inherits(fitFunction,'function')) {
     if (is.null(m@.temp.env)) m@.temp.env <- new.env()
     if (!paste(m@name,'.fit',sep='') %in% ls(envir=m@.temp.env)) fn <-paste(m@name,'.fit',sep='') ####
     else stop('the user defined function in fitFunction cannot be registered because an object with a similar name exists in the container!')
@@ -518,7 +518,7 @@ setMethod('getmethodNames', signature(w='ANY'),
   #---------
   
   if (!is.null(predictFunction)) {
-    if (class(predictFunction) == "character") {
+    if (inherits(predictFunction,"character")) {
       if (length(strsplit(predictFunction,'::')[[1]]) == 2) predictFunction <- strsplit(predictFunction,'::')[[1]][2]
       if (exists(predictFunction,mode='function')) {
         if (environmentName(environment(get(predictFunction))) == "R_GlobalEnv") {
@@ -529,7 +529,7 @@ setMethod('getmethodNames', signature(w='ANY'),
           # when environment if attached, the conflict with the existing object in .GlobalEnv should be resolved!
         }
         m@predictFunction <- eval(parse(text=paste("function(params) {do.call(",predictFunction,",params)}")))
-      } else if (length(strsplit(predictFunction,':::')[[1]]) == 2 && class(eval(parse(text=predictFunction))) == 'function') {
+      } else if (length(strsplit(predictFunction,':::')[[1]]) == 2 && inherits(eval(parse(text=predictFunction)),'function')) {
         if (!exists(strsplit(predictFunction,':::')[[1]][2],mode='function')) {
           m@predictFunction <- eval(parse(text=paste("function(params) {do.call(",strsplit(predictFunction,':::')[[1]][2],",params)}")))
         } else {
@@ -542,7 +542,7 @@ setMethod('getmethodNames', signature(w='ANY'),
       } else if (!Installed) {
         m@predictFunction <- eval(parse(text=paste("function(params) {do.call(",predictFunction,",params)}")))
       } else stop('predictFunction cannot be identified!')
-    } else if (class(predictFunction) == 'function') {
+    } else if (inherits(predictFunction,'function')) {
       if (is.null(m@.temp.env)) m@.temp.env <- new.env()
       if (!paste(m@name,'.predict',sep='') %in% ls(envir=m@.temp.env)) fn <-paste(m@name,'.predict',sep='') ####
       else stop('the user defined function in predictFunction cannot be registered because an object with a similar name exists in the container!')

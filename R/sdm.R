@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Oct. 2021
-# Version 4.6
+# Date (last update):  Jan 2024
+# Version 5.1
 # Licence GPL v3
 #--------
 
@@ -118,171 +118,6 @@
 }
 #-------------
 
-.factorFix <- function(data1,data2,nFact,nf) {
-  # assign the problematic factors to the more similar factors according to continuous variables
-  # if no continus variable does exist, then it is assigned to a dominant class.
-  if (missing(nFact) || is.null(nFact)) nFact <- colnames(data2)[.where(is.factor,data2)]
-  if (missing(nf) || is.null(nf)) {
-    nf <- colnames(data2)[!colnames(data2) %in% nFact]
-    if (length(nf) == 0) nf <- NULL
-  }
-  
-  dd <- data2
-  
-  for (i in seq_along(nFact)) {
-    data1[,nFact[i]] <- factor(data1[,nFact[i]])
-    data2[,nFact[i]] <- factor(data2[,nFact[i]])
-    dd[,nFact[i]] <- as.character(dd[,nFact[i]])
-    
-    fc <- .checkFactor(data1[,nFact[i]],data2[,nFact[i]])
-    if (!is.null(fc)) {
-      p <- names(fc$p)
-      np <- names(fc$np)
-      for (j in seq_along(p)) {
-        w <- fc[['p']][[p[[j]]]]
-        if (!is.null(nf)) {
-          m <- rep(NA,length(np))
-          d2 <- data2[w,which(colnames(data2) %in% nf)]
-          if (length(nf) > 1) {
-            options(warn=-1)
-            for (k in seq_along(np)) {
-              ww <- fc[['np']][[np[[k]]]]
-              d1 <- data2[ww,which(colnames(data2) %in% nf)]
-              m[k] <- mean(try(.mahal(d1,d2),silent=TRUE),na.rm=TRUE)
-            }
-            options(warn=0)
-          } else {
-            for (k in seq_along(np)) {
-              ww <- fc[['np']][[np[[k]]]]
-              d1 <- data2[ww,which(colnames(data2) %in% nf)]
-              m[k] <- abs(mean(d2,na.rm=TRUE) - mean(d1,na.rm=TRUE))
-            }
-          }
-          
-          ww <- which.min(m)
-          if (length(ww) > 0) dd[w,nFact[i]] <- np[ww]
-          else {
-            dom.class <- summary(data1[,nFact[i]])
-            dom.class <- attr(sort(dom.class, decreasing = TRUE)[1], "names")
-            dd[w,nFact[i]] <- dom.class
-          }
-        } else {
-          dom.class <- summary(data1[,nFact[i]])
-          dom.class <- attr(sort(dom.class, decreasing = TRUE)[1], "names")
-          dd[w,nFact[i]] <- dom.class
-        }
-        
-      }
-      
-    }
-  }
-  for (i in seq_along(nFact)) dd[,nFact[i]] <- factor(dd[,nFact[i]])
-  .eqFactLevel(data1,dd)
-}
-#--------
-
-.factorFixW <- function(data1,data2,nFact,nf) {
-  # just generates a list to report which class should be assigned to which class!
-  if (missing(nFact) || is.null(nFact)) nFact <- colnames(data2)[.where(is.factor,data2)]
-  if (missing(nf) || is.null(nf)) {
-    nf <- colnames(data2)[!colnames(data2) %in% nFact]
-    if (length(nf) == 0) nf <- NULL
-  }
-  
-  dd <- data2
-  o <- list()
-  for (i in seq_along(nFact)) {
-    data1[,nFact[i]] <- factor(data1[,nFact[i]])
-    data2[,nFact[i]] <- factor(data2[,nFact[i]])
-    dd[,nFact[i]] <- as.character(dd[,nFact[i]])
-    
-    fc <- .checkFactor(data1[,nFact[i]],data2[,nFact[i]])
-    if (!is.null(fc)) {
-      p <- names(fc$p)
-      np <- names(fc$np)
-      for (j in seq_along(p)) {
-        w <- fc[['p']][[p[[j]]]]
-        if (!is.null(nf)) {
-          m <- rep(NA,length(np))
-          d2 <- data2[w,which(colnames(data2) %in% nf)]
-          if (length(nf) > 1) {
-            options(warn=-1)
-            for (k in seq_along(np)) {
-              ww <- fc[['np']][[np[[k]]]]
-              d1 <- data2[ww,which(colnames(data2) %in% nf)]
-              m[k] <- mean(try(.mahal(d1,d2),silent=TRUE),na.rm=TRUE)
-            }
-            if (any(is.na(m))) {
-              m <- matrix(NA,nrow=length(nf),ncol=length(np))
-              for (k in seq_along(np)) {
-                ww <- fc[['np']][[np[[k]]]]
-                d1 <- data2[ww,which(colnames(data2) %in% nf)]
-                for (nfi in seq_along(nf)) {
-                  m[nfi,k] <- abs(mean(d2[[nf[nfi]]],na.rm=TRUE) - mean(d1[[nf[nfi]]],na.rm=TRUE))
-                }
-              }
-              m <- abs(apply(t(apply(m,1,function(x) (x - mean(x)) / sd(x))),2,mean))
-            }
-            options(warn=0)
-          } else {
-            for (k in seq_along(np)) {
-              ww <- fc[['np']][[np[[k]]]]
-              d1 <- data2[ww,which(colnames(data2) %in% nf)]
-              m[k] <- abs(mean(d2,na.rm=TRUE) - mean(d1,na.rm=TRUE))
-            }
-          }
-          
-          ww <- which.min(m)
-          if (length(ww) > 0) {
-            o <- c(o,list(c(field=nFact[i],old=unique(dd[w,nFact[i]]),new=np[ww])))
-          } else {
-            dom.class <- summary(data1[,nFact[i]])
-            dom.class <- attr(sort(dom.class, decreasing = TRUE)[1], "names")
-            o <- c(o,list(c(field=nFact[i],old=unique(dd[w,nFact[i]]),new=dom.class)))
-          }
-        } else {
-          dom.class <- summary(data1[,nFact[i]])
-          dom.class <- attr(sort(dom.class, decreasing = TRUE)[1], "names")
-          o <- c(o,list(c(field=nFact[i],old=unique(dd[w,nFact[i]]),new=dom.class)))
-        }
-      }
-    }
-  }
-  o
-}
-
-#--------
-
-.factorFix.bm <- function(data1,data2,nFact,nf) {
-  # problematic factors are moved from data2 to data1
-  if (missing(nFact) || is.null(nFact)) nFact <- colnames(data2)[.where(is.factor,data2)]
-  er <- FALSE
-  
-  for (i in seq_along(nFact)) {
-    data1[,nFact[i]] <- factor(data1[,nFact[i]])
-    data2[,nFact[i]] <- factor(data2[,nFact[i]])
-    fc <- .checkFactor(data1[,nFact[i]],data2[,nFact[i]])
-    if (!is.null(fc)) {
-      er <- TRUE
-      p <- names(fc$p)
-      for (j in seq_along(p)) {
-        ww <- fc[['p']][[p[[j]]]]
-        ww <- sample(ww,1)
-        data1 <- rbind(data1,data2[ww,])
-        data2 <- data2[-ww,]
-        #dd <- dd[-ww,]
-      }
-    }
-  }
-  if (er) {
-    for (i in seq_along(nFact)) {
-      data1[,nFact[i]] <- factor(data1[,nFact[i]])
-      data2[,nFact[i]] <- factor(data2[,nFact[i]])
-    }
-    return(list(train=data1,test=data2,IDs=fc$p))
-  }
-}
-#--------
 
 .is.windows <- function() {
   s <- Sys.info()
@@ -351,18 +186,6 @@
   }
   
   ww <- .loadLib(pkgs)
-  # if (!all(ww)) {
-  #   if (!any(ww)) {
-  #     cat('some methods are removed because they depend on some packages that are not installed on this machine!\n')
-  #     cat('you can use installAll() function to simply install all the packages that may be required by some functions in the sdm package!\n')
-  #     stop(paste('There is no installed packages rquired by the selected methods. Package names:',paste(unlist(pkgs),collapse=', ')))
-  #   } else {
-  #     cat('some methods are removed because they depend on some packages that are not installed on this machine!\n')
-  #     cat('you can use installAll() function to simply install all the packages that may be required by some functions in the sdm package!\n')
-  #     warning(paste('There is no installed packages rquired by the methods:',paste(s@methods[!ww],collapse=', '),'; These methods are excluded! The packages need to be installed for these methods:',paste(unlist(pkgs[!ww]),collapse=', ')))
-  #     s@methods <- s@methods[ww]
-  #   }
-  # }
   all(ww)
 }
 
@@ -399,21 +222,28 @@
   ww <- .loadLib(pkgs)
   if (!all(ww)) {
     if (!any(ww)) {
-      cat('some methods are ignored because they depend on package(s) that is/are not installed on the machine!\n')
-      cat('you can use the installAll() function to simply install all the packages that may be required by some functions in the sdm package!\n')
-      stop(paste('There is no installed packages rquired by the selected methods. Package names:',paste(unlist(pkgs),collapse=', ')))
+      cat('Some methods are ignored as they depend on package(s) which is/are not installed on your machine!\n')
+      cat('you can use the installAll() function to  install all packages required by methods in sdm\n')
+      stop(paste('The packages rquired by the selected methods are not installed -> package names:',paste(unlist(pkgs),collapse=', ')))
     } else {
-      cat('some methods are ignored because they depend on some package(s) that is/are not installed on the machine!\n')
-      cat('you can use the installAll() function to simply install all the packages that may be required by some functions in the sdm package!\n')
-      warning(paste('There is no installed packages rquired by the methods:',paste(s@methods[!ww],collapse=', '),'; These methods are excluded! The packages need to be installed for these methods:',paste(unlist(pkgs[!ww]),collapse=', ')))
+      cat('Some methods are ignored as they depend on package(s) which is/are not installed on your machine!\n')
+      cat('you can use the installAll() function to  install all packages required by methods in sdm\n')
+      warning(paste('The packages rquired by the following methods are not installed:',paste(s@methods[!ww],collapse=', '),'; These methods are excluded! The packages need to be installed for these methods:',paste(unlist(pkgs[!ww]),collapse=', ')))
       s@methods <- s@methods[ww]
     }
   }
   #------------
-  if (!is.null(s@seed)) set.seed(s@seed)
+  if (!is.null(s@seed)) {
+    if (is.numeric(s@seed)) set.seed(s@seed[1])
+    else if (is.logical(s@seed) && s@seed) {
+      s@seed <- sample(1000000,1)
+      set.seed(s@seed)
+    }
+  }
   #-----------
+  if (length(s@parallelSetting@ncore) == 0) s@parallelSetting@ncore <- 1
   
-  w <- new('.workload',ncore=s@parallelSettings@ncore,data=d,setting=s,frame=s@featuresFrame,filename=filename)
+  w <- new('.workload',ncore=s@parallelSetting@ncore,data=d,setting=s,frame=s@featureFrame,filename=filename)
   #-----
   hasTest <- 'test' %in% d@groups$training@values[,2]
   nFact <- NULL
@@ -422,40 +252,17 @@
   nf <- nf[nf %in% s@sdmFormula@vars@names]
   nFact <- nFact[nFact %in% s@sdmFormula@vars@names]
   #---------
-  for (sp in s@sdmFormula@species) {
+  for (sp in s@sdmFormula@vars@species) {
     dt <- as.data.frame(d,sp=sp,grp='train')
     w$recordIDs[[sp]]$train <- data.frame(rID=dt[,1],rowID=1:nrow(dt))
-    f <- .getModelFrame(w$frame,dt,response=sp)
-    if (!is.null(f$specis_specific)) {
-      w$train[[sp]]$sdmDataFrame <- cbind(dt[,sp],f$features,f$specis_specific)
-    } else w$train[[sp]]$sdmDataFrame  <- cbind(dt[,sp],f$features)
-    colnames(w$train[[sp]]$sdmDataFrame)[1] <- sp
+    f <- w$frame@featureGenerator(dt)
+    w$train[[sp]]$sdmDataFrame  <- cbind(dt[,sp,drop=FALSE],f)
     
     if (hasTest) {
       dt <- as.data.frame(d,sp=sp,grp='test')
       w$recordIDs[[sp]]$test <- data.frame(rID=dt[,1],rowID=1:nrow(dt))
-      f <- .getModelFrame(w$frame,dt,response=sp)
-      if (!is.null(f$specis_specific)) {
-        w$test[[sp]]$sdmDataFrame <- cbind(dt[,sp],f$features,f$specis_specific)
-      } else w$test[[sp]]$sdmDataFrame <- cbind(dt[,sp],f$features)
-      colnames(w$test[[sp]]$sdmDataFrame)[1] <- sp
-      
-      if (!is.null(nFact)) {
-        
-        for (nF in nFact) {
-          fc <- .checkFactor(w$train[[sp]]$sdmDataFrame[,nF],w$test[[sp]]$sdmDataFrame[,nF])
-          if (!is.null(fc)) {
-            p <- names(fc$p)
-            for (j in seq_along(p)) {
-              ww <- fc[['p']][[p[[j]]]]
-              if (length(ww) > 1) ww <- sample(ww,1)
-              w$train[[sp]]$sdmDataFrame <- rbind(w$train[[sp]]$sdmDataFrame,w$test[[sp]]$sdmDataFrame[ww,])
-              w$test[[sp]]$sdmDataFrame[ww,] <- w$test[[sp]]$sdmDataFrame[-ww,]
-              w$data <- .updateGroup(w$data,c(.getRecordID(w$recordIDs,sp=sp,id = ww,train=FALSE),'test','train'))
-            }
-          }
-        }
-      }
+      f <- w$frame@featureGenerator(dt)
+      w$test[[sp]]$sdmDataFrame <- cbind(dt[,sp,drop=FALSE],f)
     }
     #--------
     w$getSdmVariables(sp=sp,nf=nf,nFact = nFact)
@@ -466,6 +273,25 @@
   w$funs[['predict']] <- .sdmMethods$getPredictFunctions(s@methods)
   w$arguments[['predict']] <- .sdmMethods$getPredictArguments(s@methods)
   #---
+  mo <- s@methods
+  names(mo) <- mo
+  w$dataObject.names <- lapply(mo, .sdmMethods$getDataArgumentNames)
+  w$settingRules <- lapply(mo,function(x) .sdmMethods$Methods[[x]]@settingRules)
+  #-----------
+  
+  # .w <- sapply(w$settingRules,is.null)
+  # if (any(!.w)) {
+  #   .w <- names(.w[!.w])
+  #   for (sp in s@sdmFormula@vars@species) {
+  #     for (mo in .w) {
+  #       f <- w$settingRules[[mo]](w$sdmVariables[[sp]],w$arguments$fit[[mo]]$settings)
+  #       if ('fitSettings' %in% names(f)) w$arguments$fit[[mo]]$settings <- f$fitSettings
+  #       
+  #       if ('predictSettings' %in% names(f)) w$arguments$predict[[mo]]$settings <- f$predictSettings
+  #       
+  #     }
+  #   }
+  # }
   #------ applying the setting rules & overriding the user settings:
   for (mo in w$setting@methods) {
     .u <- NULL
@@ -528,14 +354,7 @@
   
   #-------------
   
-  #w$dataObject.names <- unique(unlist(lapply(s@methods, .sdmMethods$getDataArgumentNames)))
-  mo <- s@methods
-  names(mo) <- mo
-  w$dataObject.names <- lapply(mo, .sdmMethods$getDataArgumentNames)
-  w$settingRules <- lapply(mo,function(x) .sdmMethods$Methods[[x]]@settingRules)
-  #-----------
-  
-  #reserved.names <- w$getReseved.names()
+ 
   for (mo in s@methods) {
     wc <- unlist(lapply(w$arguments$fit[[mo]]$params,function(x) is.character(x)))
     if (any(!wc)) {
@@ -587,7 +406,8 @@
     for (sp in names(w$train)) {
       if (d@species[[sp]]@type %in% c('Presence-Absence','Presence-Background')) family <- 'binomial'
       else if (d@species[[sp]]@type %in% c('Abundance')) family <- 'poisson'
-      else family <- 'xxx'
+      else if (d@species[[sp]]@type %in% c('Multinomial')) family <- 'Multinomial'
+      else family <- 'Numerical'
       
       # sdmDataFrame! Leter should be checked for other types of data!
       for (ff in f) {
@@ -595,320 +415,9 @@
       }
     }
   }
-  
-  # for each replicatios, checks whether the factor level is going to be problematic
-  # if so, move the record from test to train
-  if (!is.null(nFact)) {
-    for (nF in nFact) {
-      for (sp in names(w$replicates)) {
-        for (i in 1:length(w$replicates[[sp]])) {
-          #fc <- .checkFactor(w$train[[sp]]$sdmDataFrame[w$runtasks$runIndex[[sp]][[i]]$train,nF],w$train[[sp]]$sdmDataFrame[w$runtasks$runIndex[[sp]][[i]]$test,nF])
-          fc <- .checkFactor(w$train[[sp]]$sdmDataFrame[w$replicates[[sp]][[i]]$train,nF],w$train[[sp]]$sdmDataFrame[w$replicates[[sp]][[i]]$test,nF])
-          if (!is.null(fc)) {
-            p <- names(fc$p)
-            for (j in seq_along(p)) {
-              ww <- fc[['p']][[p[[j]]]]
-              if (length(ww) > 1) ww <- sample(ww,1)
-              w$replicates[[sp]][[i]]$train <- c(w$replicates[[sp]][[i]]$train,w$replicates[[sp]][[i]]$test[ww])
-              w$replicates[[sp]][[i]]$test <- w$replicates[[sp]][[i]]$test[-ww]
-            }
-          }
-        }
-      }
-    }
-  }
   #-----
   w
 }
-
-#----------------------------------------
-
-if (!isGeneric("sdmSetting")) {
-  setGeneric("sdmSetting", function(formula,data,methods,interaction.depth=1,n=1,replication=NULL,
-                                    cv.folds=NULL,test.percent=NULL,bg=NULL,bg.n=NULL,var.importance=NULL,response.curve=TRUE,
-                                    var.selection=FALSE,ncore=1L,modelSettings=NULL,seed=NULL,parallelSettings=NULL,...)
-    standardGeneric("sdmSetting"))
-}
-
-setMethod('sdmSetting', signature(formula='ANY','sdmdata','character'), 
-          function(formula,data,methods,interaction.depth=1,n=1,replication=NULL,
-                   cv.folds=NULL,test.percent=NULL,bg=NULL,bg.n=NULL,var.importance=NULL,response.curve=TRUE,
-                   var.selection=FALSE,ncore=1L,modelSettings=NULL,seed=NULL,parallelSettings=NULL,...) {
-            
-            if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
-            
-            dot <- list(...)
-            sobj <- NULL
-            if (length(dot) > 0) {
-              ndot <- names(dot)
-              if ('' %in% ndot) {
-                for (i in seq_along(which(ndot == ''))) {
-                  if (inherits(dot[[i]],'.sdmCorSetting')) {
-                    sobj <- dot[[i]]
-                    break
-                  }
-                }
-                dot <- dot[-which(ndot == '')]
-                ndot <- names(dot)
-              }
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
-              a <- c('interaction.depth','replication','cv.folds','test.percent','bg','bg.n','var.importance','response.curve','var.selection','ncore','modelSettings','seed','setting','parallelSettings')
-              ndot <- .pmatch(ndot,a)
-              w <- !is.na(ndot)
-              if (length(w) > 0) {
-                dot <- dot[w]
-                ndot <- ndot[w]
-                names(dot) <- ndot
-              }
-              
-              if ('setting' %in% names(dot) && inherits(dot[['setting']],'.sdmCorSetting')) {
-                sobj <- dot[['setting']]
-                dot <- dot[-which(ndot == 'setting')]
-                ndot <- names(dot)
-              }
-              
-              if (length(dot) > 0) {
-                if (length(ndot) > 0) {
-                  for (nd in ndot) {
-                    if (nd == 'interaction.depth' && interaction.depth == 1) interaction.depth <- dot[[nd]]
-                    else if (nd == 'ncore' && ncore == 1L) ncore <- dot[[nd]]
-                    else if (nd == 'replication' && is.null(replication)) replication <- dot[[nd]]
-                    else if (nd == 'cv.folds' && is.null(cv.folds)) cv.folds <- dot[[nd]]
-                    else if (nd == 'test.percent' && is.null(test.percent)) test.percent <- dot[[nd]]
-                    else if (nd == 'bg' && is.null(bg)) bg <- dot[[nd]]
-                    else if (nd == 'bg.n' && is.null(bg.n)) bg.n <- dot[[nd]]
-                    else if (nd == 'var.importance' && is.null(var.importance)) var.importance <- dot[[nd]]
-                    else if (nd == 'response.curve' && response.curve && is.logical(dot[[nd]])) response.curve <- dot[[nd]]
-                    else if (nd == 'var.selection' && !var.selection && is.logical(dot[[nd]])) var.selection <- dot[[nd]]
-                    else if (nd == 'modelSettings' && is.null(modelSettings)) modelSettings <- dot[[nd]]
-                    else if (nd == 'seed' && is.null(seed)) seed <- dot[[nd]]
-                    else if (nd == 'parallelSettings' && is.null(parallelSettings) && is.list(dot[[nd]])) parallelSettings <- dot[[nd]]
-                  }
-                }
-              }
-            }
-            #--------
-            
-            m <- .methodFix(methods)
-            if (any(is.na(m))) stop(paste('methods',paste(methods[is.na(m)],collapse=', '),'do not exist!'))
-            m <- unique(m)
-            #---------
-            s <- new('.sdmCorSetting',methods=m)
-            #---------
-            if (missing(formula)) {
-              if (!is.null(sobj)) {
-                if (all(sobj@sdmFormula@vars@names %in% data@features.name)) s@sdmFormula <- sobj@sdmFormula
-                else s@sdmFormula <- data@sdmFormula
-              } else s@sdmFormula <- data@sdmFormula
-              
-            } else if (inherits(formula,'sdmFormula')) s@sdmFormula <- formula
-            else if (inherits(formula,'formula')) {  
-              s@sdmFormula <- .exFormula(formula,as.data.frame(data)[,-1])
-            } else if (inherits(formula,'.sdmCorSetting')) {
-              sobj <- formula
-              if (all(sobj@sdmFormula@vars@names %in% data@features.name)) s@sdmFormula <- sobj@sdmFormula
-              else s@sdmFormula <- data@sdmFormula
-            } else {
-              if (!is.null(sobj)) {
-                if (all(sobj@sdmFormula@vars@names %in% data@features.name)) s@sdmFormula <- sobj@sdmFormula
-                else s@sdmFormula <- data@sdmFormula
-              } else s@sdmFormula <- data@sdmFormula
-            }
-            
-            s@featuresFrame <- .getFeaturetype(data,s@sdmFormula)  
-            #---------
-            s@distribution <- .getSpeciesDistribution(data,sp=s@sdmFormula@species)
-            #---------
-            if (!is.null(test.percent)) s@test.percentage <- test.percent
-            else {
-              if (!is.null(sobj)) {
-                if (!is.null(sobj@test.percentage)) s@test.percentage <- sobj@test.percentage
-              }
-            }
-            #---------
-            if (!is.null(parallelSettings) && is.list(parallelSettings)) {
-              nparallel <- names(parallelSettings)
-              a <- c('ncore','doParallel','method','cluster','hosts','fork','type')
-              nparallel <- .pmatch(nparallel,a)
-              w <- !is.na(nparallel)
-              if (length(w) > 0) {
-                parallelSettings <- parallelSettings[w]
-                nparallel <- nparallel[w]
-                names(parallelSettings) <- nparallel
-              }
-              #--
-              if ('ncore' %in% nparallel) s@parallelSettings@ncore <- parallelSettings$ncore
-              else {
-                s@parallelSettings@ncore <- ncore
-                if (ncore == 1L && !is.null(sobj) && length(sobj@parallelSettings@ncore) == 1) s@parallelSettings@ncore <- sobj@parallelSettings@ncore
-              }
-              #--
-              if ('method' %in% nparallel) {
-                if (parallelSettings$method %in% c('parallel','foreach')) s@parallelSettings@method <- parallelSettings$method
-                else {
-                  warning('parallelisation method is not recognised; the default value ("parallel") is used!')
-                  s@parallelSettings@method <- 'parallel'
-                }
-              } else s@parallelSettings@method <- 'parallel'
-              #--
-              if ('fork' %in% nparallel) {
-                if (is.logical(parallelSettings$fork)) {
-                  if (parallelSettings$fork && .is.windows()) {
-                    warning('"fork" in parallelisation setting cannot be TRUE on Windows Operating Systems; It is changed to FALSE!')
-                    s@parallelSettings@fork <- FALSE
-                  } else s@parallelSettings@fork <- parallelSettings$fork
-                } else {
-                  warning('"fork" in parallelisation setting should be logical; the default value is used!')
-                  s@parallelSettings@fork <- !.is.windows()
-                }
-              } else s@parallelSettings@fork <- !.is.windows()
-              #--
-              if ('type' %in% nparallel) s@parallelSettings@type <- parallelSettings$type
-              #--
-              if ('doParallel' %in% nparallel && is.expression(parallelSettings$doParallel)) s@parallelSettings@doParallel <- parallelSettings$doParallel
-              #--
-              if ('cluster' %in% nparallel && inherits(parallelSettings$cluster,'cluster')) s@parallelSettings@cluster <- parallelSettings$cluster
-              #--
-              if ('hosts' %in% nparallel && is.character(parallelSettings$hosts)) s@parallelSettings@hosts <- parallelSettings$hosts
-              
-            } else {
-              if (!is.null(sobj)) s@parallelSettings <- sobj@parallelSettings
-              else {
-                s@parallelSettings@ncore <- ncore
-                s@parallelSettings@fork <- !.is.windows()
-              }
-            }
-            
-            #---------
-            if (!is.null(replication)) {
-              nx <- .replicate.methodFix(replication)
-              if (any(is.na(nx))) warning(paste(paste(replication[is.na(nx)],collapse=', '),'methods in replication are not found [They are ignored!]'))
-              replication <- nx[!is.na(nx)]
-              s@replicate <- replication
-            } else {
-              if (!is.null(sobj)) {
-                if (!is.null(sobj@replicate)) s@replicate <- sobj@replicate
-              }
-              if (is.null(s@replicate) && !is.null(s@test.percentage)) {
-                s@replicate <- "subsampling"
-              }
-            }
-            
-            s@n.replicates <- n
-            if (!is.null(sobj) && !is.null(sobj@n.replicates)) s@n.replicates <- sobj@n.replicates
-            
-            if ("subsampling" %in% s@replicate) {
-              if (is.null(s@test.percentage)) s@test.percentage <- 30
-            }
-            
-            if (!is.null(cv.folds)) s@cv.folds <- cv.folds
-            else {
-              if (!is.null(sobj) && !is.null(sobj@cv.folds)) s@cv.folds <- sobj@cv.folds
-              if (is.null(s@cv.folds) && "cross_validation" %in% s@replicate) s@cv.folds <- 5
-            }
-            
-            if (!is.null(s@cv.folds) && !"cross_validation" %in% s@replicate) {
-              s@replicate <- c("cross_validation",s@replicate)
-            }
-            #---------
-            if (!is.null(bg)) s@pseudo.absence.methods <- bg
-            else {
-              if (!is.null(sobj)) {
-                if (!is.null(sobj@pseudo.absence.methods)) s@pseudo.absence.methods <- sobj@pseudo.absence.methods
-              }
-            }
-            if (!is.null(bg.n)) s@n.pseudo.absence <- bg.n
-            else {
-              if (!is.null(sobj)) {
-                if (!is.null(sobj@n.pseudo.absence)) s@n.pseudo.absence <- sobj@n.pseudo.absence
-              }
-              if (is.null(s@n.pseudo.absence) && !is.null(s@pseudo.absence.methods)) {
-                s@n.pseudo.absence <- 1000
-              }
-            }
-            #---------
-            if (!is.null(var.importance)) s@varImportance.methods <- var.importance
-            else {
-              if (!is.null(sobj)) {
-                if (!is.null(sobj@varImportance.methods)) s@varImportance.methods <- sobj@varImportance.methods
-              }
-            }
-            #---------
-            if (response.curve) s@response.curve <- TRUE
-            else {
-              if (!is.null(sobj)) {
-                if (!is.null(sobj@response.curve) && sobj@response.curve) s@response.curve <- sobj@response.curve
-              } else s@response.curve <- FALSE
-            }
-            #---------
-            if (var.selection) s@var.selection <- TRUE
-            else {
-              if (!is.null(sobj)) {
-                if (!is.null(sobj@var.selection) && sobj@var.selection) s@var.selection <- sobj@var.selection
-              } else s@var.selection <- FALSE
-            }
-            #---------
-            #s@interaction.depth <- interaction.depth
-            #if (interaction.depth ==1 && !is.null(sobj) && !is.null(sobj@interaction.depth)) s@interaction.depth <- sobj@interaction.depth
-            #---------
-            
-            if (!is.null(interaction.depth)) s@interaction.depth <- interaction.depth
-            else {
-              if (!is.null(sobj)) {
-                if (!is.null(sobj@interaction.depth)) s@interaction.depth <- sobj@interaction.depth
-              }
-            }
-            #---------
-            if (!is.null(modelSettings) && inherits(modelSettings,'list')) {
-              .ms <- names(modelSettings)
-              if (!is.null(.ms)) {
-                .ms <- .methodFix(.ms)
-                if (!all(.ms %in% s@methods)) warning(paste('the models in the modelSettings:',paste0(names(modelSettings)[!.ms %in% s@methods],collapse = ', '),'are not selected in the methods, or do not exitst!'))
-                w <- which(.ms %in% s@methods)
-                if (length(w) > 0) {
-                  .ms <- .ms[w]
-                  modelSettings <- modelSettings[w]
-                  names(modelSettings) <- .ms
-                  ww <- c()
-                  for (i in seq_along(.ms)) {
-                    if(!inherits(modelSettings[[.ms[i]]],'list')) ww <- c(ww,i)
-                  }
-                  
-                  if (length(ww) > 0) {
-                    if (length(ww) < length(modelSettings)) {
-                      warning(paste('the modelSettings for the items:',paste(.ms[ww],collapse = ','),'are not a list, and so they are ignored!'))
-                      modelSettings <- modelSettings[-ww]
-                    } else {
-                      warning('the arguments for each method in the modelSettings should be introduced using a list; modelSettings is ignored!')
-                      modelSetting <- NULL
-                    }
-                  }
-                } else modelSetting <- NULL
-                
-              } else warning('modelSettings is not in the right structure, so it is ignored!')
-              
-              if (!is.null(modelSettings)) {
-                s@modelSettings <- modelSettings
-              }
-            } else {
-              if (!is.null(sobj)) {
-                if (!is.null(sobj@modelSettings)) s@modelSettings <- sobj@modelSettings
-              }
-            }
-            #---------
-            if (!is.null(seed)) {
-              if (is.logical(seed)) seed <- sample(100000,1)
-              else if (!is.numeric(seed)) seed <- NULL
-              s@seed <- seed
-            } else {
-              if (!is.null(sobj)) {
-                if (!is.null(sobj@seed)) s@seed <- sobj@seed
-              }
-            }
-            #-------------
-            s
-          }
-)
 #----------------
 if (!isGeneric("sdm")) {
   setGeneric("sdm", function(formula,data,methods,...)
@@ -917,7 +426,7 @@ if (!isGeneric("sdm")) {
 
 setMethod('sdm', signature(formula='ANY',data='sdmdata',methods='character'), 
           function(formula,data,methods,...) {
-            a <- c('interaction.depth','n','replication','cv.folds','test.percent','bg','bg.n','var.importance','response.curve','var.selection','setting','ncore','modelSettings','seed','parallelSettings','filename')
+            a <- c('interaction.depth','n','replication','cv.folds','test.percent','bg','bg.n','var.importance','response.curve','var.selection','setting','ncore','modelSettings','seed','parallelSetting','filename')
             .sdm...temp <- NULL; rm(.sdm...temp)
             dot <- list(...)
             ndot <- names(dot)
@@ -959,7 +468,7 @@ setMethod('sdm', signature(formula='ANY',data='sdmdata',methods='character'),
 
 setMethod('sdm', signature(formula='ANY',data='sdmdata',methods='.sdmCorSetting'), 
           function(formula,data,methods,...) {
-            a <- c('interaction.depth','n','replication','cv.folds','test.percent','bg','bg.n','var.importance','response.curve','var.selection','setting','ncore','modelSettings','seed','parallelSettings','filename')
+            a <- c('interaction.depth','n','replication','cv.folds','test.percent','bg','bg.n','var.importance','response.curve','var.selection','setting','ncore','modelSettings','seed','parallelSetting','filename')
             .sdm...temp <- NULL; rm(.sdm...temp)
             dot <- list(...)
             ndot <- names(dot)
@@ -990,7 +499,7 @@ setMethod('sdm', signature(formula='ANY',data='sdmdata',methods='.sdmCorSetting'
                 if (length(ndot) > 0) {
                   for (nd in ndot) {
                     if (nd == 'interaction.depth') interaction.depth <- dot[[nd]]
-                    else if (nd == 'ncore') s@parallelSettings@ncore <- dot[[nd]]
+                    else if (nd == 'ncore') s@parallelSetting@ncore <- dot[[nd]]
                     else if (nd == 'replication') s@replicate <- dot[[nd]]
                     else if (nd == 'cv.folds') s@cv.folds <- dot[[nd]]
                     else if (nd == 'test.percent') s@test.percentage <- dot[[nd]]
@@ -1001,47 +510,56 @@ setMethod('sdm', signature(formula='ANY',data='sdmdata',methods='.sdmCorSetting'
                     else if (nd == 'var.selection' && is.logical(dot[[nd]])) s@var.selection <- dot[[nd]]
                     else if (nd == 'modelSettings') s@modelSettings <- dot[[nd]]
                     else if (nd == 'seed') s@seed <- dot[[nd]]
-                    else if (nd == 'parallelSettings' && is.list(dot[[nd]])) {
-                      parallelSettings <- dot[[nd]]
-                      nparallel <- names(parallelSettings)
+                    else if (nd == 'parallelSetting' && is.list(dot[[nd]])) {
+                      parallelSetting <- dot[[nd]]
+                      nparallel <- names(parallelSetting)
                       a <- c('ncore','doParallel','method','cluster','hosts','fork','type')
                       nparallel <- .pmatch(nparallel,a)
-                      w <- !is.na(nparallel)
+                      w <- which(!is.na(nparallel))
                       if (length(w) > 0) {
-                        parallelSettings <- parallelSettings[w]
+                        parallelSetting <- parallelSetting[w]
                         nparallel <- nparallel[w]
-                        names(parallelSettings) <- nparallel
+                        names(parallelSetting) <- nparallel
                       }
                       #--
-                      if ('ncore' %in% nparallel) s@parallelSettings@ncore <- parallelSettings$ncore
+                      if ('ncore' %in% nparallel) s@parallelSetting@ncore <- parallelSetting$ncore
+                      else s@parallelSetting@ncore <- max(c(floor(parallel::detectCores() * 0.5),1))
                       #--
                       if ('method' %in% nparallel) {
-                        if (parallelSettings$method %in% c('parallel','foreach')) s@parallelSettings@method <- parallelSettings$method
+                        if (parallelSetting$method %in% c('parallel','foreach','future')) s@parallelSetting@method <- parallelSetting$method
                         else {
                           warning('parallelisation method is not recognised; the default value ("parallel") is used!')
-                          s@parallelSettings@method <- 'parallel'
+                          s@parallelSetting@method <- 'parallel'
                         }
-                      } else s@parallelSettings@method <- 'parallel'
+                      } else s@parallelSetting@method <- 'parallel'
                       #--
+                      if ('strategy' %in% nparallel) {
+                        parallelSetting$strategy <- tolower(parallelSetting$strategy)[1]
+                        if (!parallelSetting$strategy %in% c('species','method','replicate','simple','auto')) {
+                          warning('The parallel strategy is not recognised (should be one of c("auto","species","method","replicate","simple")); the default, "auto", is used!')
+                          s@parallelSetting@strategy <- 'auto'
+                        } else s@parallelSetting@strategy <- parallelSetting$strategy
+                      } else s@parallelSetting@strategy <- 'auto'
+                      #---
                       if ('fork' %in% nparallel) {
-                        if (is.logical(parallelSettings$fork)) {
-                          if (parallelSettings$fork && .is.windows()) {
+                        if (is.logical(parallelSetting$fork)) {
+                          if (parallelSetting$fork && .is.windows()) {
                             warning('"fork" in parallelisation setting cannot be TRUE on Windows Operating Systems; It is changed to FALSE!')
-                            s@parallelSettings@fork <- FALSE
-                          } else s@parallelSettings@fork <- parallelSettings$fork
+                            s@parallelSetting@fork <- FALSE
+                          } else s@parallelSetting@fork <- parallelSetting$fork
                         } else {
                           warning('"fork" in parallelisation setting should be logical; the default value is used!')
-                          s@parallelSettings@fork <- !.is.windows()
+                          s@parallelSetting@fork <- !.is.windows()
                         }
-                      } else s@parallelSettings@fork <- !.is.windows()
+                      } else s@parallelSetting@fork <- !.is.windows()
                       #--
-                      if ('type' %in% nparallel) s@parallelSettings@type <- parallelSettings$type
+                      if ('type' %in% nparallel) s@parallelSetting@type <- parallelSetting$type
                       #--
-                      if ('doParallel' %in% nparallel && is.expression(parallelSettings$doParallel)) s@parallelSettings@doParallel <- parallelSettings$doParallel
+                      if ('doParallel' %in% nparallel && is.expression(parallelSetting$doParallel)) s@parallelSetting@doParallel <- parallelSetting$doParallel
                       #--
-                      if ('cluster' %in% nparallel && inherits(parallelSettings$cluster,'cluster')) s@parallelSettings@cluster <- parallelSettings$cluster
+                      if ('cluster' %in% nparallel && inherits(parallelSetting$cluster,'cluster')) s@parallelSetting@cl <- parallelSetting$cluster
                       #--
-                      if ('hosts' %in% nparallel && is.character(parallelSettings$hosts)) s@parallelSettings@hosts <- parallelSettings$hosts
+                      if ('hosts' %in% nparallel && is.character(parallelSetting$hosts)) s@parallelSetting@hosts <- parallelSetting$hosts
                     }
                   }
                 }
@@ -1064,7 +582,7 @@ setMethod('sdm', signature(formula='ANY',data='sdmdata',methods='.sdmCorSetting'
 
 setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'), 
           function(formula,data,methods,...) {
-            a <- c('interaction.depth','n','replication','cv.folds','test.percent','bg','bg.n','var.importance','response.curve','var.selection','setting','ncore','modelSettings','seed','parallelSettings','filename')
+            a <- c('interaction.depth','n','replication','cv.folds','test.percent','bg','bg.n','var.importance','response.curve','var.selection','setting','ncore','modelSettings','seed','parallelSetting','filename')
             .sdm...temp <- NULL; rm(.sdm...temp)
             dot <- list(...)
             ndot <- names(dot)
@@ -1101,7 +619,7 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
                 if (length(ndot) > 0) {
                   for (nd in ndot) {
                     if (nd == 'interaction.depth') interaction.depth <- dot[[nd]]
-                    else if (nd == 'ncore') s@parallelSettings@ncore <- dot[[nd]]
+                    else if (nd == 'ncore') s@parallelSetting@ncore <- dot[[nd]]
                     else if (nd == 'replication') s@replicate <- dot[[nd]]
                     else if (nd == 'cv.folds') s@cv.folds <- dot[[nd]]
                     else if (nd == 'test.percent') s@test.percentage <- dot[[nd]]
@@ -1112,48 +630,57 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
                     else if (nd == 'var.selection' && is.logical(dot[[nd]])) s@var.selection <- dot[[nd]]
                     else if (nd == 'modelSettings') s@modelSettings <- dot[[nd]]
                     else if (nd == 'seed') s@seed <- dot[[nd]]
-                    else if (nd == 'parallelSettings' && is.list(dot[[nd]])) {
-                      parallelSettings <- dot[[nd]]
-                      nparallel <- names(parallelSettings)
+                    else if (nd == 'parallelSetting' && is.list(dot[[nd]])) {
+                      parallelSetting <- dot[[nd]]
+                      nparallel <- names(parallelSetting)
                       a <- c('ncore','doParallel','method','cluster','hosts','fork','type')
                       nparallel <- .pmatch(nparallel,a)
-                      w <- !is.na(nparallel)
+                      w <- which(!is.na(nparallel))
                       if (length(w) > 0) {
-                        parallelSettings <- parallelSettings[w]
+                        parallelSetting <- parallelSetting[w]
                         nparallel <- nparallel[w]
-                        names(parallelSettings) <- nparallel
+                        names(parallelSetting) <- nparallel
                       }
                       #--
-                      if ('ncore' %in% nparallel) s@parallelSettings@ncore <- parallelSettings$ncore
+                      if ('ncore' %in% nparallel) s@parallelSetting@ncore <- parallelSetting$ncore
+                      else s@parallelSetting@ncore <- max(c(floor(parallel::detectCores() * 0.5),1))
                       
                       #--
                       if ('method' %in% nparallel) {
-                        if (parallelSettings$method %in% c('parallel','foreach')) s@parallelSettings@method <- parallelSettings$method
+                        if (parallelSetting$method %in% c('parallel','foreach')) s@parallelSetting@method <- parallelSetting$method
                         else {
                           warning('parallelisation method is not recognised; the default value ("parallel") is used!')
-                          s@parallelSettings@method <- 'parallel'
+                          s@parallelSetting@method <- 'parallel'
                         }
-                      } else s@parallelSettings@method <- 'parallel'
+                      } else s@parallelSetting@method <- 'parallel'
                       #--
+                      if ('strategy' %in% nparallel) {
+                        parallelSetting$strategy <- tolower(parallelSetting$strategy)[1]
+                        if (!parallelSetting$strategy %in% c('species','method','replicate','simple','auto')) {
+                          warning('The parallel strategy is not recognised (should be one of c("auto","species","method","replicate","simple")); the default, "auto", is used!')
+                          s@parallelSetting@strategy <- 'auto'
+                        } else s@parallelSetting@strategy <- parallelSetting$strategy
+                      } else s@parallelSetting@strategy <- 'auto'
+                      #---
                       if ('fork' %in% nparallel) {
-                        if (is.logical(parallelSettings$fork)) {
-                          if (parallelSettings$fork && .is.windows()) {
+                        if (is.logical(parallelSetting$fork)) {
+                          if (parallelSetting$fork && .is.windows()) {
                             warning('"fork" in parallelisation setting cannot be TRUE on Windows Operating Systems; It is changed to FALSE!')
-                            s@parallelSettings@fork <- FALSE
-                          } else s@parallelSettings@fork <- parallelSettings$fork
+                            s@parallelSetting@fork <- FALSE
+                          } else s@parallelSetting@fork <- parallelSetting$fork
                         } else {
                           warning('"fork" in parallelisation setting should be logical; the default value is used!')
-                          s@parallelSettings@fork <- !.is.windows()
+                          s@parallelSetting@fork <- !.is.windows()
                         }
-                      } else s@parallelSettings@fork <- !.is.windows()
+                      } else s@parallelSetting@fork <- !.is.windows()
                       #--
-                      if ('type' %in% nparallel) s@parallelSettings@type <- parallelSettings$type
+                      if ('type' %in% nparallel) s@parallelSetting@type <- parallelSetting$type
                       #--
-                      if ('doParallel' %in% nparallel && is.expression(parallelSettings$doParallel)) s@parallelSettings@doParallel <- parallelSettings$doParallel
+                      if ('doParallel' %in% nparallel && is.expression(parallelSetting$doParallel)) s@parallelSetting@doParallel <- parallelSetting$doParallel
                       #--
-                      if ('cluster' %in% nparallel && inherits(parallelSettings$cluster,'cluster')) s@parallelSettings@cluster <- parallelSettings$cluster
+                      if ('cluster' %in% nparallel && inherits(parallelSetting$cluster,'cluster')) s@parallelSetting@cl <- parallelSetting$cluster
                       #--
-                      if ('hosts' %in% nparallel && is.character(parallelSettings$hosts)) s@parallelSettings@hosts <- parallelSettings$hosts
+                      if ('hosts' %in% nparallel && is.character(parallelSetting$hosts)) s@parallelSetting@hosts <- parallelSetting$hosts
                     }
                   }
                 }
@@ -1444,6 +971,13 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
   xx
 }
 #---------
+.fuLapply <- function(X, FUN,cl=NULL,...) {
+  # wrapper to future_lapply (cl is not used, just to make it consistent with the other functions!)
+  xx <- eval(expression({future_lapply(X=X,FUN=FUN,future.seed = TRUE,...)}))
+  if (!is.null(names(X))) names(xx) <- names(X)
+  xx
+}
+#-----
 .Lapply <- function(X, FUN, ...) {
   # wrapper to lapply (cl is not used, just to make it consistent with the other functions!)
   lapply(X, FUN, ...)
@@ -1486,7 +1020,7 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
   
   if (is.null(woL$ncore)) nc <- 1L
   else {
-    .require('parallel')
+    #.require('parallel')
     #nc <- detectCores()
     #if (woL$ncore < nc) nc <- woL$ncore
     nc <- woL$ncore
@@ -1556,54 +1090,77 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
   woL$tasks <- .tasks
   
   if (nc > 1) {
-    if (.fork) {
-      cl <- makeForkCluster(nc)
-      .lapply <- .parLapply
+    #####################
+    .require('parallel')
+    
+    if (.parMethod == 'future') {
+      if (!.require('future.apply')) {
+        warning('To use "future" as the parallel method, packages of "future" and "future.apply" are needed but they are not available, so the method is changed to "parallel"')
+        .parMethod <- "parallel"
+      }
+    } else if (.parMethod == 'foreach') {
+      if (!.require('foreach')) {
+        warning('To use "foreach" as the parallel method, the "foreach" package is needed but it is not available, so the method is changed to "parallel"')
+        .parMethod <- "parallel"
+      }
+    }
+    #----
+    if (.parMethod == 'future') {
+      if (.fork) {
+        .eval('plan(multicore,workers=nc,gc=TRUE)',environment())
+      } else {
+        .eval('plan(multisession,workers=nc,gc=TRUE)',environment())
+      }
+      .lapply <- .fuLapply
     } else {
-      if (!is.null(.hostnames)) {
-        cl <- try(makePSOCKcluster(.hostnames),silent = TRUE)
-        if (inherits(cl,'try-error')) {
-          cat('\n Error in connecting to remote servers:' ,print(cl))
-          cat('\n cores on the local machine is considered!')
-          if (nc == 1) {
-            nc <- length(which(.hostnames == 'localhost'))
-            nc <- max(nc,1)
-            #if (nc > detectCores()) nc <- detectCores()
-            cl <- makePSOCKcluster(nc)
+      if (.fork) {
+        cl <- makeForkCluster(nc)
+        .lapply <- .parLapply
+      } else {
+        if (!is.null(.hostnames)) {
+          cl <- try(makePSOCKcluster(.hostnames),silent = TRUE)
+          if (inherits(cl,'try-error')) {
+            cat('\n Error in connecting to remote servers:' ,print(cl))
+            cat('\n cores on the local machine is considered!')
+            if (nc == 1) {
+              nc <- length(which(.hostnames == 'localhost'))
+              nc <- max(nc,1)
+              #if (nc > detectCores()) nc <- detectCores()
+              cl <- makePSOCKcluster(nc)
+            }
           }
+        } else cl <- makePSOCKcluster(nc) # I should work more on providing the hostnames (on windows the connection needs to be through plink or PUTTY...)
+        #--------
+        clusterExport(cl,c('woL','.Lapply','.fun','.tasks','.fitLapply','.fitSimpleLapply','.fitlapply'),envir = environment())
+        .w <- try(clusterEvalQ(cl,{
+          library(sdm)
+          sdm:::.addMethods()
+          sdm:::.pkgLoad(woL$setting@methods)
+        }),silent = TRUE)
+        
+        if (inherits(.w,'try-error')) {
+          nc <- 1
+          stopCluster(cl)
+          warning('for some reasons, the clusters (for parallel processing) are not working!')
+          cat('\n ncore is changed to 1!')
+          .lapply <- .Lapply
+        } else .lapply <- .parLapply
+      }
+      #---
+      if (.parMethod == 'foreach' && .require('foreach') && (.require('doParallel') | .eval('getDoParRegistered()',environment()))) {
+        .lapply <- .feLapply
+        if (!.eval('getDoParRegistered()',environment())) {
+          eval(expression({registerDoParallel(cl,nc)}))
         }
-      } else cl <- makePSOCKcluster(nc) # I should work more on providing the hostnames (on windows the connection needs to be throuy plink or PUTTY...)
-      #--------
-      clusterExport(cl,c('woL','.Lapply','.fun','.tasks','.fitLapply','.fitSimpleLapply','.fitlapply'),envir = environment())
-      .w <- try(clusterEvalQ(cl,{
-        library(sdm)
-        sdm:::.addMethods()
-        sdm:::.pkgLoad(woL$setting@methods)
-      }),silent = TRUE)
-      
-      if (inherits(.w,'try-error')) {
-        nc <- 1
-        stopCluster(cl)
-        warning('for some reason, the clusters (for parallel processing) are not working!')
-        cat('\n ncore is changed to 1!')
-        .lapply <- .Lapply
-      } else .lapply <- .parLapply
+        
+        if (eval(expression({getDoParWorkers() != nc}))) {
+          eval(expression({warning(paste0('the number of workers registered for the foreach backend parallelisation is :',getDoParWorkers(),', which is different than the n.cores specified in the function! (n.cores is changed to this number)'))}))
+          eval(expression({nc <- getDoParWorkers()}))
+        }
+      }
     }
   } else .lapply <- .Lapply
   #-------
-  if (eval(expression({nc > 1 && .parMethod == 'foreach' && .require('foreach') && (.require('doParallel') | getDoParRegistered())}))) {
-    .lapply <- .feLapply
-    if (!eval(parse(text='getDoParRegistered()'))) {
-      eval(expression({registerDoParallel(cl,nc)}))
-    }
-    
-    if (eval(expression({getDoParWorkers() != nc}))) {
-      eval(expression({warning(paste0('the number of workers registered for the foreach backend parallelisation is :',getDoParWorkers(),', which is different than the n.cores specified in the function! (n.cores is changed to this number)'))}))
-      eval(expression({nc <- getDoParWorkers()}))
-    }
-  }
-  #-------
-  
   names(species) <- species
   
   if (is.null(.ch)) {

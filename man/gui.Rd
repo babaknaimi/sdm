@@ -33,7 +33,7 @@ A HTML page in browser is opened.
 
 \url{https://www.r-gis.net/}
 
-\url{https://www.biogeoinformatics.org}
+\url{https://www.biogeoinformatics.org/}
 
 }
 

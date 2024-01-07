@@ -10,9 +10,9 @@
 \title{add a new method to the package}
 
 \description{
-This function is an interface to extend the package. A user can define a new method band add it to the package. When the method is successfully added, it can be used together with all existing methods. The names of available methods in the package can be seen using \code{getmethodNames}. It is not limited only to modelling (fitting) methods, but can be a replication method, or one to generate pseudo-absences, etc.
+This function is an interface to extend the package. A user can define a new method and add it to the package. When the method is successfully added, it can be used along with other existing methods. The names of available methods in the package can be seen using the \code{getmethodNames} function. It is not limited only to the modelling methods, but can also be used for a replication method, or those used to generate pseudo-absences (backgrounds), etc.
 
-You can get an object of an existing method through getmethod.
+You can get definitions for an existing method as an object using \code{getmethod}.
 }
 
 \usage{
@@ -31,14 +31,14 @@ getmethodNames(w,...)
   \item{...}{additional arguments. see details}
   }
 \details{
-These functions provide flexibility to extend the package by adding new methods. It is also possible to add several instances of an existing method to have, for example, a method with different settings at the same time. Whetevet the new method is, it can also be shared and used by other users.
+These functions provide flexibility to extend the package by users through adding new methods to the package. It is also possible to add several instances of an existing method which, for example, edited to use the same method with different settings at the same time. Whatever the new method is, it can also be shared and used by other users.
 
 }
 
 \value{
  getmethod gives an object of an appropriate class depending on \code{w}.
  
- getmethodNames generate a list (if alt=TRUE is provided as additional argument) containing the name of methods and all alternative names (aliases) specified for each method, or a character vector (if alt=FALSE) containing the main names.
+ getmethodNames generates a list (if alt=TRUE is provided as an additional argument) containing the name of methods and all alternative names (aliases) specified for each method, or a character vector (if alt=FALSE) containing the main abbreviation names of the existing methods.
 }
 
 \references{
@@ -49,7 +49,7 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 \url{https://www.r-gis.net/}
 
-\url{https://www.biogeoinformatics.org}
+\url{https://www.biogeoinformatics.org/}
 }
 
 

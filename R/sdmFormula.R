@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Nov. 2021
-# Version 1.9
+# Date (last update):  Feb. 2024
+# Version 2.4
 # Licence GPL v3
 
 .newFormulaFunction <- function(cls,name,args,setFrame=NULL,getFeature=NULL) {
@@ -104,12 +104,23 @@
                                                             ))),
                                          name=c('poly','Po','po','Poly'),args=c('x','degree','raw')))
 
+.sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.interaction',
+                                                            representation(x='character',
+                                                                           depth='numeric',
+                                                                           feature.name='characterORnull',
+                                                                           term='call'
+                                                            ),
+                                                            prototype(
+                                                              depth=1
+                                                            ))),
+                                         name=c('int','interaction','in','In','Int','INT'),args=c('x','depth')))
+
 .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.product',
                                                             representation(x='character',
                                                                            feature.name='characterORnull',
                                                                            term='call'
                                                             ))),
-                                         name=c('product','p','P','Product','prod','Prod'),args=c('x')))
+                                         name=c('product','p','P','Product','prod','Prod','pr'),args=c('x')))
 
 .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.func',
                                                             representation(x='call',
@@ -122,12 +133,12 @@
 
 
 .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.simple.func',
-                                                            representation(x='call',
+                                                            representation(x='name',
                                                                            varName='characterORnull',
                                                                            feature.name='characterORnull',
                                                                            term='call'
                                                             ))),
-                                         name=c('xxx'),args=c('x')))
+                                         name=c('FUN'),args=c('x')))
 
 .sdmFormulaFuncs$add(.newFormulaFunction(cls=quote(setClass('.log',
                                                             representation(x='character',
@@ -176,6 +187,51 @@
   }
 }
 #-------
+.split.formula.for.select <- function(x) {
+  x <- .split.formula(x)[[1]]
+  .n <- x[[1]]
+  .x <- .split.formula(x,.n)
+  
+  if (length(.x) > 1 && length(.x[[1]]) > 1) {
+    o <-.x[-1]
+    n <- rep(as.character(.n),length(.x)-1)
+  } else {
+    o <- .x
+    n <- rep(as.character(.n),length(.x))
+  }
+  
+  while (length(.x) > 1) {
+    if (length(.x[[1]]) > 1) {
+      .n <- .x[[1]][[1]]
+      .x <- .split.formula(.x[[1]],.n)
+      
+      if (length(.x) > 1 && length(.x[[1]]) > 1) {
+        o <- c(.x[-1],o)
+        n <- c(rep(as.character(.n),length(.x)-1),n)
+      } else {
+        if (length(.x) > 1) {
+          o <- c(.x,o)
+          n <- c(rep(as.character(.n),length(.x)),n)
+        } else {
+          o <- c(.x,o)
+          n <- c(as.character(.n),n)
+        }
+      }
+      
+    } else {
+      break
+    } 
+  }
+  
+  if (any(n == '-')) {
+    .k <- as.character(o[which(n != '-')])
+    if (length(.k) == 0) .k <- as.character(o[1])
+    return(list(select=.k,keep = as.character(o[which(n[-1] == '-')+1])))
+  } else {
+    return(list(select=as.character(o)))
+  }
+}
+#----
 
 .fixFormula <- function(formula) {
   if (length(formula) == 3) {
@@ -203,172 +259,384 @@
   else if (length(f) == 2) f
   else as.formula(paste('~',deparse(f)),env=env)
 }
-
-#---- Levenshtein distance (similarity of two strings):
-.LD <- function(s,t) {
-  sl <- unlist(strsplit(s,''))
-  tl <- unlist(strsplit(t,''))
-  if (s == t) return(0)
-  else if (length(sl) == 0) return(length(tl))
-  else if (length(tl) == 0) return(length(sl))
-  v0 <- 0:length(tl)
-  v1 <- rep(NA,length(tl)+1)
-  for (i in seq_along(sl)) {
-    v1[1] <- i
-    for (j in seq_along(tl)) {
-      if (sl[i] == tl[j]) cost <- 0
-      else cost <- 1
-      v1[j+1] <- min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost)
-    }
-    for (j in seq_along(v0)) {
-      v0[j] <- v1[j]
-    }
-  }
-  return(v1[length(tl)+1])
-}
-#-----
-
-.LD2 <- function(s,t) {
-  sl <- unlist(strsplit(s,''))
-  tl <- unlist(strsplit(t,''))
-  xx <- c(length(sl),length(tl))
-  xx <- min(xx)/max(xx)
-  if (s == t) return(0)
-  else if (length(sl) == 0) return(length(tl))
-  else if (length(tl) == 0) return(length(sl))
-  v0 <- 0:length(tl)
-  v1 <- rep(NA,length(tl)+1)
-  for (i in seq_along(sl)) {
-    v1[1] <- i
-    for (j in seq_along(tl)) {
-      if (sl[i] == tl[j]) cost <- 0
-      else cost <- 1
-      v1[j+1] <- min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost)
-    }
-    for (j in seq_along(v0)) {
-      v0[j] <- v1[j]
-    }
-  }
-  return(v1[length(tl)+1]*xx)
-}
 #------
 
-.agrep <- function(n,choices, r=seq(0,0.3,0.05)) {
-  # r is a range can be used for max distance
-  for (i in r) {
-    w <- agrep(n,choices,ignore.case = TRUE,max.distance = list(all=i))
-    if (length(w) > 0) break
+# remove coords term from formula!
+.rmCoordsInFormula <- function(f) {
+  
+  sf <- .split.formula(f)
+  lhs <- rhs <- NULL
+  if (length(sf) > 2) stop('in the right hand side of the formula, the `~` can only be in m(...)')
+  
+  if (length(sf) == 1) rhs <- sf[[1]]
+  else {
+    lhs <- sf[[1]]
+    rhs <- sf[[2]]
   }
-  if (length(w) > 1) {
-    d <- unlist(lapply(choices[w],function(x) .LD(n,x)))
-    w2 <- which(d == min(d))
-    if (length(w2) == 1) choices[w][w2]
-    else NA
-  } else if (length(w) == 1) choices[w]
-  else NA
+  
+  if (length(rhs) == 2) rhsi <- list(rhs)
+  else rhsi <- .split.formula(rhs,'+')
+  #-----
+  temp <- unlist(lapply(rhsi,function(x) as.character(x)[[1]] %in% c('coords','coord','coordinates','coordinate','xy','geom','coods','crds','crd','cords','cord')))
+  if (any(temp)) {
+    #.nxy <- as.character(.split.formula(rhsi[[which(temp)]][[2]],'+'))
+    if (is.null(lhs)) as.formula(paste('~',paste(rhsi[-which(temp)],collapse = '+')))
+    else {
+      
+      if (length(lhs) > 1 && lhs[[1]] == '+') {
+        
+        as.formula(paste(paste(.split.formula(lhs,'+'),collapse = '+'),'~',paste(rhsi[-which(temp)],collapse = '+')),env = parent.frame())
+      } else {
+        as.formula(paste(as.character(lhs),'~',paste(rhsi[-which(temp)],collapse = '+')),env = parent.frame())
+      }
+      
+    }
+  } else f
+  
 }
 
-.pmatch <- function(n,choices) {
-  for (i in seq_along(n)) {
-    if (n[i] != '') {
-      if (!n[i] %in% choices) {
-        u <- try(match.arg(tolower(n[i]),tolower(choices)),silent=TRUE)
-        if (!inherits(u,"try-error")) {
-          n[i] <- choices[which(tolower(choices) == u)]
-        } else {
-          n[i] <- .agrep(n[i],choices)
-        }
-      }
-    } else n[i] <- NA
-  }
-  n
-}
 
-##########
-# old version:
-.pmatch2 <- function(n,choices) {
-  for (i in seq_along(n)) {
-    if (n[i] != '') {
-      if (!n[i] %in% choices) {
-        u <- try(match.arg(tolower(n[i]),tolower(choices)),silent=TRUE)
-        if (!inherits(u,"try-error")) {
-          n[i] <- choices[which(tolower(choices) == u)]
-        } else {
-          u <- unlist(strsplit(n[i],''))
-          w1 <- which(unlist(lapply(choices,function(x) tolower(strsplit(x,'')[[1]][1]) == tolower(u[1]))))
-          w2 <- unlist(lapply(choices,function(x)  length(which(tolower(u) %in% tolower(strsplit(x,'')[[1]])))/length(u)))
-          w4 <- unlist(lapply(choices,function(x)  .LD2(n[i],x)))
-          w3 <- which(w2 > 0.5)
-          if (length(w1) > 0) {
-            if (length(w3) > 0) {
-              w <- w1[w1 %in% w3]
-              if (length(w) > 1) {
-                w <- w[which(w2[w] == max(w2))]
-                if (length(w) == 1) n[i] <- choices[w]
-                else if (length(w1) == 1 && w2[w1] > 0.2) n[i] <- choices[w1]
-                else n[i] <- NA
-              } else if (length(w) == 1) {
-                n[i] <- choices[w]
-              } else {
-                if (length(w1) == 1 && w2[w1] > 0.2) n[i] <- choices[w1]
-                #else stop(paste('no match is found for',n[i]))
-                else n[i] <- NA
-              }
-            } else {
-              if (length(w1) == 1 && w2[w1] > 0.2) n[i] <- choices[w1]
-              #else stop(paste('no match is found for',n[i]))
-              else n[i] <- NA
-            }
-          } else {
-            if (length(which(w2 > 0.7)) > 0) {
-              w <- which(w2 > 0.7)[which(w2 > 0.7) %in% which(w4 < 3)]
-              if (length(w) == 1) n[i] <- choices[w]
-              #else stop(paste('no match is found for',n[i]))
-              else n[i] <- NA
-            } else n[i] <- NA
-          } 
-        }
-      }
+#-----------
+
+.getDataParams <- function(data,nf=NULL,nFact=NULL,id=NULL) {
+  if (!is.null(id)) data <- data[id,,drop=FALSE]
+  
+  if (all(c(is.null(nf),is.null(nFact)))) {
+    nf <- colnames(data)
+    nFact <- nf[.where(is.factor,data)]
+    nFact <- c(nFact,nf[.where(is.character,data)])
+    
+    if (length(nFact) == 0) nFact <- NULL
+    
+    nf <- .excludeVector(nf,nFact)
+    
+    nt <- nf[.where(.is.Date,data[,nf])]
+    
+    if (length(nt) > 0 && all(is.na(nt))) nt <- NULL
+    
+    nf <- .excludeVector(nf,nt)
+  }
+  
+  if (!is.null(nf)) {
+    df<- data[,nf,drop=FALSE]
+    df <- data.frame(names=nf,min=round(apply(df,2,min,na.rm=TRUE),5),
+                     max=round(apply(df,2,max,na.rm=TRUE),5),
+                     mean=round(apply(df,2,mean,na.rm=TRUE),5),
+                     sd=round(apply(df,2,sd,na.rm=TRUE),5),
+                     type=apply(df,2,function(x) {
+                       x <- x[!is.na(x)]
+                       if (all((x - round(x,0)) == 0)) "integer" 
+                       else "numeric"
+                     }),
+                     unique_count=apply(df,2,function(x) length(unique(x))))
+  }
+  
+  if (!is.null(nFact)) {
+    dFact <- list()
+    for (n in nFact) {
+      .tab <- table(data[,n])
+      dFact[[n]] <- data.frame(levels=names(.tab),count=as.vector(.tab))
     }
   }
   
-  if ('' %in% n) {
-    w <- which(n == '')
-    for (i in w) if (!choices[i] %in% n) n[i] <- choices[i]
-    w <- which(n == '')
-    if (length(w) == 1) {
-      ww <- which(!choices %in% n)
-      if (length(ww) == 1) n[w] <- choices[ww]
-    }
+  if (any(c(is.null(nf),is.null(nFact)))) {
+    if (is.null(nf)) dFact
+    else df
+  } else {
+    list(continuous = df, categorical = dFact)
   }
-  #if (length(unique(n)) < length(n)) stop('repeated arguments!')
-  n
+  
 }
-#-----------
-.getDataParams <- function(data,n,id=NULL) {
-  if (!is.null(id)) data <- data[id,,drop=FALSE]
-  data<- data[,n,drop=FALSE]
-  data.frame(names=n,min=apply(data,2,min,na.rm=TRUE),
-             max=apply(data,2,max,na.rm=TRUE),
-             mean=apply(data,2,mean,na.rm=TRUE),
-             sd=apply(data,2,sd,na.rm=TRUE))
-}
+#------
 
 
 #################---- detect the terms in the nested formula (model) inside the main formula:
-.nested_terms <- function(x,r='.parent',output='.prediction',setting=NULL,method='glm') {
-  n <- new('.nestedModel',response=r,output=output,setting=setting,method=method)
+# .nested_terms <- function(x) {
+#   .nm <- new('.nestedModel',term=x)
+#   #--------
+#   a <- c('formula','method','setting','output')
+#   s <- list()
+#   n <- names(x[-1])
+#   if (length(n) > 0) {
+#     for (i in seq_along(n)) {
+#       if (n[i] != '') {
+#         .w <- .pmatch(tolower(n[i]),a)
+#         if (!is.na(.w)) n[i] <- .w
+#       }
+#     }
+#   } else n <- rep('',length(x[-1]))
+#   
+#   if (length(n[n != '']) > 0 && !all(n[n != ''] %in% a)) stop('some arguments in the formula:model (m) function is unknown!')
+#   if (length(x) > 5) stop('the arguments in the formula:model (m) function are not match!')
+#   for (i in 1:length(n)) {
+#     if (n[i] != '') s[[n[i]]] <- x[[i+1]]
+#     else s[[a[i]]] <- x[[i+1]]
+#   }
+#   x <- s[['formula']]
+#   
+#   if (length(x) > 1) {
+#     if (x[[1]] == '~') {
+#       if (length(x) == 3) {
+#         x <- .fixFormula(x)
+#         l <- .split.formula(x[[3]],'+')
+#         if (length(.split.formula(x[[2]],'+')) > 1) stop('nested formula in the rhs, cannot be multi-response!')
+#         .nm@response <- as.character(x[[2]])
+#       } else l <- .split.formula(x[[2]],'+')
+#     } else l <- .split.formula(x,'+')
+#   } else l <- list(x)
+#   #----------
+#   
+#   .nm@terms <- lapply(l,.term)
+#   x <- s[['method']]
+#   if (!is.null(x)) {
+#     w <- unlist(.sdmMethods$getMethodNames(alt = TRUE))
+#     names(w) <- NULL
+#     
+#     if (length(x) > 1) {
+#       if (x[[1]] == 'c') {
+#         x <- tolower(as.character(x[-1]))
+#         if (!all(x %in% w)) {
+#           if (!any(x %in% w)) .nm@method <- NULL
+#           else .nm@method <- x[x %in% w]
+#         } else .nm@method <- x
+#       }
+#     } else {
+#       x <- tolower(as.character(x))
+#       if (!x %in% w) .nm@method <- NULL
+#       else .nm@method <- x
+#     }
+#   }
+#   
+#   #----
+#   x <- s[['setting']]
+#   if (!is.null(x)) {
+#     if (length(x) > 1) {
+#       if (x[[1]] == 'c') x[1] <- call('list')
+#       
+#       .nm@setting <- eval(x)
+#     }
+#   }
+#   #-------
+#   
+#   x <- s[['output']]
+#   if (!is.null(x)) {
+#     if (length(x) == 1) {
+#       
+#       x <- tolower(as.character(x))
+#       x <- .pmatch(x,c('prediction','residual'))
+#       if (!is.na(x)) .nm@output <- x
+#     } else .nm@output <- 'prediction'
+#   } else .nm@output <- 'prediction'
+#   #-------
+#   .nm
+# }
+#----
+.nested_terms <- function(x) {
+  .nm <- new('.nestedModel',term=x)
+  #--------
+  a <- c('formula','method','setting','output')
+  s <- list()
+  n <- names(x[-1])
+  if (length(n) > 0) {
+    for (i in seq_along(n)) {
+      if (n[i] != '') {
+        .w <- .pmatch(tolower(n[i]),a)
+        if (!is.na(.w)) n[i] <- .w
+      }
+    }
+  } else n <- rep('',length(x[-1]))
+  
+  if (length(n[n != '']) > 0 && !all(n[n != ''] %in% a)) stop('some arguments in the formula:model (m) function is unknown!')
+  if (length(x) > 5) stop('the arguments in the formula:model (m) function are not match!')
+  for (i in 1:length(n)) {
+    if (n[i] != '') s[[n[i]]] <- x[[i+1]]
+    else s[[a[i]]] <- x[[i+1]]
+  }
+  x <- s[['formula']]
+  
   if (length(x) > 1) {
     if (x[[1]] == '~') {
       if (length(x) == 3) {
         x <- .fixFormula(x)
-        l <- .split.formula(x[[3]],'+')
+        l <- all.vars(x[[3]])
+        #l <- .split.formula(x[[3]],'+')
         if (length(.split.formula(x[[2]],'+')) > 1) stop('nested formula in the rhs, cannot be multi-response!')
-        n@response <- as.character(x[[2]])
-      } else l <- .split.formula(x[[2]],'+')
-    } else l <- .split.formula(x,'+')
+        .nm@response <- as.character(x[[2]])
+      } else l <- all.vars(x[[2]])
+    } else l <- all.vars(x)
   } else l <- list(x)
-  n@terms <- lapply(l,.term)
+  #----------
+  
+  .nm@predictors <- l
+  x <- s[['method']]
+  if (!is.null(x)) {
+    w <- unlist(.sdmMethods$getMethodNames(alt = TRUE))
+    names(w) <- NULL
+    
+    if (length(x) > 1) {
+      if (x[[1]] == 'c') {
+        x <- tolower(as.character(x[-1]))
+        if (!all(x %in% w)) {
+          if (!any(x %in% w)) .nm@method <- NULL
+          else .nm@method <- x[x %in% w]
+        } else .nm@method <- x
+      }
+    } else {
+      x <- tolower(as.character(x))
+      if (!x %in% w) .nm@method <- NULL
+      else .nm@method <- x
+    }
+  }
+  
+  #----
+  x <- s[['setting']]
+  if (!is.null(x)) {
+    if (length(x) > 1) {
+      if (x[[1]] == 'c') x[1] <- call('list')
+      
+      .nm@setting <- eval(x)
+    }
+  }
+  #-------
+  
+  x <- s[['output']]
+  if (!is.null(x)) {
+    if (length(x) == 1) {
+      
+      x <- tolower(as.character(x))
+      x <- .pmatch(x,c('prediction','residual'))
+      if (!is.na(x)) .nm@output <- x
+    } else .nm@output <- 'prediction'
+  } else .nm@output <- 'prediction'
+  #-------
+  .nm
+}
+#----------
+#----------
+.exPCA <- function(x) {
+  a <- c('formula','n')
+  #-----
+  s <- list()
+  if (length(x) == 1) {
+    .pc <- new('.pcaSetting',vars='.',n=3,term=x)
+  } else {
+    .n <- names(x)
+    if (length(.n) > 0) {
+      for (i in seq_along(.n)) {
+        if (.n[i] != '') {
+          .w <- .pmatch(tolower(.n[i]),a)
+          if (!is.na(.w)) .n[i] <- .w
+        }
+      }
+    } else .n <- rep('',length(x))
+    
+    if (length(.n[.n != '']) > 0 && !all(.n[.n != ''] %in% a)) stop('some arguments in pca function is unknown!')
+    
+    if (length(x) > 3) stop('the arguments in the pca function are not match!')
+    
+    for (i in 2:length(.n)) {
+      if (.n[i] != '') s[[.n[i]]] <- x[[i]]
+      else s[[a[i-1]]] <- x[[i]]
+    }
+    
+    if (length(s[['formula']]) > 1) {
+      if (s[['formula']][[1]] != '+') stop('something in `pca` is wrong; pca(var1+var2+var3,n=3); pca(.,n="90%"); pca(.,n="auto"); pca(.,n=3)')
+      else {
+        l <- .split.formula(s[['formula']],'+')
+        if (any(unlist(lapply(l,function(x) {length(x) > 1})))) stop('something wrong with pca; example: pca(var1+var2+var3,n=3); pca(.,n="90%"); pca(.,n="auto"); pca(.,n=3)')
+      }
+    } else l <- list(s[['formula']])
+    
+    .pc <- new('.pcaSetting',term=x)
+    
+    if (!is.null(s[['n']])) .pc@n <- s[['n']]
+    else .pc@n <- 3
+    
+    if (any(as.character(l) %in% c("NULL","."))) .pc@vars <- '.'
+    else .pc@vars <- as.character(l)
+  }
+  .pc
+}
+#--------
+.exScale <- function(x) {
+  a <- c('formula','method')
+  s <- list()
+  if (length(x) == 1) {
+    n <- new('.scaleSetting',vars='.',method="minmax")
+  } else {
+    n <- names(x)
+    if (length(n) > 0) {
+      for (i in seq_along(n)) {
+        if (n[i] != '') {
+          .w <- .pmatch(tolower(n[i]),a)
+          if (!is.na(.w)) n[i] <- .w
+        }
+      }
+    } else n <- rep('',length(x))
+    
+    if (length(n[n != '']) > 0 && !all(n[n != ''] %in% a)) stop('some arguments in the scale function is unknown!')
+    if (length(x) > 3) stop('the arguments in the scale function are not correct!')
+    for (i in 2:length(n)) {
+      if (n[i] != '') s[[n[i]]] <- x[[i]]
+      else s[[a[i-1]]] <- x[[i]]
+    }
+    
+    if (length(s[['formula']]) > 1) {
+      if (s[['formula']][[1]] != '+') stop('something in `scale` is wrong; example: scale(var1+var2+var3,method="minmax")...')
+      else {
+        l <- .split.formula(s[['formula']],'+')
+        if (any(unlist(lapply(l,function(x) {length(x) > 1})))) stop('something is wrong in the scale function in formula; example: scale(var1+var2+var3,method="minmax")')
+      }
+    } else l <- list(s[['formula']])
+    
+    n <- new('.scaleSetting',term=x)
+    
+    if (!is.null(s[['method']])) n@method <- s[['method']]
+    else n@method <- 'minmax'
+    if (any(as.character(l) %in% c("NULL","."))) n@vars <- '.'
+    else n@vars <- as.character(l)
+  }
+  n
+}
+#----
+
+.exInteraction <- function(x) {
+  a <- .sdmFormulaFuncs$getFuncs('int')$int@args
+  s <- list()
+  
+  n <- names(x)
+  if (length(n) > 0) {
+    for (i in seq_along(n)) {
+      if (n[i] != '') {
+        .w <- .pmatch(tolower(n[i]),a)
+        if (!is.na(.w)) n[i] <- .w
+      }
+    }
+  } else n <- rep('',length(x))
+  
+  if (length(n[n != '']) > 0 && !all(n[n != ''] %in% a)) stop('Some arguments in the interaction function in the formula is unknown!')
+  if (length(x) > 3) stop('Arguments in the interaction function in the formula are not correct!')
+  for (i in 2:length(n)) {
+    if (n[i] != '') s[[n[i]]] <- x[[i]]
+    else s[[a[i-1]]] <- x[[i]]
+  }
+  
+  if (length(s[['x']]) > 1) {
+    if (s[['x']][[1]] != '+') stop('something in `interaction` is wrong: Examples: int(., depth=2); int(x1 + x2 + x3, depth=3) !')
+    else {
+      l <- .split.formula(s[['x']],'+')
+      if (any(unlist(lapply(l,function(x) {length(x) > 1})))) stop('something wrong with scale; example: scale(var1+var2+var3,method="minmax")')
+    }
+  } else l <- list(s[['x']])
+  
+  n <- new('.interaction',term=x)
+  
+  if (!is.null(s[['depth']])) {
+    if (is.numeric(s[['depth']]) && s[['depth']] > 0) n@depth <- ceiling(s[['depth']])
+  } else n@depth <- 1
+  
+  if (any(as.character(l) %in% c("NULL","."))) n@x <- '.'
+  else n@x <- as.character(l)
   n
 }
 
@@ -378,13 +646,11 @@
     if (x == '.') return(new('.all.vars',names=as.character(x)))
     else return(new('.var',name=as.character(x)))
   } else if (length(x) > 1) {
-    if (x[[1]] == 'm') {
-      .nested_terms(x[[2]],output='.prediction')
-    } else if (x[[1]] == 'r') {
-      .nested_terms(x[[2]],output='.residual')
-    } else if (x[[1]] == 'select' || x[[1]] == 'se') {
+    if (as.character(x[[1]]) %in% c('m','M','mo','model','mod','MODEL','Model')) {
+      .nested_terms(x)
+    } else if (as.character(x[[1]]) %in% c('select','se','sel','SEL','SELECT','SE')) {
       .select.terms(x)
-    } else if (x[[1]] == 'coords' || any(!is.na(pmatch(c("co"),tolower(as.character(x[[1]])))))) {
+    } else if (as.character(x[[1]]) %in% c('coords','coord','coordinates','coordinate','xy','geom','coods','crds','crd','cords','cord') || any(!is.na(pmatch(c("co"),tolower(as.character(x[[1]])))))) {
       .exCoords(x)
     } else if (as.character(x[[1]]) %in% c('g','G','gr','group','Group','GROUP','GR','gro','grop','grp')) {
       .exGroup(x)
@@ -394,6 +660,12 @@
       .exInfo(x)
     } else if (as.character(x[[1]]) %in% c('*',':','product','p','P','Product','prod','Prod','pro','Pro')) {
       .exProduct(x)
+    } else if (as.character(x[[1]]) %in% c('scale','SCALE','sc')) {
+      .exScale(x)
+    } else if (as.character(x[[1]]) %in% c('int','INT','interaction','Int','in','In')) {
+      .exInteraction(x)
+    } else if (as.character(x[[1]]) %in% c('pca','PCA','prcomp','princomp')) {
+      .exPCA(x)
     } else .exFunc(x)
   }
 }
@@ -452,23 +724,25 @@
       if (length(n[n != ''] > 0) && !all(n[n != ''] %in% a)) stop(paste0('some arguments in function ',xx, ' is unknown!'))
       for (i in 1:length(n)) {
         if (n[i] != '') {
-          if (class(x[[i+1]]) == 'name') {
+          if (inherits(x[[i+1]],'name')) {
             slot(cls,n[i]) <- as.character(x[[i+1]])
           } else slot(cls,n[i]) <- x[[i+1]]
         } else {
-          if (class(x[[i+1]]) == 'name') slot(cls,a[i]) <- as.character(x[[i+1]])
+          if (inherits(x[[i+1]],'name')) slot(cls,a[i]) <- as.character(x[[i+1]])
           else slot(cls,a[i]) <- x[[i+1]]
         }
       }
     } else {
       for (i in 2:length(x)) {
-        if (class(x[[i]]) == 'name') slot(cls,a[i-1]) <- as.character(x[[i]])
+        if (inherits(x[[i]],'name')) slot(cls,a[i-1]) <- as.character(x[[i]])
         else slot(cls,a[i-1]) <- x[[i]]
       }
     }
   } else {
     if (exists(as.character(x[[1]]),mode='function')) {
       cls <- new('.simple.func')
+      cls@x <- x[[2]]
+      cls@varName <- all.vars(x)
     } else stop(paste(as.character(x[[1]]),'is not a known function!'))
   }
   
@@ -479,15 +753,15 @@
 .exProduct <- function(x) {
   cls <- new('.product')
   if (as.character(x[[1]]) %in% c('*',':')) {
-    cls@x <- as.character(.split.formula(x,as.character(x[[1]])))
+    cls@x <- unique(as.character(.split.formula(x,as.character(x[[1]]))))
   } else {
     if (length(x) == 2) {
       xx <- x[[2]]
-      cls@x <- as.character(.split.formula(xx,as.character(xx[[1]])))
+      cls@x <- unique(as.character(.split.formula(xx,as.character(xx[[1]]))))
     } else {
       xx <- c()
       for (i in 2:length(x)) xx <- c(xx,as.character(x[[i]]))
-      cls@x <- xx
+      cls@x <- unique(xx)
     }
   }
   
@@ -506,42 +780,42 @@
 
 
 #-------------
+
 .select.terms <- function(x) {
-  a <- c('formula','stat','n')
+  a <- c('formula','method','th')
   s <- list()
   n <- names(x)
   if (length(n) > 0) {
     for (i in seq_along(n)) {
       if (n[i] != '') {
-        if (any(!is.na(pmatch(c("n"),tolower(n[i]))))) n[i] <- 'n'
-        else if (any(!is.na(pmatch(c("st"),tolower(n[i]))))) n[i] <- 'stat'
+        .w <- .pmatch(tolower(n[i]),a)
+        if (!is.na(.w)) n[i] <- .w
       }
     }
   } else n <- rep('',length(x))
   
-  if (length(n[n != ''] > 0) && !all(n[n != ''] %in% a)) stop('some arguments in select function is unknown!')
-  if (length(x) > 4) stop('the arguments in select function are not match!')
+  if (length(n[n != '']) > 0 && !all(n[n != ''] %in% a)) stop('some arguments in select function is unknown!')
+  if (length(x) > 5) stop('the arguments in select function are not match!')
   for (i in 2:length(n)) {
     if (n[i] != '') s[[n[i]]] <- x[[i]]
     else s[[a[i-1]]] <- x[[i]]
   }
   
   if (length(s[['formula']]) > 1) {
-    if (s[['formula']][[1]] != '|' && s[['formula']][[1]] != 'select') stop('something in `select` is wrong, check the help to see how the select function in formula should be used...')
-    else {
-      l <- .split.formula(s[['formula']],'+')
-      if (any(unlist(lapply(l,function(x) {length(x) > 1})))) stop('something wrong with select; example: select(var1+var2+var3,stat="vifstep",n="auto"')
-    }
-  } else l <- list(s[['formula']])
+    l <- .split.formula.for.select(s[['formula']])
+    
+  } else l <- list(select=as.character(s[['formula']]))
   
-  n <- new('.selectFrame')
+  n <- new('.selectFrame',term=x)
   
-  if (!is.null(s[['n']])) n@n <- s[['n']]
-  if (!is.null(s[['stat']])) n@stat <- s[['stat']]
+  if (!is.null(s[['th']])) n@th <- s[['th']]
+  if (!is.null(s[['method']])) n@method <- s[['method']]
   
-  n@vars <- lapply(l,.term)
+  n@vars <- l$select
+  n@keep <- l$keep
   n
 }
+#----
 #--------
 .trim <- function(x) {
   x <- strsplit(x,'')[[1]]
@@ -554,9 +828,11 @@
 # .exFormula extract terms in formula and detect what each term is. it may be a model.term (including a
 # variable, a function, a nested model, etc.) or a data.term (including coordinates, select function, group, etc.)
 .exFormula <- function(f,data,detect=TRUE) {
-  nf <- nt <- ng <- nFact <- nsp <- ni <- NULL
+  
   f <- .fixFormula(f)
   v <- colnames(data)
+  
+  nFact <- nf <- ng <- ni <- nt <- nxy <- nsp <- NULL
   
   nall <- n <- all.vars(f)
   
@@ -606,13 +882,13 @@
   #f@vars <- nall
   
   
-  f@species <- as.character(lhs)
+  #f@species <- as.character(lhs)
   
   if (length(rhs) == 2) rhsi <- list(rhs)
   else rhsi <- .split.formula(rhs,'+')
   
-  nxy <- NULL
-  temp <- unlist(lapply(rhsi,function(x) as.character(x)[[1]] == 'coords'))
+  
+  temp <- unlist(lapply(rhsi,function(x) as.character(x)[[1]] %in% c('coords','coord','coordinates','coordinate','xy','geom','coods','crds','crd','cords','cord')))
   if (any(temp)) nxy <- as.character(.split.formula(rhsi[[which(temp)]][[2]],'+'))
   
   vars <- .excludeVector(nall,c(n,nxy,nFact))
@@ -637,10 +913,29 @@
   
   func.cls <- unlist(lapply(.sdmFormulaFuncs$funcNames,function(x) .sdmFormulaFuncs$funcs[[x]]@cls[[2]]))
   temp <- lapply(rhsi,.term)
-  w <- unlist(lapply(temp,class))
-  wt <- which(w %in% c('.var','.nestedModel',func.cls))
+  .fc <- unlist(lapply(temp,class)) # classes of the items in formula
+  #---
+  if ('.selectFrame' %in% .fc) {
+    if (!is.null(temp[[which(.fc == '.selectFrame')]]@keep)) {
+      w <- FALSE
+      for (.k in temp[[which(.fc == '.selectFrame')]]@keep) {
+        wt <- sapply(rhsi,function(x) x == as.name(.k))
+        if (!any(wt)) {
+          rhsi <- c(rhsi,as.name(.k))
+          w <- TRUE
+        }
+      }
+      if (w) {
+        temp <- lapply(rhsi,.term)
+        .fc <- unlist(lapply(temp,class)) # classes of the items in formula
+      }
+    }
+  }
+  #----
+  wt <- which(.fc %in% c('.var','.nestedModel',func.cls))
   if (length(wt) > 0) f@model.terms <- temp[wt]
-  wt <- which(w %in% c('.coord.vars','.grouping','.Info','.time'))
+  wt <- which(.fc %in% c('.coord.vars','.grouping','.Info','.time','.scaleSetting','.selectFrame','.pcaSetting'))
+  
   if (length(wt) > 0) {
     f@data.terms <- c(f@data.terms,temp[wt])
     w <- unlist(lapply(f@data.terms,class))
@@ -652,19 +947,46 @@
       nFact <- .excludeVector(nFact,ng)
     }
     #---
-    if ('.time' %in% w) {
-      wt <- f@data.terms[which(w == ".time")]
-      nt <- sapply(wt,function(x) as.character(x@terms[1]))
-      nf <- .excludeVector(nf,nt)
-      nFact <- .excludeVector(nFact,nt)
-    }
-    #---
     if ('.Info' %in% w) {
       wt <- f@data.terms[which(w == ".Info")]
       ni <- sapply(wt,function(x) as.character(x@names))
       nf <- .excludeVector(nf,ni)
       nFact <- .excludeVector(nFact,ni)
     }
+    #----
+    if ('.time' %in% w) {
+      wt <- f@data.terms[which(w == ".time")]
+      nt <- sapply(wt,function(x) as.character(x@terms[1]))
+      nf <- .excludeVector(nf,nt)
+      nFact <- .excludeVector(nFact,nt)
+    } else {
+      if (!is.null(nf)) nt <- nf[.where(.is.Date,data[,nf])]
+      if (length(nt) > 0) {
+        nf <- .excludeVector(nf,nt)
+        nt <- nt[1]
+        for (i in 1:length(f@model.terms)) {
+          if (inherits(f@model.terms[[i]], '.var') && f@model.terms[[i]]@name == nt ) {
+            f@model.terms <- f@model.terms[-i]
+            f@data.terms <- c(f@data.terms,.exTime(.split.formula(as.formula(paste('~time(',nt,')')))[[1]]))
+            break
+          }
+        }
+      } else nt <- NULL
+    }
+    #----
+  } else {
+    if (!is.null(nf)) nt <- nf[.where(.is.Date,data[,nf])]
+    if (length(nt) > 0) {
+      nf <- .excludeVector(nf,nt)
+      nt <- nt[1]
+      for (i in 1:length(f@model.terms)) {
+        if (inherits(f@model.terms[[i]], '.var') && f@model.terms[[i]]@name == nt ) {
+          f@model.terms <- f@model.terms[-i]
+          f@data.terms <- c(f@data.terms,.exTime(.split.formula(as.formula(paste('~time(',nt,')')))[[1]]))
+          break
+        }
+      }
+    } else nt <- NULL
   }
   #-----
   if (!is.null(f@model.terms)) {
@@ -682,19 +1004,56 @@
   }
   
   nf <- .excludeVector(nf,nFact)
-  #----
-  wt <- which(w %in% c('.selectFrame'))
-  if (length(wt) > 0) {
-    for (i in wt) {
-      if (temp[[i]]@stat %in% c('vif','pca')) f@data.terms <- c(f@data.terms,temp[wt])
-      else f@model.terms <- c(f@model.terms,temp[wt])
+  
+  if (!is.null(nf)) w1 <- .getDataParams(data,nf=nf)
+  else w1 <- NULL
+  if (!is.null(nFact)) w2 <- .getDataParams(data,nFact=nFact)
+  else w2 <- NULL
+  
+  if (any(!is.null(c(nxy,ng,ni,nt)))) {
+    #w3 <- data.frame(name='xxx',type='xxx',details='xxx')[0,]
+    w3 <- data.frame(name='xxx',type='xxx')[0,]
+    if (!is.null(nxy)) {
+      #w3 <- rbind(w3,data.frame(name=nxy,type=c('x_coordinate','y_coordinate'),details=c(paste('mean:',round(mean(data[,nxy[1]],na.rm=T),2)),paste('mean:',round(mean(data[,nxy[2]],na.rm=T),2)))))
+      w3 <- rbind(w3,data.frame(name=nxy,type=c('x_coordinate','y_coordinate')))
+    }
+    
+    if (!is.null(nt)) {
+      #w3 <- rbind(w3,data.frame(name=nt,type='Date/Time',details=paste0('range: ',paste(range(data[,nt]),collapse=':'))))
+      w3 <- rbind(w3,data.frame(name=nt,type='Date/Time'))
+    }
+    
+    if (!is.null(ng)) {
+      w3 <- rbind(w3,data.frame(name=ng,type=rep('group',length(ng))))
+    }
+    
+    if (!is.null(ni)) {
+      w3 <- rbind(w3,data.frame(name=ni,type=rep('Info',length(ni))))
+    }
+  } else w3 <- NULL
+  
+  f@vars <- new('.variables',names=c(nsp,nf,nFact,nxy,nt,ng,ni),
+                species=nsp,numeric=w1,categorical=w2,others=w3)
+  if (!is.null(w2)) {
+    nFact <- names(w2)
+    w <- which(sapply(f@model.terms,class) == '.factor')
+    if (length(w) > 0) {
+      w <- which(!nFact %in% sapply(f@model.terms[w],function(x) x@x))
+      if (length(w) > 0) {
+        for (i in w) {
+          f@model.terms <- c(f@model.terms,
+                             new('.factor',x=nFact[i],levels=w2[[nFact[i]]]$levels))
+        }
+      }
+    } else {
+      for (i in 1:length(nFact)) {
+        n <- nFact[i]
+        f@model.terms <- c(f@model.terms,
+                           new('.factor',x=n,levels=w2[[n]]$levels,term=.eval(paste0("call('f',substitute(",n,'))'),environment())))
+      }
     }
   }
-  #-----
-  #nall <- .excludeVector(nall,nxy)
   
-  
-  f@vars <- new('.variables',names=c(nf,nFact),params=.getDataParams(data,nf))
   f
 }
 #-----------

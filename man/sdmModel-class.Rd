@@ -20,6 +20,9 @@
 \alias{functionORcharacter-class}
 \alias{environmentORnull-class}
 \alias{expressionORnull-class}
+\alias{integerORnull-class}
+\alias{data.frameORmatrix-class}
+\alias{.pcaObject-class}
 
 \alias{show,sdmModels-method}
 
@@ -75,7 +78,7 @@ Slots for sdmModels objects:
 
 \url{https://www.r-gis.net/}
 
-\url{https://www.biogeoinformatics.org}
+\url{https://www.biogeoinformatics.org/}
 }
 
 

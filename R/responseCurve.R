@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date:  June 2018
-# Last update:  Oct. 2019
-# Version 1.2
+# Last update:  Jan 2024
+# Version 1.3
 # Licence GPL v3
 
 
@@ -14,7 +14,9 @@
 
 
 
-.responseCurve1 <- function(m,id,si=100,includeTest=FALSE) {
+.responseCurve1 <- function(m,id,si=100,includeTest=FALSE,.fun=mean) {
+  if (missing(.fun) || !is.function(.fun)) .fun <- mean
+  
   mi <- m@run.info[m@run.info$modelID == id,]
   if (nrow(mi) != 1) stop('the model with the specified id does not exist!')
   
@@ -28,13 +30,15 @@
   if (includeTest) dt <- as.data.frame(m@data,sp=sp)
   else dt <- as.data.frame(m@data,grp=c('train'),sp=sp)
   
-  nf <- m@setting@featuresFrame@vars
+  .wPr <- which(dt[,sp] == 1)
+  
+  nf <- m@setting@featureFrame@predictors
   
   rc@variables <- nf
   
   dt <- dt[,nf,drop=FALSE]
   
-  nFact <- m@data@factors
+  nFact <- names(m@setting@featureFrame@categorical)
   
   if (any(nFact %in% nf)) {
     nFact <- nFact[nFact %in% nf]
@@ -47,7 +51,7 @@
     dm <- data.frame(matrix(nrow=1,ncol=length(nf)+length(nFact)))
     colnames(dm) <- c(nf,nFact)
     
-    for (n in nf) dm[,n] <- mean(dt[,n],na.rm=TRUE)
+    for (n in nf) dm[,n] <- .fun(dt[.wPr,n],na.rm=TRUE)
     
     for (n in nFact) {
       u <- .factorFreq(dt[,n])
@@ -63,7 +67,7 @@
       for (i in seq_along(u)) {
         dv <- dm
         dv[,n] <- u[i]
-        p <- predict(m,newdata=dv,w=id)
+        p <- predict(m,newdata=dv,id=id)
         dc[i,1] <- u[i]
         dc[i,2] <- p[1,1]
       }
@@ -82,7 +86,7 @@
       for (n in nf) {
         dv <- dm
         dv[,n] <- seq(min(dt[,n],na.rm=TRUE),max(dt[,n],na.rm=TRUE),length.out = si)
-        p <- predict(m,newdata=dv,w=id)
+        p <- predict(m,newdata=dv,id=id)
         rc@response[[n]] <- data.frame(dv[,n],p[,1])
         colnames(rc@response[[n]]) <- c(n,'Response')
       }
@@ -91,12 +95,12 @@
     dm <- data.frame(matrix(nrow=si,ncol=length(nf)))
     colnames(dm) <- nf
     
-    for (n in nf) dm[,n] <- mean(dt[,n],na.rm=TRUE)
+    for (n in nf) dm[,n] <- .fun(dt[.wPr,n],na.rm=TRUE)
     
     for (n in nf) {
       dv <- dm
       dv[,n] <- seq(min(dt[,n],na.rm=TRUE),max(dt[,n],na.rm=TRUE),length.out = si)
-      p <- predict(m,newdata=dv,w=id)
+      p <- predict(m,newdata=dv,id=id)
       rc@response[[n]] <- data.frame(dv[,n],p[,1])
       colnames(rc@response[[n]]) <- c(n,'Response')
     }
@@ -107,11 +111,21 @@
 #-----------
 
 
-.responseCurve <- function(m,id,si=100,includeTest=FALSE) {
+.responseCurve <- function(m,id,si=100,includeTest=FALSE,.fun=mean) {
+  if (missing(.fun) || !is.function(.fun)) .fun <- mean
   
   mi <- m@run.info[m@run.info$modelID %in% id,]
   
   mi <- mi[mi$success,]
+  
+  sp <- unique(as.character(mi$species))
+  
+  if (length(sp) > 1) {
+    warning('More than one species exists in the model object; only first species is considered!')
+    sp <- sp[1]
+    mi <- mi[mi$species == sp,]
+    id <-mi$modelID
+  }
   
   na <- paste0(mi$method,'_ID-',mi$modelID)
   #--------
@@ -119,19 +133,20 @@
   
   rc@multi <- nrow(mi) > 1
   
-  sp <- as.character(mi$species)
   
   
   if (includeTest) dt <- as.data.frame(m@data,sp=sp)
   else dt <- as.data.frame(m@data,grp=c('train'),sp=sp)
   
-  nf <- m@setting@featuresFrame@vars
+  .wPr <- which(dt[,sp] == 1)
+  
+  nf <- m@setting@featureFrame@predictors
   
   rc@variables <- nf
   
   dt <- dt[,nf,drop=FALSE]
   
-  nFact <- m@data@factors
+  nFact <- names(m@setting@featureFrame@categorical)
   
   if (any(nFact %in% nf)) {
     nFact <- nFact[nFact %in% nf]
@@ -144,7 +159,7 @@
     dm <- data.frame(matrix(nrow=1,ncol=length(nf)+length(nFact)))
     colnames(dm) <- c(nf,nFact)
     
-    for (n in nf) dm[,n] <- mean(dt[,n],na.rm=TRUE)
+    for (n in nf) dm[,n] <- .fun(dt[.wPr,n],na.rm=TRUE)
     
     for (n in nFact) {
       u <- .factorFreq(dt[,n])
@@ -161,7 +176,7 @@
       for (i in seq_along(u)) {
         dv <- dm
         dv[,n] <- u[i]
-        p <- predict(m,newdata=dv,w=mi$modelID)
+        p <- predict(m,newdata=dv,id=mi$modelID)
         dc[i,1] <- u[i]
         for (j in 2:ncol(dc)) dc[i,j] <- p[1,(j-1)]
       }
@@ -183,7 +198,7 @@
         dv[,n] <- seq(min(dt[,n],na.rm=TRUE),max(dt[,n],na.rm=TRUE),length.out = si)
         dc <- data.frame(matrix(nrow=si,ncol=1+nrow(mi)))
         dc[,1] <- dv[,n]
-        p <- predict(m,newdata=dv,w=mi$modelID)
+        p <- predict(m,newdata=dv,id=mi$modelID)
         for (j in 2:ncol(dc)) dc[,j] <- p[,(j-1)]
         
         rc@response[[n]] <- dc
@@ -194,7 +209,7 @@
     dm <- data.frame(matrix(nrow=si,ncol=length(nf)))
     colnames(dm) <- nf
     
-    for (n in nf) dm[,n] <- mean(dt[,n],na.rm=TRUE)
+    for (n in nf) dm[,n] <- .fun(dt[,n],na.rm=TRUE)
     
     for (n in nf) {
       dv <- dm
@@ -202,7 +217,7 @@
       dc <- data.frame(matrix(nrow=si,ncol=1+nrow(mi)))
       dc[,1] <- dv[,n]
       for (j in seq_along(mi$modelID)) {
-        p <- predict(m,newdata=dv,w=mi$modelID[j])
+        p <- predict(m,newdata=dv,id=mi$modelID[j])
         dc[,(j+1)] <- p[,1]
       }
       
@@ -223,7 +238,24 @@ if (!isGeneric("getResponseCurve")) {
 
 
 setMethod("getResponseCurve", signature(x='sdmModels'),
-          function(x,id,size=100,includeTest=FALSE,...) {
+          function(x,id,size=100,includeTest=FALSE,fun='mean',...) {
+            if (missing(fun)) fun <- mean
+            else {
+              if (is.character(fun)) {
+                fun <- fun[1]
+                if (fun == 'mean') fun <- mean
+                else if (fun == 'median') fun <- median
+                else if (fun == 'max') fun <- max
+                else if (fun == 'min') fun <- min
+                else {
+                  warning('fun should be one of c("mean","median","max","min") or a function (default="mean" is considered)!')
+                  fun <- mean
+                }
+              } else if (!is.function(fun)) {
+                warning('fun should be one of c("mean","median","max","min") or a function (default="mean" is considered)!')
+                fun <- mean
+              }
+            }
             
             if (missing(id)) {
               id <- x@run.info[which(x@run.info$success),1]
@@ -236,20 +268,37 @@ setMethod("getResponseCurve", signature(x='sdmModels'),
             
             if (missing(includeTest)) includeTest <- FALSE
             
-            .responseCurve(x,id=id,si=size,includeTest=includeTest)
+            .responseCurve(x,id=id,si=size,includeTest=includeTest,.fun=fun)
           }
 )
 
 
 if (!isGeneric("rcurve")) {
-  setGeneric("rcurve", function(x,n,id,mean,confidence,gg,...)
+  setGeneric("rcurve", function(x,n,id,mean,fun,confidence,gg,...)
     standardGeneric("rcurve"))
 }  
 
 
 setMethod("rcurve", signature(x='sdmModels'),
-          function(x,n,id,mean,confidence,gg,size,includeTest,...) {
+          function(x,n,id,mean,fun,confidence,gg,size,includeTest,...) {
             
+            if (missing(fun)) fun <- mean
+            else {
+              if (is.character(fun)) {
+                fun <- fun[1]
+                if (fun == 'mean') fun <- mean
+                else if (fun == 'median') fun <- median
+                else if (fun == 'max') fun <- max
+                else if (fun == 'min') fun <- min
+                else {
+                  warning('fun should be one of c("mean","median","max","min") or a function (default="mean" is considered)!')
+                  fun <- mean
+                }
+              } else if (!is.function(fun)) {
+                warning('fun should be one of c("mean","median","max","min") or a function (default="mean" is considered)!')
+                fun <- mean
+              }
+            }
             # if (missing(id)) {
             #   id <- x@run.info[which(x@run.info$success)[1],1]
             #   if (length(which(x@run.info$success)) > 1) cat(paste0('The id is missing; the first successfully fitted model is considered, i.e., id = ',id,'\n'))
@@ -284,7 +333,7 @@ setMethod("rcurve", signature(x='sdmModels'),
             
             if (missing(n)) n <- NULL
             
-            rc <- .responseCurve(x,id=id,si=size,includeTest=includeTest)
+            rc <- .responseCurve(x,id=id,si=size,includeTest=includeTest,.fun=fun)
             
             plot(rc,y=n,gg=gg,mean=mean,confidence=confidence,...)
           }
@@ -293,7 +342,8 @@ setMethod("rcurve", signature(x='sdmModels'),
 
 
 setMethod("rcurve", signature(x='.responseCurve'),
-          function(x,n,id,mean=TRUE,confidence=TRUE,gg=TRUE,...) {
+          function(x,n,id,mean=TRUE,fun,confidence=TRUE,gg=TRUE,...) {
+            if (missing(fun)) fun <- NULL
             
             if (missing(gg)) gg <- .require('ggplot2')
             else if (gg && !.require('ggplot2')) gg <- FALSE

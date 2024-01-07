@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Oct. 2021
-# Version 2.0
+# Date (last update):  Jan 2024
+# Version 2.5
 # Licence GPL v3
 
 setMethod ('show' , 'sdmdata',
@@ -43,10 +43,12 @@ setMethod ('show' , '.sdmCorSetting',
              cat('class                                 :' , class(object), '\n')
              cat('========================================================','\n')
              cat('modelling methods                     : ' , paste(object@methods,collapse=', '), '\n')
-             sn <- object@sdmFormula@species
-             cat('species names                         : ' , if (length(sn) > 3) paste(length(sn),'species including:',paste(c(sn,'...'),collapse=', ')) else paste(sn,collapse=', '), '\n')
-             cat('feature names                         : ' , if (length(object@sdmFormula@vars@names) > 3) paste(length(object@sdmFormula@vars@names),'variables including:',paste(c(object@sdmFormula@vars@names[1:3],'...'),collapse=', ')) else paste(object@sdmFormula@vars@names,collapse=', '), '\n')
-             cat('feature types                         : ' , paste(unique(unlist(lapply(object@featuresFrame@feature.types,function(x) x@type))),collapse=', '), '\n')
+             sn <- object@sdmFormula@vars@species
+             vn <- object@sdmFormula@vars@names
+             vn <- .excludeVector(vn,sn)
+             cat('species names                         : ' , if (length(sn) > 4) paste0(paste(c(sn[1:4],'...'),collapse=', '),' (',length(sn),' species)') else paste(sn,collapse=', '), '\n')
+             cat('predictor names                       : ' , if (length(vn) > 4) paste0(paste(c(vn[1:4],'...'),collapse=', '),' (',length(vn),' variables)') else paste(vn,collapse=', '), '\n')
+             #cat('feature types                         : ' , paste(unique(unlist(lapply(object@featureFrame@feature.types,function(x) x@type))),collapse=', '), '\n')
              if (!is.null(object@replicate)) {
                r.n <- length(object@replicate)
                r <- object@n.replicates
@@ -165,17 +167,25 @@ setMethod ('show' , 'sdmModels',
              } 
              
              cat('-------------------------------------------------------------------------------\n')
-             p <- function(x,sp) {
+             p <- function(x,sp,s1=c('AUC','COR','Deviance'),s2='TSS') {
                a <- c()
                w1 <- mi$species == sp
                w2 <- mi$method == x
                id <- mi$modelID[w1 & w2 & mi$success]
                if (length(id) > 0) {
-                 o <- ._getPerformance(object,id,wtest = NULL,s1=c('AUC','COR','Deviance'),s2='TSS',opt = 2)
-                 a <- mean(sapply(o,function(x) x$AUC),na.rm=TRUE)
-                 a <- c(a,mean(sapply(o,function(x) x$COR),na.rm=TRUE))
-                 a <- c(a,mean(sapply(o,function(x) x$TSS),na.rm=TRUE))
-                 a <- c(a,mean(sapply(o,function(x) x$Deviance),na.rm=TRUE))
+                 o <- ._getPerformance(object,id,wtest = NULL,s1=s1,s2=s2,opt = 2)
+                 if (is.null(s2)) {
+                   a <- mean(sapply(o,function(x) x[[s1[1]]]),na.rm=TRUE)
+                   a <- c(a,mean(sapply(o,function(x) x[[s1[2]]]),na.rm=TRUE))
+                   a <- c(a,mean(sapply(o,function(x) x[[s1[3]]]),na.rm=TRUE))
+                   a <- c(a,mean(sapply(o,function(x) x[[s1[4]]]),na.rm=TRUE))
+                 } else {
+                   a <- mean(sapply(o,function(x) x[[s1[1]]]),na.rm=TRUE)
+                   a <- c(a,mean(sapply(o,function(x) x[[s1[2]]]),na.rm=TRUE))
+                   a <- c(a,mean(sapply(o,function(x) x[[s2[1]]]),na.rm=TRUE))
+                   a <- c(a,mean(sapply(o,function(x) x[[s1[3]]]),na.rm=TRUE))
+                 }
+                 
                  a <- round(a,2)
                  a <- as.character(a)
                } else a <- as.character(c(NA,NA,NA,NA))
@@ -184,17 +194,32 @@ setMethod ('show' , 'sdmModels',
                paste(b,collapse='|     ')
              }
              
-             for (spp in sp) {
-               
-               cat('\n ## species   : ',spp,'\n')
-               cat('=========================\n\n')
-               if (lb > 10) cat(paste('methods',paste(rep(' ',(lb/3+1)),collapse=''),' : ',paste(rep(' ',lb/3),collapse=''),sep='')  , paste(c('AUC','COR','TSS','Deviance'),collapse='     |     '), '\n')
-               else cat(paste('methods',paste(rep(' ',3),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , paste(c('AUC','COR','TSS','Deviance'),collapse='     |     '), '\n')
-               cat('-------------------------------------------------------------------------\n')
-               for (i in seq_along(mo)) {
-                 cat(paste(mo[i],paste(rep(' ',lb - length(unlist(strsplit(mo[i],'')))),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , p(mo[i],spp), '\n')
+             if (object@setting@distribution[1] == 'binomial') {
+               for (spp in sp) {
+                 
+                 cat('\n ## species   : ',spp,'\n')
+                 cat('=========================\n\n')
+                 if (lb > 10) cat(paste('methods',paste(rep(' ',(lb/3+1)),collapse=''),' : ',paste(rep(' ',lb/3),collapse=''),sep='')  , paste(c('AUC','COR','TSS','Deviance'),collapse='     |     '), '\n')
+                 else cat(paste('methods',paste(rep(' ',3),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , paste(c('AUC','COR','TSS','Deviance'),collapse='     |     '), '\n')
+                 cat('-------------------------------------------------------------------------\n')
+                 for (i in seq_along(mo)) {
+                   cat(paste(mo[i],paste(rep(' ',lb - length(unlist(strsplit(mo[i],'')))),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , p(mo[i],spp), '\n')
+                 }
+               }
+             } else {
+               for (spp in sp) {
+                 
+                 cat('\n ## species   : ',spp,'\n')
+                 cat('=========================\n\n')
+                 if (lb > 10) cat(paste('methods',paste(rep(' ',(lb/3+1)),collapse=''),' : ',paste(rep(' ',lb/3),collapse=''),sep='')  , paste(c('RMSE','COR','MAE','Deviance'),collapse='     |     '), '\n')
+                 else cat(paste('methods',paste(rep(' ',3),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , paste(c('RMSE','COR','MAE','Deviance'),collapse='     |     '), '\n')
+                 cat('-------------------------------------------------------------------------\n')
+                 for (i in seq_along(mo)) {
+                   cat(paste(mo[i],paste(rep(' ',lb - length(unlist(strsplit(mo[i],'')))),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , p(mo[i],spp,s1=c('RMSE','COR','MAE','Deviance'),s2=NULL), '\n')
+                 }
                }
              }
+             
            }
 )
 
@@ -323,6 +348,67 @@ setMethod ('show' , '.varImportance',
              
            }
 )
+#------
 
+setMethod ('show' , '.pcaObject',
+           function ( object ) {
+             cat('class                                 :' , class(object), '\n')
+             cat('===========================================================','\n')
+             cat('number of components                  : ' , ncol(object@pcaObject$scores) , '\n')
+             .vi <- object@pcaObject$sdev * object@pcaObject$sdev
+             .vi <- .vi / sum(.vi)
+             names(.vi) <- colnames(object@pcaObject$scores)
+             
+             .load <- object@pcaObject$loadings
+             
+             
+             cat('----------------------------------------------','\n')
+             cat('Proportion of Variance: \n\n')
+             #cat('Proportion of Variance                : ' , if (length(.vi) > 4) paste(c(round(.vi[1:4],3),'...'),collapse=', ') else paste(round(.vi,3),collapse=', ') , '\n')
+             for (n in names(.vi)) {
+               .ns <- unlist(strsplit(n,''))
+               v <- round(.vi[n]*50)
+               vp <- round(.vi[n]*100,1) 
+               xx <- c(.ns,rep(' ',10 - length(.ns)), ': ',rep('*',v))
+               xx <- c(xx,' (',vp,' %)')
+               cat(paste(xx,collapse=''),'\n')
+             }
+             cat('-----------------------------------------------','\n')
+             
+             .vic <- cumsum(.vi)
+             .nc <- 1 - (1 / length(.vi))
+             .nv <- which(.vic >= .nc)[1]
+             .nc <- round(.nc,2)*100
+             
+             cat("nr of comp. explain more than one variable's worth of information (1 - [1 / N] =>",.nc,'%):' , .nv, '\n')
+             cat('-----------------------------------------------','\n')
+             cat('loadings:\n\n')
+             if (.nv < 3) {
+               .l1 <- abs(.load[,1])
+               .l2 <- abs(.load[,2])
+               cat(' -- The most important variables contributing to the first 2 components:\n')
+               
+               cat('            ---> ' , paste(c(names(.l1)[which.max(.l1)],names(.l2)[which.max(.l2)]),collapse=', ') , '\n')
+             } else {
+               .l1 <- abs(.load[,1])
+               .l2 <- abs(.load[,2])
+               .l3 <- abs(.load[,3])
+               
+               cat(' -- The most important variables contributing to the first 3 components:\n')
+               cat('            ---> ' , paste(c(names(.l1)[which.max(.l1)],names(.l2)[which.max(.l2)],names(.l3)[which.max(.l3)]),collapse=', ') , '\n')
+             }
+             #----
+             
+             for (i in 1:.nv) {
+               #cat('------------ \n')
+               cat(paste0(' -- Important variables contributing to PC',i),':\n')
+               .l1 <- abs(.load[,i])
+               .l1 <- sort(.l1,decreasing = TRUE)[1]
+               cat('            ---> ' , paste(paste0(names(.l1),' (',round(.l1,3),')'),collapse=', ') , '\n')
+             }
+             cat('----------------------------------------------','\n')
+           }
+)
+#-----------
 
 

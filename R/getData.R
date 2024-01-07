@@ -1,3 +1,8 @@
+# Author: Babak Naimi, naimi.b@gmail.com
+# Date (last update):  January 2024
+# Version 1.2
+# Licence GPL v3
+#--------
 
 .getFeatureRecords <- function(d,ind=NULL,n=NULL) {
   if (is.null(ind)) ind <- .getIndex(d)
@@ -86,8 +91,23 @@ setAs('sdmdata', 'data.frame',
 setAs('sdmdata', 'SpatialPointsDataFrame',
       function(from) {
         if (!is.null(from@info) && !is.null(from@info@coords)) {
-          SpatialPointsDataFrame(coords=coordinates(from),data=as.data.frame(from),
+          SpatialPointsDataFrame(coords=coords(from),data=as.data.frame(from),
                                  proj4string = if (is.null(from@info@crs)) CRS(as.character(NA)) else from@info@crs)
         }
       }
 )
+#-------
+#-------
+setAs('sdmdata', 'SpatVector',
+      function(from) {
+        if (!is.null(from@info) && !is.null(from@info@coords)) {
+          .df <- as.data.frame(from)
+          .xy <- from@info@coords
+          .df <- merge(.df,.xy,by="rID")
+          if (is.null(from@info@crs) || !is.character(from@info@crs) || from@info@crs == "") .crs <- ""
+          else .crs <- from@info@crs
+          vect(.df,geom=colnames(.xy)[-1],crs=.crs)
+        } else stop('the sdmdata object has no spatial coordinates records...!')
+      }
+)
+#----

@@ -14,7 +14,7 @@ Calculate the response of species to the range of values in each predictor varia
 }
 
 \usage{
-rcurve(x,n,id,mean,confidence,gg,...)
+rcurve(x,n,id,mean,fun,confidence,gg,...)
      
 getResponseCurve(x,id,...)
 }
@@ -24,6 +24,7 @@ getResponseCurve(x,id,...)
   \item{id}{specifies the modelIDs corresponding to the models in the sdmModels object for which the response curves should be generated}
   \item{n}{A vector with the name of variables for which the response curve should be generated}
   \item{mean}{logical, specifies whether a mean should be calculated over responses to a variable when multiple models are specified in ids}
+  \item{fun}{character or function, (default="mean") specifies what function should be used to calculate the value of the variables over the presence locations (except the variable of interest)}
   \item{confidence}{logical, specifies whether a confidence interval should be added to the curve when the mean response curve is calculated based on multiple models}
   \item{gg}{logical, specifies whether the plot should be generated using the ggplot2 package (if the package is installed)}
   \item{...}{additional arguments passed to plot function}
@@ -58,7 +59,7 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 \url{https://www.r-gis.net/}
 
-\url{https://www.biogeoinformatics.org}
+\url{https://www.biogeoinformatics.org/}
 }
 
 

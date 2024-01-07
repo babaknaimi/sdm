@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Dec. 2020
-# Version 1.5
+# Date (last update):  Feb. 2024
+# Version 1.9
 # Licence GPL v3
 #--------
 
@@ -212,9 +212,9 @@
 .cor <- function(o,p,method='pearson') {
   co <- try(cor(p, o, method=method), silent = TRUE)
   co.t <- try(cor.test(p, o, method=method), silent = TRUE)
-  if (class(co) != "try-error") {
+  if (!inherits(co,"try-error")) {
     co <- round(co,3)
-    if (class(co.t) != "try-error") return(c(cor=co,p.value=co.t$p.value))
+    if (!inherits(co.t,"try-error")) return(c(cor=co,p.value=co.t$p.value))
     else return(co)
   } else return(as.numeric(NA))
 }
@@ -310,22 +310,41 @@ setMethod('evaluates', signature(x='vector',p='vector'),
     wtest <- .pmatch(wtest,c('training','test.dep','test.indep'))[1]
     if (is.na(wtest)) wtest <- colnames(mi)[9:7][which(as.matrix(mi[1,c(9,8,7)]))[1]]
   }
-  s1 <- c('AUC','COR','Deviance','obs.prevalence')
   
-  s2 <- c('threshold','sensitivity','specificity','TSS','Kappa','NMI','phi','ppv','npv','ccr','prevalence')
+  .dist <- x@setting@distribution[1]
+  
+  
+  if (.dist == 'binomial') {
+    s1 <- c('AUC','COR','Deviance','obs.prevalence')
+    
+    s2 <- c('threshold','sensitivity','specificity','TSS','Kappa','NMI','phi','ppv','npv','ccr','prevalence')
+    
+  } else {
+    s1 <- c('RMSE','COR','MAE','Deviance')
+    
+    s2 <- NULL
+  }
+  
+  
   
   
   if (!is.null(stat)) {
     stat <- .pmatch(stat,c(s1,s2))
     stat <- stat[!is.na(stat)]
     if (length(stat) == 0) stat <- c('AUC','COR','Deviance','TSS')
-  } else stat <- c('AUC','COR','Deviance','TSS')
+  } else {
+    if (.dist == 'binomial') stat <- c('AUC','COR','Deviance','TSS')
+    else stat <- c('RMSE','COR','MAE','Deviance')
+  }
   
   s1 <- stat[stat %in% s1]
-  s2 <- stat[stat %in% s2]
   if (length(s1) == 0) s1 <- NULL
   else if ('obs.prevalence' %in% s1) s1[s1 == 'obs.prevalence'] <- 'Prevalence'
-  if (length(s2) == 0) s2 <- NULL
+  
+  if (!is.null(s2)) {
+    s2 <- stat[stat %in% s2]
+    if (length(s2) == 0) s2 <- NULL
+  }
   
   th.criteria <- c("sp=se","max(se+sp)","min(cost)","minROCdist","max(kappa)","max(ppv+npv)","ppv=npv","max(NMI)","max(ccr)","prevalence")
   if (!is.null(opt)) {
@@ -443,21 +462,26 @@ setMethod('evaluates', signature(x='vector',p='vector'),
 
 #--------
 if (!isGeneric("getEvaluation")) {
-  setGeneric("getEvaluation", function(x,w,wtest,stat,opt,...)
+  setGeneric("getEvaluation", function(x,id,wtest,stat,opt,...)
     standardGeneric("getEvaluation"))
 }  
 
 setMethod('getEvaluation', signature(x='sdmModels'),
-          function(x, w, wtest,stat,opt,...) {
-            if (missing(w)) w <- NULL
+          function(x, id, wtest,stat,opt,...) {
+            .dist <- x@setting@distribution[1]
+            
+            if (missing(id)) id <- NULL
             if (missing(wtest)) wtest <- NULL
-            if (missing(stat)) stat <-c('AUC','COR','Deviance','TSS')
+            if (missing(stat)) {
+              if (.dist == 'binomial') stat <-c('AUC','COR','Deviance','TSS')
+              else stat <- c('RMSE','COR','MAE','Deviance')
+            }
             if (missing(opt)) opt <- 2
             
-            if (!is.null(w) && length(w) == 1 && all(stat %in% 1:2)) {
-              .getEvalTable(x,id = w,wtest=wtest,stat=stat)
+            if (!is.null(id) && length(id) == 1 && all(stat %in% 1:2)) {
+              .getEvalTable(x,id = id,wtest=wtest,stat=stat)
             } else {
-              e <- .extractEvaluation(x,id=w,wtest=wtest,stat=stat,opt=opt)
+              e <- .extractEvaluation(x,id=id,wtest=wtest,stat=stat,opt=opt)
               if (length(e) > 0) {
                 stat <- names(e[[1]])
                 o <- data.frame(matrix(ncol=length(stat)+1,nrow=length(e)))
@@ -476,7 +500,12 @@ setMethod('evaluates', signature(x='sdmdata',p='RasterLayer'),
           function(x, p,distribution,wtest=NULL,...) {
             if (is.null(x@info) || is.null(x@info@coords)) stop('sdmdata object does not contain spatial coordintes!')
             
-            if (missing(distribution)) distribution <- NULL
+            if (missing(distribution)) {
+              if (x@species[[1]]@type %in% c('Abundance')) distribution <- 'poisson'
+              else if (x@species[[1]]@type %in% c('Numerical')) distribution <- 'gaussian'
+              else if (x@species[[1]]@type %in% c('Presence-Absence','Presence-Background')) distribution <- 'binomial'
+              else distribution <- NULL
+            }
             if (missing(wtest)) wtest <- NULL
             
             if ('test' %in% .getGroupNames(x,levels=TRUE)) {
@@ -499,7 +528,46 @@ setMethod('evaluates', signature(x='sdmdata',p='RasterLayer'),
             } else spn <- x@species.names
             
             o <- d[,spn]
-            p <- extract(p,d[,colnames(coordinates(x))])
+            p <- extract(p,d[,colnames(coords(x))])
+            
+            evaluates(o, p, distribution = distribution)
+          }
+)
+#----
+setMethod('evaluates', signature(x='sdmdata',p='SpatRaster'),
+          function(x, p,distribution,wtest=NULL,...) {
+            if (is.null(x@info) || is.null(x@info@coords)) stop('sdmdata object does not contain spatial coordintes!')
+            
+            if (missing(distribution)) {
+              if (x@species[[1]]@type %in% c('Abundance')) distribution <- 'poisson'
+              else if (x@species[[1]]@type %in% c('Numerical')) distribution <- 'gaussian'
+              else if (x@species[[1]]@type %in% c('Presence-Absence','Presence-Background')) distribution <- 'binomial'
+              else distribution <- NULL
+            }
+            
+            if (missing(wtest)) wtest <- NULL
+            
+            if ('test' %in% .getGroupNames(x,levels=TRUE)) {
+              if (!is.null(wtest)) {
+                if (wtest %in% c('test','test.indep','test.dep')) d <- .getDataFrame(x,grp='test',...)
+                else if (wtest %in% c('train','training')) d <- .getDataFrame(x,grp='train',...)
+                else {
+                  warning('"test" is considered for wtest (it should be either "train" or "test")...!')
+                  d <- .getDataFrame(x,grp='test',...)
+                } 
+              } else d <- .getDataFrame(x,grp='test',...)
+            } else d <- .getDataFrame(x,...)
+            #--------
+            if (length(x@species.names) > 1) {
+              w <- which(x@species.names %in% colnames(d))
+              if (length(w) > 1) {
+                stop('sdmdata object has multiple species. specify the name of species through the spn argument...')
+              }
+              spn <- x@species.names[w] 
+            } else spn <- x@species.names
+            
+            o <- d[,spn]
+            p <- extract(p,d[,colnames(coords(x))],ID=FALSE)[,1]
             
             evaluates(o, p, distribution = distribution)
           }

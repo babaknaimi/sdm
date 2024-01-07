@@ -7,7 +7,7 @@
 \title{Get a data.frame with record id values (rID)}
 
 \description{
-Converts a \code{sdmdata} object to a \code{data.frame}. By additional arguments, it is possible to make a quary on the dataset (see details).
+Converts a \code{sdmdata} object to a \code{data.frame}. By including additional arguments, it is possible to make a query on the dataset (see details).
 }
 
 \usage{
@@ -19,11 +19,14 @@ Converts a \code{sdmdata} object to a \code{data.frame}. By additional arguments
  \item{...}{Additional arguments (optional, see details)} 
 }
 \details{
-Following additional arguments optionally can be used to get a subset of data by specifying the record IDs; or using a query  by specifying the name of species, and/or the name of data groups, and/or range of times (if time information are available):
+The following additional arguments can optionally be used to get a subset of data by specifying record IDs; or make a query by specifying the name of species, and/or the name of data groups, and/or a range of time period (if time is available in data):
 
-\code{ind}: an intiger vector containing the record Ids;
-\code{sp}: a character vector of the name of species
-\code{grp}: a character vector of the group names (e.g., 'test'; if indipendent test is available)
+\code{ind}: an integer vector with record Ids;
+
+\code{sp}: a character vector with the name of species;
+
+\code{grp}: a character vector specifying groups of data (e.g., 'test', if independent test data is available)
+
 \code{time}: a vector of times (an appropriate time class or a character that can be converted into a time format)
 }
   
@@ -39,7 +42,7 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 \url{https://www.r-gis.net/}
 
-\url{https://www.biogeoinformatics.org}
+\url{https://www.biogeoinformatics.org/}
 }
 
 \examples{
@@ -51,11 +54,14 @@ d <- read.sdm(file)
 d # a sdmdata object
 
 df <- as.data.frame(d)
+
 head(df)
 
 # only the records with rID == c(1,2,3):
+
 as.data.frame(d, ind=1:3)
 }
+
 
 }
 

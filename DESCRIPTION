@@ -1,13 +1,13 @@
 Package: sdm
 Type: Package
 Title: Species Distribution Modelling
-Version: 1.1-8
-Date: 2021-11-11
+Version: 1.2-22
+Date: 2024-02-18
 Author: Babak Naimi, Miguel B. Araujo
 Maintainer: Babak Naimi <naimi.b@gmail.com>
-Depends: methods, sp, R (>= 3.0.0)
-Imports: raster
-Suggests: R.rsp, shinyBS, shiny, dismo, rmarkdown
+Depends: methods, R (>= 3.5.0), terra
+Imports: sp, raster
+Suggests: R.rsp, shinyBS, shiny, dismo
 Description: An extensible framework for developing species distribution
     models using individual and community-based approaches, generate ensembles of
     models, evaluate the models, and predict species potential distributions in

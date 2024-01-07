@@ -1,9 +1,10 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date of last update :  Nov. 2021
-# Version 3.2
+# Date of last update :  Sep. 2023
+# Version 3.7
 # Licence GPL v3
 
 #------
+# create a .group class # .newgroup('training','test',list(test=30:40))
 .newgroup <- function(name,values,index) {
   g <- new('.group',name=name)
   if (!is.null(values)) {
@@ -17,6 +18,32 @@
   g
 }
 #-------
+.getGroupNames <- function(d,levels=FALSE) {
+  if (levels) {
+    if (!is.null(names(d@groups))) {
+      nn <- c()
+      for (n in names(d@groups)) nn <- c(nn,as.character(d@groups[[n]]@values[,2]))
+      nn
+    } else NULL
+  } else names(d@groups)
+}
+#-----
+# .newgroup creates a new group class, and .newGroup call it and add it to the data object!
+.newGroup <- function(d,name,values=NULL,index=NULL) {
+  d@groups[[name]] <- .newgroup(name,values,index)
+  d
+}
+#-----
+.getGroupLevels <- function(d,g=NULL) {
+  if (!is.null(g)) {
+    g <- .pmatch(g,.getGroupNames(d))
+    g <- g[!is.na(g)][1]
+    if (is.na(g)) stop(paste('group',g,'does not exist!'))
+    as.character(d@groups[[g]]@values[,2])
+  }
+}
+#-----
+
 ###################
 
 # tbl <- c(122,'test','train') (example1 : tbl is vector)
@@ -51,21 +78,17 @@
   x
 }
 #-----------
+#######################
 .getSpeciesNames <- function(d,n=NULL) {
   if (is.null(n)) d@species.names
   else d@species.names[d@species.names %in% n]
 }
+
 #-----
-.getGroupLevels <- function(d,g=NULL) {
-  if (!is.null(g)) {
-    g <- g[1]
-    if (!g %in% .getGroupNames(d)) stop(paste('group',g,'does not exist!'))
-    as.character(d@groups[[g]]@values[,2])
-  }
-}
-#-----
-.getSpeciesDF <- function(d,sp,id) {
-  if (missing(sp)) sp <- d@species.names[1]
+# convert the sdmData to a data.frame (if list is TRUE, for multi-species, a list is returned)
+.getSpeciesDF <- function(d,sp,id,list=TRUE) {
+  if (missing(sp)) sp <- d@species.names
+  if (missing(id)) id <- d@features$rID
   o <- list()
   for (s in sp) {
     o[[s]] <- data.frame(rID=id,value=NA)
@@ -74,15 +97,41 @@
       o[[s]][id %in% d@species[[s]]@absence,2] <- 0
     } else if (d@species[[s]]@type == 'Presence-Only') {
       o[[s]][id %in% d@species[[s]]@presence,2] <- 1
+    } else if (d@species[[s]]@type == 'Presence-Background') {
+      o[[s]][id %in% d@species[[s]]@presence,2] <- 1
+      o[[s]][id %in% d@species[[s]]@background,2] <- 0
     } else if (d@species[[s]]@type == 'Abundance') {
-      o[[s]][id %in% d@species[[s]]@abundance$rID,2] <- sapply(id[id %in% d@species[[s]]@abundance$rID],function(x) {d@species[[s]]@abundance[d@species[[s]]@abundance$rID == x,2]})
+      o[[s]][id %in% d@species[[s]]@abundance$rID,2] <- d@species[[s]]@abundance[d@species[[s]]@abundance$rID %in% id,2]
     } else if (d@species[[s]]@type == 'Absence-Only!') {
       o[[s]][id %in% d@species[[s]]@absence,2] <- 0
     } else if (d@species[[s]]@type == 'Abundance-constant!') {
       o[[s]][id %in% d@species[[s]]@abundance$rID,2] <- d@species[[s]]@abundance[1,2]
     }
   }
-  o
+  
+  for (i in 1:length(o)) {
+    o[[i]] <- o[[i]][!is.na(o[[i]]$value),]
+  }
+
+  if (list) {
+    o
+  } else {
+    .o <- o[[1]]
+    if ('species' %in% colnames(.o)) .o[['species____name']] <- names(o)[1]
+    else .o[['species']] <- names(o)[1]
+    
+    if (length(o) > 1) {
+      for (i in 2:length(o)) {
+        .o2 <- o[[i]]
+        if ('species' %in% colnames(.o2)) .o[['species____name']] <- names(o)[i]
+        else .o2[['species']] <- names(o)[i]
+        
+        .o <- rbind(.o,.o2)
+      }
+    }
+    .o
+  }
+  
 }
 
 #-----
@@ -119,35 +168,28 @@
   }
 }
 #-----
-.getTimeIndex <- function(d,t=NULL) {
-  if (!is.null(t)) {
-    id <- c()
-    #g <- d@groups
-    #d@groups$training@values
-    #sdm:::.getGroupNames(d)
-    for (gg in t) {
-      gl <- unlist(lapply(unlist(strsplit(gg,':')),.trim))
-      if (length(gl) > 1) {
-        if (!gl[1] %in% .getGroupNames(d)) stop(paste('group',gl[1],'does not exist!'))
-        if (!gl[2] %in% .getGroupNames(d,TRUE)) stop(paste('group level',gl[2],'does not exist!'))
-        id <- c(id,d@groups[[gl[1]]]@indices[[gl[2]]])
+.getTimeIndex <- function(d,.t=NULL) {
+  if (!is.null(d@info) && !is.null(d@info@time)) {
+    id <- NULL
+    if (is.null(.t)) {
+      id <- d@info@time
+    } else {
+      if (is.numeric(.t)) {
+        w <- which(d@info@time[,1] %in% .t)
+        if (length(w) > 0) id <- d@info@time[w,]
       } else {
-        if (!gl %in% c(.getGroupNames(d),.getGroupNames(d,TRUE))) stop(paste(gl,' is neither a group nor a group level!'))
-        if (gl %in% .getGroupNames(d)) {
-          for (gv in d@groups[[gl]]@values[,2]) id <- c(id,d@groups[[gl]]@indices[[gv]])
-        } else {
-          for (gn in .getGroupNames(d)) {
-            if (gl %in% d@groups[[gn]]@values[,2]) id <- c(id,d@groups[[gn]]@indices[[gl]])
-          }
-        }
+        w <- which(d@info@time[,2] %in% .t)
+        if (length(w) > 0) id <- d@info@time[w,]
       }
     }
-    unique(id)
+    
+    
+    id
   }
 }
 #-----
 .getIndex <- function(d,sp=NULL,groups=NULL,time=NULL) {
-  id1 <- id2 <- NULL
+  id1 <- id2 <- id3 <- NULL
   if (is.null(sp)) id1 <- d@features$rID
   else {
     id1 <- .getSpeciesIndex(d,sp)
@@ -157,89 +199,17 @@
     id2 <- .getGroupIndex(d,groups)
   }
   
-  if (is.null(id2)) id1
-  else id1[id1 %in% id2]
+  if (!is.null(time)) {
+    id3 <- .getTimeIndex(d,time)
+  }
+  
+  if (is.null(id2)) id <- id1
+  else id <- id1[id1 %in% id2]
+  
+  if (is.null(id3)) id
+  else id[id %in% id3]
 }
-#-----
-.getGroupNames <- function(d,levels=FALSE) {
-  if (levels) {
-    if (!is.null(names(d@groups))) {
-      nn <- c()
-      for (n in names(d@groups)) nn <- c(nn,as.character(d@groups[[n]]@values[,2]))
-      nn
-    } else NULL
-  } else names(d@groups)
-}
-#-----
 
-.newGroup <- function(d,name,values=NULL,index=NULL) {
-  d@groups[[name]] <- .newgroup(name,values,index)
-  d
-}
-#-----
-# .getFeature <- function(d,n,type='l',id,...) {
-#   if (missing(id)) id <- .getIndex(d)
-#   rid <- which(d@features$rID %in% id)
-#   n <- n[1]
-#   type <- tolower(type)
-#   dot <- list(...)
-#   if (!n %in% d@features.name) stop('the variable does not exist!')
-#   if (type %in% c('l','linear')) {
-#     d@features[rid,n]
-#   } else if (type %in% c('q','quad','quadratic')) {
-#     .getFeature.quad(d@features[rid,n])
-#   } else if (type %in% c('c','cub','cubic')) {
-#     .getFeature.cubic(d$features[rid,n])
-#   } else if (type %in% c('poly')) {
-#     if ('degree' %in% names(dot)) degree <- dot[['degree']]
-#     else degree <- 3
-#     if ('raw' %in% names(dot)) raw <- dot[['raw']]
-#     else raw <- TRUE
-#     o <- .getFeature.poly(d@features[rid,n],degree=degree,raw=raw)
-#     colnames(o) <- paste(colnames(o),'.',n,sep='')
-#     o
-#   } else if (type %in% c('h','hing','hinge')) {
-#     if ('th' %in% names(dot)) th <- dot[['th']]
-#     else th <- NULL
-#     if (is.null(th)) {
-#       if ('species' %in% names(dot)) {
-#         if (is.numeric(dot[['species']]) && dot[['species']] <= length(d@species.names)) s <- dot[['species']]
-#         else if (is.character(dot[['species']]) && dot[['species']] %in% d@species.names) s <- which(d@species.names == dot[['species']])
-#         else stop('species is not identified!')
-#       } else {
-#         if (length(d@species.names) > 1) {
-#           s <- 1
-#           warning('to detect the threshold for the hinge feature, the species name is needed; since it is not specified the first species is used')
-#         } else s <- 1
-#       }
-#       s <- d@species.names[s]
-#       hP <- .getHingeParams(d@features[rid,n],y=.getSpeciesDF(d,sp=s,id=id)[[1]]$value) # should be updated!
-#       .getFeature.hinge(d@features[rid,n],knots=10) # should be updated!!
-#     } else .getFeature.hinge(d@features[rid,n],knots=10) # should be updated!
-#     
-#   } else if (type %in% c('th','threshold')) {
-#     if ('th' %in% names(dot)) th <- dot[['th']]
-#     else th <- NULL
-#     if (is.null(th)) {
-#       if ('species' %in% names(dot)) {
-#         if (is.numeric(dot[['species']]) && dot[['species']] <= length(d@species.names)) s <- dot[['species']]
-#         else if (is.character(dot[['species']]) && dot[['species']] %in% d@species.names) s <- which(d@species.names == dot[['species']])
-#         else stop('species is not identified!')
-#       } else {
-#         if (length(d@species.names) > 1) {
-#           s <- 1
-#           warning('to detect the threshold for the threshold feature, the species name is needed; since it is not specified the first species is used')
-#         } else s <- 1
-#       }
-#       s <- d@species.names[s]
-#       #thP <- .getThresholdParams(d@features[rid,n],y=.getSpeciesDF(d,sp=s,id=id)[[1]]$value)
-#       #.getFeature.threshold(d@features[rid,n],th=thP$threshold,increasing=thP$increasing)
-#     } else .getFeature.threshold(d@features[rid,n])
-#     
-#     
-#     
-#   }
-# }
 #-----------
 
 if (!isGeneric('.addLog<-')) {
@@ -255,35 +225,23 @@ setReplaceMethod('.addLog','sdmdata',
 )
 #----------
 
-.isBinomial <- function(x) {
-  if (is.numeric(x)) {
-    u <- unique(x)
-    if (length(u) > 2) return(FALSE)
-    else if (length(u) == 2) return(all(sort(u) == c(0,1)) | all(sort(u) == c(-1,1)))
-    else return(u == 1)
-  } else if (is.logical(x)) return(TRUE)
-  else {
-    x <- as.character(x)
-    u <- unique(x)
-    if (length(u) > 2) return(FALSE)
-    else if (length(u) == 2) return(all(sort(u) == c('0','1')) | all(sort(u) == c('-1','1')))
-    else return(u == '1')
-  }
-}
-#----------
-
-# detect the type of species data (i.e., pa, po, ab); whan all are 0 returns ao, and when variance is 0, returns ab_constant 
+# detect the type of species data (i.e., pa, po, ab); when all are 0 returns ao, and when variance is 0, returns ab_constant 
 .speciesType <- function(x) {
   u <- unique(x)
   if (is.numeric(x)) {
-    if (length(u) > 2) return('Abundance')
-    else if (length(u) == 2) {
+    if (length(u) > 2) {
+      if (all(c(x - round(x)) == 0)) return('Abundance')
+      else return('Numeric')
+    } else if (length(u) == 2) {
       if ((all(sort(u) == c(0,1)) || all(sort(u) == c(-1,1)))) return('Presence-Absence')
-      else return('Abundance')
+      else {
+        if (all(c(x - round(x)) == 0)) return('Abundance')
+        else return('Numeric')
+      }
     } else {
       if (u == 1) return('Presence-Only')
       else if (u == 0 || u == -1) return('Absence-Only!') # ao is absence only! ONLY to detect and handle this kind of records
-      else return('Abundance_constant!') # ab_constant to detect the sepcies data when the variance is 0
+      else return('Constant (single numeric value)!') # ab_constant to detect the species data when the variance is 0
     } 
   } else if (is.logical(x)) {
     if (length(u) == 2) return('Presence-Absence')
@@ -303,13 +261,9 @@ setReplaceMethod('.addLog','sdmdata',
 }
 
 #----------
-# check whether the names (vars) do exist in data (data.frame)
-.varExist <-function(data,vars) {
-  all(vars %in% names(data))
-}
-#----------
 
-# get species dara.frame from the input data:
+
+# get species data.frame from the input data:
 .getSpecies <- function(data,nsp,bg=FALSE,id.train=NULL,id.test=NULL) {
   species <- list()
   for (n in nsp) {
@@ -317,7 +271,7 @@ setReplaceMethod('.addLog','sdmdata',
       typ1 <- .speciesType(data[id.train,n])
       typ2 <- .speciesType(data[id.test,n])
       if (typ1 == typ2) typ <- typ1
-      else stop('train and test data have different type (for example, one maybe presence-only while the other is presence-absence)!')
+      else stop('train and test data seem different (for example, one is presence-only and the other is presence-absence...)!')
     } else typ <- .speciesType(data[,n])
     
     if (typ == 'Presence-Absence') {
@@ -363,6 +317,11 @@ setReplaceMethod('.addLog','sdmdata',
       species[[n]]@name <- n
       species[[n]]@abundance <- data.frame(rID=data$rID,abundance=data[,n])
       species[[n]]@type <- typ
+    } else if (typ == 'Numeric') {
+      species[[n]] <- new('.species.data')
+      species[[n]]@name <- n
+      species[[n]]@numerical <- data.frame(rID=data$rID,value=data[,n])
+      species[[n]]@type <- typ
     } else if (typ == 'Abundance_constant!') {
       species[[n]] <- new('.species.data')
       species[[n]]@name <- n
@@ -391,9 +350,9 @@ setReplaceMethod('.addLog','sdmdata',
 }
 
 #----------
-# remove duplicate records, and the rows that species columns contin NA OR all (or any) columns contain NA
+# remove duplicate records, and the rows that species columns contain NA OR all (or any) columns contain NA
 .dataClean <- function(x,nsp,ANY=TRUE) {
-  # ANY: whether if even a predictor variable is NA, is removed, or all should have NA?
+  # ANY: whether a record should be removed if only one/some predictor variable is/are NA, or all should be NA to be removed?
   rm.na <-0; rm.duplicate <- 0
   w <- nrow(x)
   x <- unique(x)
@@ -418,84 +377,7 @@ setReplaceMethod('.addLog','sdmdata',
   list(x,c(na=rm.na,duplicate=rm.duplicate))
 }
 #----------
-# given a vector of colnames, their correponding col numbers are retrurned
-.colNumber <- function(d,n) {
-  unlist(lapply(n,function(x) which(colnames(d) == x)))
-}
-#----------
-.char2time <- function(d,...) {
-  if (length(list(...)) > 0) {
-    tst <- try(as.POSIXct(d[1],...),silent=TRUE)
-    if (!inherits(tst, "try-error") && !is.na(tst)) return(as.POSIXct(d,...))
-    else {
-      tst <- try(as.POSIXct(d[1]),silent=TRUE)
-      if (!inherits(tst, "try-error") && !is.na(tst)) return(as.POSIXct(d))
-      else {
-        tst <- try(as.Date(d[1],...),silent=TRUE)
-        if (!inherits(tst, "try-error") && !is.na(tst)) return(as.Date(d,...))
-        else {
-          tst <- try(as.Date(d[1]),silent=TRUE)
-          if (!inherits(tst, "try-error") && !is.na(tst)) return(as.Date(d))
-          else return(NA)
-        }
-      }
-    }
-  } else {
-    tst <- try(as.POSIXct(d[1]),silent=TRUE)
-    if (!inherits(tst, "try-error") && !is.na(tst)) return(as.POSIXct(d))
-    else {
-      tst <- try(as.Date(d[1]),silent=TRUE)
-      if (!inherits(tst, "try-error") && !is.na(tst)) return(as.Date(d))
-      else return(NA)
-    }
-  }
-}
-#-----------
-#----
-.where <- function(f, x) {
-  vapply(x, f, logical(1))
-}
-#------
-.int.to.numeric <- function(data) {
-  w <- which(unlist(lapply(data,is.integer)))
-  if (length(w) > 0) {
-    for (i in w) data[,i] <- as.numeric(data[,i])
-  }
-  data
-}
-#----------
-#--------------------
 
-.which.is.coords <- function(n) {
-  nxy <- NULL
-  w <- tolower(n) %in% c('x','y','coords.x1','coords.x2','coords.x','coords.y','lon','long','longitude','lat','latitude')
-  if (any(w)) {
-    nxy <- n[w]
-    if (length(nxy) == 2) {
-      nxy <- c(nxy[tolower(nxy) %in% c('x','coords.x1','coords.x','lon','long','longitude')],nxy[tolower(nxy) %in% c('y','coords.x2','coords.y','lat','latitude')])
-    } else nxy <- NULL
-  }
-  nxy
-}
-#---------------
-
-.normalize <- function(x,except=NULL) {
-  w <- !.where(is.factor,x)
-  if (!is.null(except)) {
-    w[except] <- FALSE
-  }
-  if (any(w)) {
-    xx <- x
-    for (i in seq_along(w)) {
-      if (w[i]) {
-        xx[,i] <- xx[,i] - mean(xx[,i],na.rm=TRUE)
-        if (sd(x[,i],na.rm=TRUE) != 0) xx[,i] <- xx[,i] / sd(x[,i],na.rm=TRUE)
-      }
-    }
-  }
-  xx
-}
-#-----------
 
 .speciesDetect <- function(data) {
   # to detect species columns with presence/absence data
@@ -520,20 +402,237 @@ setReplaceMethod('.addLog','sdmdata',
         nf <- .excludeVector(nf,nFact)
       }
     }
-    w <- tolower(varNames) %in% c('lon','long','longitude')
-    if (any(w) && length(which(w) == 1)) {
-      nx <- varNames[w]
-      w <- tolower(varNames) %in% c('lat','latitude')
-      if (any(w) && length(which(w) == 1)) nxy <- c(nx,varNames[w])
+    w <- .which.is.coords(nf)
+    
+    if (length(w == 2)) {
+      nxy <- w
+      nf <- .excludeVector(nf,nxy)
     }
   }
   list(nsp=nsp,nf=nf,nFact=nFact,nxy=nxy,nt=nt)
 }
 #--------
 
+.selectData <- function(d) {
+  
+  nf <- d@sdmFormula@vars@numeric$names
+  
+  # the Formula in select term should be in the form of either all variables - those to keep (e.g., ~. - v1 - v2)
+  # or list of variables to be checked for selection (e.g., ~ v1 + v2 + v3 ; OR: ~ .  [all numeric variables])
+  if (!is.null(d@sdmFormula@data.terms)) {
+    .cls <- sapply(d@sdmFormula@data.terms,class)
+    #function(x) inherits(x,'.selectFrame')
+    if ('.selectFrame' %in% .cls) {
+      .slf <- d@sdmFormula@data.terms[[which(.cls == '.selectFrame')]]
+      if ('.' %in% .slf@vars || length(.slf@vars) == 0 || is.null(.slf@vars)) .svar <- nf
+      else .svar <- .slf@vars
+      #----
+      .svar <- .svar[.svar %in% nf]
+      if (all(nf %in% .svar)) {
+        if (!is.null(.slf@keep) || length(.slf@keep) != 0) {
+          .slf@keep <- .slf@keep[.slf@keep %in% nf]
+          if (length(.slf@keep) == 0) {
+            .slf@keep <- NULL
+            warning('The variables specified in keep in the select argument in Formula are ignored because either they do not exist or they are not numeric variables!')
+            .addLog(d) <- 'The variables specified in keep in the select argument in Formula are ignored because either they do not exist or they are not numeric variables!'
+          }
+        }
+      } else {
+        .slf@keep <- nf[!nf %in% .svar]
+        .svar <- nf # among all nf variables check collinearity and keep those specified in keep!
+      }
+      #----
+      if (length(.svar) < 2) {
+        .slf@method <- ""
+        warning('select is ignored: The number of variables specified for select in Formula should be at least 2 variables!')
+        .addLog(d) <- 'select is ignored: The number of variables specified for select in Formula should be at least 2 variables!'
+      } else {
+        if (!tolower(.slf@method) %in% c('vifstep','vifcor','vif')) {
+          .w <- .pmatch(tolower(.slf@method),c('vifstep','vifcor','vif'))
+          if (is.na(.w)) {
+            .addLog(d) <- 'The method in the select argument in formula is not identified (should be either vifstep or vifcor) so it is ignored!'
+            warning('The method in the select argument in formula is not identified (should be either vifstep or vifcor) so it is ignored!')
+          } else {
+            if (.w == 'vif') {
+              .w <- 'vifstep'
+              .addLog(d) <- '"vifstep" is assumed for the method in the select argument in formula!'
+            }
+            d@sdmFormula@data.terms[[which(.cls == '.selectFrame')]]@method <- .slf@method <- .w
+          }
+        } else {
+          if (tolower(.slf@method) == 'vif') {
+            d@sdmFormula@data.terms[[which(.cls == '.selectFrame')]]@method <- .slf@method <- 'vifstep'
+            .addLog(d) <- '"vifstep" is assumed for the method in the select argument in formula!'
+          } else d@sdmFormula@data.terms[[which(.cls == '.selectFrame')]]@method <- .slf@method <- tolower(.slf@method)
+        }
+      }
+      #------
+      
+      
+      if (.slf@method %in% c('vifstep','vifcor')) {
+        if (is.null(.slf@keep) || length(.slf@keep) == 0) {
+          if (.require('usdm')) {
+            if (.slf@method == 'vifstep') {
+              if (is.null(.slf@th) || length(.slf@th) == 0) {
+                d@sdmFormula@data.terms[[which(.cls == '.selectFrame')]]@th <- .slf@th <- 10
+              } else {
+                if (.slf@th < 1) {
+                  warning('Are you sure the right threshold is specified for the vifstep method in the select argument in the Formula?! (for vifstep, a commonly used threshold is between 5 to 10)')
+                  .addLog(d) <-'Are you sure the right threshold is specified for the vifstep method in the select argument in the Formula?! (for vifstep, a commonly used threshold is between 5 to 10)'
+                }
+              }
+              #----
+              
+              # vifstep
+              .v <- .eval("vifstep(d@features[,.svar],th=.slf@th,size=nrow(d@features)+1)",env=environment())
+              # exclude based on vifstep:
+              if (!inherits(.v,'try-error')) {
+                if (length(.v@excluded) > 0) {
+                  if (length(.v@excluded) == 1) .addLog(d) <- paste0('One variable had collinearity problem and so, it is excluded. Its name is: ',.v@excluded)
+                  else .addLog(d) <- paste0(length(.v@excluded),' variables had collinearity problems and they are excluded. They include: ',paste(.v@excluded,collapse = ', '))
+                  #----
+                  .v <- .eval('usdm::exclude(d@features,.v)',env=environment())
+                  if (!inherits(.v,'try-error')) {
+                    d@features <- .v
+                  } else {
+                    .addLog(d) <- .v
+                  }
+                  
+                } else {
+                  .addLog(d) <- 'No input variables from those specified in the select argument in Formula had collinearity problem so none of them are excluded! '
+                }
+              } else {
+                .addLog(d) <- .v
+              }
+              #-----
+            } else {
+              if (is.null(.slf@th) || length(.slf@th) == 0) {
+                d@sdmFormula@data.terms[[which(.cls == '.selectFrame')]]@th <- .slf@th <- 0.9
+              } else {
+                if (.slf@th >= 1) {
+                  warning('A wrong threshold is specified for the vifcor method in the select argument in the Formula. It is changed to 0.9!')
+                  .addLog(d) <-'A wrong threshold is specified for the vifcor method in the select argument in the Formula. It is changed to 0.9!'
+                }
+              }
+              #----
+              # vifcor:
+              .v <- .eval("vifcor(d@features[,.svar],th=.slf@th,size=nrow(d@features)+1)",env=environment())
+              # exclude based on vifcor:
+              if (!inherits(.v,'try-error')) {
+                if (length(.v@excluded) > 0) {
+                  if (length(.v@excluded) == 1) .addLog(d) <- paste0('One variable had collinearity problem and so, it is excluded. Its name is: ',.v@excluded)
+                  else .addLog(d) <- paste0(length(.v@excluded),' variables had collinearity problems and they are excluded. They include: ',paste(.v@excluded,collapse = ', '))
+                  #----
+                  .v <- .eval('usdm::exclude(d@features,.v)',env=environment())
+                  if (!inherits(.v,'try-error')) {
+                    d@features <- .v
+                  } else {
+                    .addLog(d) <- .v
+                  }
+                  
+                } else {
+                  .addLog(d) <- 'No input variables from those specified in the select argument in Formula had collinearity problem so none of them are excluded! '
+                }
+              } else {
+                .addLog(d) <- .v
+              }
+            }
+            
+          } else {
+            warning('usdm package is required for multicollinearity check but it is not installed!')
+          }
+        } else { # when keep is specified in select(...)
+          #-------
+          
+          if (.require('usdm')) {
+            if (.slf@method == 'vifstep') {
+              if (is.null(.slf@th) || length(.slf@th) == 0) {
+                d@sdmFormula@data.terms[[which(.cls == '.selectFrame')]]@th <- .slf@th <- 10
+              } else {
+                if (.slf@th < 1) {
+                  warning('Are you sure the right threshold is specified for the vifstep method in the select argument in the Formula?! (for vifstep, a commonly used threshold is between 5 to 10)')
+                  .addLog(d) <-'Are you sure the right threshold is specified for the vifstep method in the select argument in the Formula?! (for vifstep, a commonly used threshold is between 5 to 10)'
+                }
+              }
+              #----
+              
+              # vifstep
+              .v <- .eval("vifstep(d@features[,.svar],th=.slf@th,keep=.slf@keep,size=nrow(d@features)+1)",env=environment())
+              # exclude based on vifstep:
+              if (!inherits(.v,'try-error')) {
+                if (length(.v@excluded) > 0) {
+                  if (length(.v@excluded) == 1) .addLog(d) <- paste0('One variable had collinearity problem and so, it is excluded. Its name is: ',.v@excluded)
+                  else .addLog(d) <- paste0(length(.v@excluded),' variables had collinearity problems and they are excluded. They include: ',paste(.v@excluded,collapse = ', '))
+                  #----
+                  .v <- .eval('usdm::exclude(d@features,.v)',env=environment())
+                  if (!inherits(.v,'try-error')) {
+                    d@features <- .v
+                  } else {
+                    .addLog(d) <- .v
+                  }
+                  
+                } else {
+                  .addLog(d) <- 'No input variables from those specified in the select argument in Formula had collinearity problem so none of them are excluded! '
+                }
+              } else {
+                .addLog(d) <- .v
+              }
+              #-----
+            } else {
+              if (is.null(.slf@th) || length(.slf@th) == 0) {
+                d@sdmFormula@data.terms[[which(.cls == '.selectFrame')]]@th <- .slf@th <- 0.9
+              } else {
+                if (.slf@th >= 1) {
+                  warning('A wrong threshold is specified for the vifcor method in the select argument in the Formula. It is changed to 0.9!')
+                  .addLog(d) <-'A wrong threshold is specified for the vifcor method in the select argument in the Formula. It is changed to 0.9!'
+                }
+              }
+              #----
+              # vifcor:
+              .v <- .eval("vifcor(d@features[,.svar],th=.slf@th,keep=.slf@keep,size=nrow(d@features)+1)",env=environment())
+              # exclude based on vifcor:
+              if (!inherits(.v,'try-error')) {
+                if (length(.v@excluded) > 0) {
+                  if (length(.v@excluded) == 1) .addLog(d) <- paste0('One variable had collinearity problem and so, it is excluded. Its name is: ',.v@excluded)
+                  else .addLog(d) <- paste0(length(.v@excluded),' variables had collinearity problems and they are excluded. They include: ',paste(.v@excluded,collapse = ', '))
+                  #----
+                  .v <- .eval('usdm::exclude(d@features,.v)',env=environment())
+                  if (!inherits(.v,'try-error')) {
+                    d@features <- .v
+                  } else {
+                    .addLog(d) <- .v
+                  }
+                  
+                } else {
+                  .addLog(d) <- 'No input variables from those specified in the select argument in Formula had collinearity problem so none of them are excluded! '
+                }
+              } else {
+                .addLog(d) <- .v
+              }
+            }
+            
+          } else {
+            warning('usdm package is required for multicollinearity check but it is not installed!')
+          }
+          
+          
+          #--------
+        }
+        
+      }
+      
+      #*****
+    } 
+    #++++
+  }
+  d
+}
+#----
+
 # create sdmdata object:
 .createSdmdata <- function(train,formula=NULL,test,bg=NULL,crs=NULL,author=NULL,website=NULL,citation=NULL,help=NULL,description=NULL,date=NULL,license=NULL) {
   if (missing(test)) test <- NULL
+  
   nFact <- nf <- nxy <- nsp <- ng <- nt <- ni <- NULL
   
   if (is.null(formula)) {
@@ -559,12 +658,12 @@ setReplaceMethod('.addLog','sdmdata',
   }
   
   exf <- .exFormula(formula,train)
-  nall <- c(exf@vars@names,exf@species)
+  nall <- c(exf@vars@names)
   
   
-  if (!.varExist(train,nall)) stop('one or more specified variables in the formula do not exist in the train data!')
+  if (!.varExist(train,nall)) stop('one (or more) variable(s) specified in the formula does not exist in the train data...!')
   
-  nsp <- exf@species
+  nsp <- exf@vars@species
   
   d <- new('sdmdata')
   
@@ -598,7 +697,7 @@ setReplaceMethod('.addLog','sdmdata',
     }
     bg <- as.data.frame(bg)
     
-    if (!.varExist(data.frame(bg),nall)) stop('one or more predictor variables do not exist in the background data!')
+    if (!.varExist(data.frame(bg),nall)) stop('One (or more) predictor variable(s) does not exist in the background data...!')
     
     w <- .dataClean(bg)
     if (any(w[[2]] > 0)) {
@@ -622,7 +721,7 @@ setReplaceMethod('.addLog','sdmdata',
   }
   
   if (!is.null(test)) {
-    if (!.varExist(test,nall)) stop('one or more specified variables in the formula does not exist in the test data!')
+    if (!.varExist(test,nall)) stop('One (or more) variable(s) specified in the formula does not exist in the test data...!')
     w <- .dataClean(test)
     if (any(w[[2]] > 0)) {
       test <- w[[1]]
@@ -636,10 +735,10 @@ setReplaceMethod('.addLog','sdmdata',
     if (!is.null(bg)) {
       w <- unlist(lapply(nsp,function(x) .speciesType(test[,x])))
       w <- unique(w)
-      if (length(w) > 1) stop(paste('Independent test data has different types of records including',paste(w,collapse=', ')))
+      if (length(w) > 1) stop(paste('The independent test dataset has different types of records including',paste(w,collapse=', ')))
       else if (w == "Presence-Only") {
         d <- .newGroup(d,'training',index=list(train=train$rID,test=c(test$rID,bg)))
-        cat('WARNING:\n Independent test dataset contains only presence records, so, background data (pseuso-absences) are used as Absence in the dataset!\n')
+        cat('WARNING:\n The independent test dataset contains only presence records, thus, the background (pseuso-absences) is used as "Absence" in the dataset...!\n')
       } else d <- .newGroup(d,'training',index=list(train=train$rID,test=test$rID))
     } else d <- .newGroup(d,'training',index=list(train=train$rID,test=test$rID))
     test <- .int.to.numeric(test)
@@ -647,58 +746,18 @@ setReplaceMethod('.addLog','sdmdata',
     d <- .newGroup(d,'training',index=list(train=train$rID))
   }
   
-  
   #-------
   
   if (is.null(nf) & is.null(nFact)) {
-    nf <- exf@vars@names
-    w <- .where(is.factor,train[,nf]) | .where(is.character,train[,nf])
-    if (any(w)) nFact <- nf[w]
-    
-    if (!is.null(exf@model.terms)) {
-      w <- unlist(lapply(exf@model.terms,class))
-      if ('.factor' %in% w) {
-        ww <- exf@model.terms[w == '.factor']
-        if (length(ww) > 0) {
-          for (i in seq_along(ww)) {
-            w <- as.character(ww[[i]]@x)
-            w <- .excludeVector(w,'+')
-            nFact <- unique(c(nFact,w))
-          }
-        }
-      }
-    }
+    nf <- exf@vars@numeric$names
+    nFact <- names(exf@vars@categorical)
     
     nf <- .excludeVector(nf,nFact)
-    
-    if (!is.null(exf@data.terms)) {
-      w <- unlist(lapply(exf@data.terms,class))
-      if (".coord.vars" %in% w) nxy <- exf@data.terms[[which(w == ".coord.vars")]]@xy
-      
-      if (".grouping" %in% w) {
-        ng <- c()
-        ww <- exf@data.terms[which(w == ".grouping")]
-        for (i in seq_along(ww)) ng <- c(ng,ww[[i]]@group.var)
-        nf <- .excludeVector(nf,ng)
-        nFact <- .excludeVector(nFact,ng)
-      }
-      
-      if ('.time' %in% w) {
-        nt <- c()
-        ww <- exf@data.terms[which(w == ".time")]
-        for (i in seq_along(ww)) nt <- c(nt,as.character(ww[[i]]@terms[[1]]))
-        nf <- .excludeVector(nf,nt)
-        nFact <- .excludeVector(nFact,nt)
-      }
-      
-      if ('.Info' %in% w) {
-        ni <- c()
-        ww <- exf@data.terms[which(w == ".Info")]
-        for (i in seq_along(ww)) ni <- c(ni,ww[[i]]@names)
-        nf <- .excludeVector(nf,ni)
-        nFact <- .excludeVector(nFact,ni)
-      }
-      
+    if (!is.null(exf@vars@others)) {
+      if ("x_coordinate" %in% exf@vars@others$type) nxy <- exf@vars@others$name[exf@vars@others$type %in% c("x_coordinate","y_coordinate")]
+      if ("Date/Time" %in% exf@vars@others$type) nt <- exf@vars@others$name[exf@vars@others$type %in% c("Date/Time")]
+      if ("group" %in% exf@vars@others$type) ng <- exf@vars@others$name[exf@vars@others$type %in% c("group")]
+      if ("Info" %in% exf@vars@others$type) ni <- exf@vars@others$name[exf@vars@others$type %in% c("Info")]
     } else {
       w <- !colnames(train) %in% c(nall,'rID')
       if (any(w)) {
@@ -706,12 +765,13 @@ setReplaceMethod('.addLog','sdmdata',
         if (!is.null(test) && !.varExist(test,nxy)) nxy <- NULL
         ww <- unlist(lapply(which(w),function(x) class(train[,x]))) %in% c("POSIXct","POSIXt","Date","yearmon","yearqtr")
         if (any(ww)) {
-          nt <- colnames(train)[w[which(ww)]]
+          nt <- colnames(train)[which(w)[which(ww)]]
           nf <- .excludeVector(nf,nt)
           nFact <- .excludeVector(nFact,nt)
         }
       }
     }
+    
     nf <- .excludeVector(nf,nxy)
     nFact <- .excludeVector(nFact,nxy)
   }
@@ -746,7 +806,7 @@ setReplaceMethod('.addLog','sdmdata',
     d@info <- new('.info')
     if (!is.null(nxy)) {
       d@info@coords <- as.matrix(train[,c('rID',nxy)])
-      if (!is.null(crs) && inherits(crs,'CRS')) d@info@crs <- crs
+      if (!is.null(crs) && is.character(crs)) d@info@crs <- crs
     }
     if (!is.null(ni)) d@info@info <- train[,c('rID',ni)]
     
@@ -755,6 +815,7 @@ setReplaceMethod('.addLog','sdmdata',
       for (n in nt) {
         if ((class(train[,n]) %in% c("POSIXct","POSIXt","Date","yearmon","yearqtr"))[1]) {
           dt <- cbind(dt,train[,n])
+          colnames(dt)[ncol(dt)] <- n
         } else {
           w <- unlist(lapply(exf@data.terms,class))
           w <- exf@data.terms[which(w == ".time")]
@@ -770,7 +831,7 @@ setReplaceMethod('.addLog','sdmdata',
           }
         }
       }
-      if (ncol(train) > 1) d@info@time <- dt
+      if (ncol(dt) > 1) d@info@time <- dt
     }
     
     if (!is.null(c(website,help,description,date,license)) || !is.null(c(citation,author))) {
@@ -778,12 +839,24 @@ setReplaceMethod('.addLog','sdmdata',
     }
   }
   #----------
+  
   d@features.name <- c(nf,nFact)
   if (!is.null(nFact)) d@factors <- nFact
   d@species <- species
   d@species.names <- names(species)
   for (n in nFact) train[,n] <- factor(train[,n])
   if (!is.null(d@features.name)) d@features <- train[,c('rID',nf,nFact)]
+  #---
+  d <- .selectData(d)
+  
+  if (!is.null(d@features.name) && !all(d@features.name %in% colnames(d@features))) {
+    d@features.name <- d@features.name[d@features.name %in% colnames(d@features)]
+    .rem <- !(d@sdmFormula@vars@numeric$names %in% colnames(d@features))
+    if (any(.rem)) {
+      d@sdmFormula@vars@names <- .excludeVector(d@sdmFormula@vars@names,d@sdmFormula@vars@numeric$names[.rem])
+      d@sdmFormula@vars@numeric <- d@sdmFormula@vars@numeric[!.rem,]
+    }
+  }
   d
 }
 #-------
@@ -804,62 +877,50 @@ setReplaceMethod('.addLog','sdmdata',
     colnames(d) <- n[factors]
   }
   
-  for (i in 1:length(factors)) d[,i] <- factor(d[,i])
+  for (.n in n[factors]) d[,.n] <- factor(d[,.n])
   return(d )
 }
 #---------
-#--- pseudo-absence based on random distribution in geographic space:
-# !is.null(p) : removes the points that are located in the locations with presence record
-.pseudo_gRandom <- function(preds,n=1000,p=NULL) {
-  s <- sampleRandom(preds,n,cells=TRUE,xy=TRUE)
-  if (!is.null(p) && ncol(p) == 2) {
-    p.cells <- cellFromXY(preds,p)
-    if (length(p.cells) > 0) {
-      s <- s[which(!s[,'cell'] %in% p.cells),]
-    }
-  }
-  s[,-1]
-}
-#----------
-.pseudo_eRandom <- function(preds,n=1000,p=NULL) {
-  #
-}
-#----------
-.pseudo_gDist <- function(preds,n=1000,p=NULL) {
-  #
-}
-#----------
-.pseudo_eDist <- function(preds,n=1000,p=NULL) {
-  #
-}
-#----------
-.pseudo <- function(preds,n=1000,method='gRandom',p=NULL) {
-  if (method == 'gRandom') .pseudo_gRandom(preds,n=n,p=p)
-  else if (method == 'eRandom') .pseudo_eRandom(preds,n=n,p=p)
-  else if (method == 'gDist') .pseudo_gDist(preds,n=n,p=p)
-  else if (method == 'eDist') .pseudo_eDist(preds,n=n,p=p)
-}
-
 
 
 if (!isGeneric("sdmData")) {
-  setGeneric("sdmData", function(formula, train, test, predictors,bg, filename, crs,...)
+  setGeneric("sdmData", function(formula, train, predictors, test,bg, filename, crs,impute,metadata,...)
     standardGeneric("sdmData"))
 }
 
 
 setMethod('sdmData', signature(train='data.frame',predictors='missing'), 
-          function(formula,train,test=NULL,predictors,bg=NULL,filename=NULL,crs=NULL,...) {
+          function(formula,train,predictors,test=NULL,bg=NULL,filename=NULL,crs=NULL,impute,metadata,...) {
             if(missing(test)) test <- NULL
             if(missing(filename)) filename <- NULL
             if(missing(crs)) crs <- NULL
             if(missing(formula)) formula <- NULL
             if(missing(bg)) bg <- NULL
+            if(missing(metadata)) metadata <- NULL
             #---
-            if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
+            if(missing(impute)) impute <- "neighbor"
+            else if (is.null(impute)) impute <- "none"
+            else if (is.logical(impute)) {
+              if (impute) impute <- "neighbor"
+              else impute <- "none"
+            } else if (is.character(impute)) {
+              if (impute %in% c('neigh','neighbor','neighbour','neighCell')) impute <- 'neighbor'
+              else {
+                warning('Currently, the only available imputation method is "neighbor", so the impute is changed to it...')
+                impute <- 'neighbor'
+              }
+            }
+            
             #---
-            dot <- list(...)
-            n <- tolower(names(dot))
+            if (!.sdmOptions$getOption('sdmLoaded')) suppressMessages(.addMethods())
+            #---
+            if (is.null(metadata)) metadata <- list()
+            if (!is.list(metadata)) {
+              warning('metadata is ignored (it should be a list)!')
+              metadata <- list()
+            }
+            
+            n <- tolower(names(metadata))
             for (i in seq_along(n)) {
               if (any(!is.na(pmatch(c("aut"),n[i])))) n[i] <- 'author'
               else if (any(!is.na(pmatch(c("web"),n[i])))) n[i] <- 'website'
@@ -869,15 +930,67 @@ setMethod('sdmData', signature(train='data.frame',predictors='missing'),
               else if (any(!is.na(pmatch(c("dat"),n[i])))) n[i] <- 'date'
               else if (any(!is.na(pmatch(c("lic"),n[i])))) n[i] <- 'license'
             }
-            names(dot) <- n
-            author <- dot[['author']]
-            website <- dot[['website']]
-            citation <- dot[['citation']]
-            help <- dot[['help']]
-            description <- dot[['description']]
-            date <- dot[['date']]
-            license <- dot[['license']]
+            names(metadata) <- n
+            author <- metadata[['author']]
+            website <- metadata[['website']]
+            citation <- metadata[['citation']]
+            help <- metadata[['help']]
+            description <- metadata[['description']]
+            date <- metadata[['date']]
+            license <- metadata[['license']]
+            #-----------
+            ############
             
+            if (inherits(train,'sf')) {
+              
+              if (!.require('sf')) stop('To handle the train data, the package "sf" is required, but it is not installed!')
+              
+              .xy <- .eval('st_coordinates(train)',env = environment())
+              nxy <- colnames(.xy)
+              
+              if (!is.null(test)) {
+                if (inherits(test,'sf')) {
+                  .xyt <- .eval('st_coordinates(test)',env = environment())
+                  nxyt <- colnames(.xyt)
+                  if (ncol(test) == 1) test <- data.frame(SPECIES=rep(1,nrow(test)),.xyt)
+                  else test <- data.frame(as(test,'data.frame')[,-which(colnames(test) == "geometry")],.xyt)
+                  if (all(nxy != nxyt)) {
+                    colnames(test)[unlist(lapply(nxyt,function(x) which(colnames(test) == x)))] <- nxy
+                  } 
+                }
+              }
+              
+              if (!.eval("is.na(st_crs(train))",env = environment())) crs <- .eval("st_crs(train)$wkt",env = environment())
+              
+              if (ncol(train) == 1) test <- data.frame(SPECIES=rep(1,nrow(train)),.xy)
+              else train <- data.frame(as(train,'data.frame')[,-which(colnames(train) == "geometry")],.xy)
+              
+              
+              if (!missing(formula)) {
+                if (!all(nxy %in% all.vars(formula))) {
+                  if ('.' %in% all.vars(formula)) {
+                    ww <- .exFormula(formula,train)
+                    nw <- .excludeVector(colnames(train),c(ww@vars@species,nxy))
+                    if (length(nw) > 0) {
+                      w <- as.character(.exFormula(formula,train,FALSE)@vars@species)
+                      if (length(w) == 0) formula[[2]] <- terms.formula(formula,data=train[,nw])[[2]]
+                      else {
+                        formula[[3]] <- terms.formula(formula,data=train[,nw],simplify = TRUE)[[3]]
+                        if (colnames(train)[1] == 'SPECIES') {
+                          colnames(train)[1] <- w[1]
+                          if (!is.null(test) && colnames(test)[1] == 'SPECIES') colnames(test)[1] <- w[1]
+                        }
+                      }
+                      
+                    }
+                  }
+                  
+                  formula <- update(formula,as.formula(paste('~ . + coords(',paste(nxy,collapse='+'),')',sep='')))
+                }
+              } else formula <- as.formula(paste('~ . + coords(',paste(nxy,collapse='+'),')',sep=''))
+              
+            }
+            #----
             .createSdmdata(train = train, formula = formula, test = test,bg=bg,crs = crs,author=author,website=website,citation=citation,help=help,description=description,date=date,license=license)
           }
 )
@@ -885,45 +998,110 @@ setMethod('sdmData', signature(train='data.frame',predictors='missing'),
 #-------  
 
 setMethod('sdmData', signature(formula='data.frame',train='formula',predictors='missing'), 
-          function(formula,train,test=NULL,predictors,bg=NULL,filename=NULL,crs=NULL,...) {
+          function(formula,train,predictors,test=NULL,bg=NULL,filename=NULL,crs=NULL,impute,metadata,...) {
             # to make it user friendly
             if(missing(test)) test <- NULL
             if(missing(filename)) filename <- NULL
             if(missing(crs)) crs <- NULL
             if(missing(bg)) bg <- NULL
-            sdmData(formula=train, train=formula,test=test,bg=bg,filename=filename,crs=crs,...)
+            if(missing(metadata)) metadata <- NULL
+            
+            if(missing(impute)) impute <- "neighbor"
+            else if (is.null(impute)) impute <- "none"
+            else if (is.logical(impute)) {
+              if (impute) impute <- "neighbor"
+              else impute <- "none"
+            } else if (is.character(impute)) {
+              if (impute %in% c('neigh','neighbor','neighbour','neighCell')) impute <- 'neighbor'
+              else {
+                warning('Currently, the only available imputation method is "neighbor", so the impute is changed to it...')
+                impute <- 'neighbor'
+              }
+            }
+            
+            #---
+            
+            sdmData(formula=train, train=formula,test=test,bg=bg,filename=filename,crs=crs,metadata=metadata,...)
           }
 )
 
 setMethod('sdmData', signature(formula='data.frame',train='missing',predictors='missing'), 
-          function(formula,train,test=NULL,predictors,bg=NULL,filename=NULL,crs=NULL,...) {
+          function(formula,train,predictors,test=NULL,bg=NULL,filename=NULL,crs=NULL,impute,metadata,...) {
             # to make it user friendly
             if(missing(test)) test <- NULL
             if(missing(filename)) filename <- NULL
             if(missing(crs)) crs <- NULL
             if(missing(bg)) bg <- NULL
-            sdmData(train=formula,test=test,bg=bg,filename=filename,crs=crs,...)
+            if(missing(metadata)) metadata <- NULL
+            
+            if(missing(impute)) impute <- "neighbor"
+            else if (is.null(impute)) impute <- "none"
+            else if (is.logical(impute)) {
+              if (impute) impute <- "neighbor"
+              else impute <- "none"
+            } else if (is.character(impute)) {
+              if (impute %in% c('neigh','neighbor','neighbour','neighCell')) impute <- 'neighbor'
+              else {
+                warning('Currently, the only available imputation method is "neighbor", so the impute is changed to it...')
+                impute <- 'neighbor'
+              }
+            }
+            #---
+            
+            sdmData(train=formula,test=test,bg=bg,filename=filename,crs=crs,metadata=metadata,...)
           }
 )
 
 setMethod('sdmData', signature(train='SpatialPoints',predictors='missing'), 
-          function(formula,train,test=NULL,predictors,bg=NULL,filename=NULL,crs=NULL,...) {
+          function(formula,train,predictors,test=NULL,bg=NULL,filename=NULL,crs=NULL,impute=TRUE,metadata=NULL,...) {
             
             if(missing(test)) test <- NULL
             if(missing(filename)) filename <- NULL
             if(missing(crs)) crs <- NULL
+            else {
+              if (is.character(crs)) {
+                if (crs(train,asText=TRUE) == "" || is.na(crs(train,asText=TRUE))) crs(train) <- crs
+                #---
+                if (!is.null(test) && inherits(test,'Spatial') && is.na(crs(test,asText=TRUE))) crs(test) <- crs
+              }
+            }
+            
             if(missing(bg)) bg <- NULL
+            if(missing(metadata)) metadata <- NULL
+            
+            #---
+            if(missing(impute)) impute <- "neighbor"
+            else if (is.null(impute)) impute <- "none"
+            else if (is.logical(impute)) {
+              if (impute) impute <- "neighbor"
+              else impute <- "none"
+            } else if (is.character(impute)) {
+              if (impute %in% c('neigh','neighbor','neighbour','neighCell')) impute <- 'neighbor'
+              else {
+                warning('Currently, the only available imputation method is "neighbor", so the impute is changed to it...')
+                impute <- 'neighbor'
+              }
+            }
             
             #---
             if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
             #---
+            if (!is.na(projection(train))) crs <- projection(train)
+            else {
+              if (!is.null(crs) && is.character(crs)) projection(train) <- crs
+            }
+            #-----
             
             nxy <- coordnames(train)
             
+            .cls <- as.character(class(train))
+            
             if (!is.null(test)) {
-              if (class(train) == class(test)) {
+              .cls0 <- as.character(class(test))
+              
+              if (.cls == .cls0) {
                 nxyt <- coordnames(test)
-                if (as.character(class(test) == 'SpatialPoints')) test <- data.frame(SPECIES=rep(1,length(test)),as(test,'data.frame'))
+                if (.cls0 == 'SpatialPoints') test <- data.frame(SPECIES=rep(1,length(test)),as(test,'data.frame'))
                 else test <- as(test,'data.frame')
                 if (all(nxy != nxyt)) {
                   colnames(test)[unlist(lapply(nxyt,function(x) which(colnames(test) ==x)))] <- nxy
@@ -931,20 +1109,20 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='missing'),
               }
             }
             
-            if (!is.na(proj4string(train))) crs <- CRS(proj4string(train))
-            if (as.character(class(train) == 'SpatialPoints')) train <- data.frame(SPECIES=rep(1,length(train)),as(train,'data.frame'))
+            
+            if (.cls == 'SpatialPoints') train <- data.frame(SPECIES=rep(1,length(train)),as(train,'data.frame'))
             else train <- as(train,'data.frame')
             
             if (!missing(formula)) {
               if (!all(nxy %in% all.vars(formula))) {
                 if ('.' %in% all.vars(formula)) {
                   ww <- .exFormula(formula,train)
-                  nw <- .excludeVector(colnames(train),c(ww@species,nxy))
+                  nw <- .excludeVector(colnames(train),c(ww@vars@species,nxy))
                   if (length(nw) > 0) {
-                    w <- as.character(.exFormula(formula,train,FALSE)@species)
+                    w <- as.character(.exFormula(formula,train,FALSE)@vars@species)
                     if (length(w) == 0) formula[[2]] <- terms.formula(formula,data=train[,nw])[[2]]
                     else {
-                      formula[[3]] <- terms.formula(formula,data=train[,nw])[[3]]
+                      formula[[3]] <- terms.formula(formula,data=train[,nw],simplify = TRUE)[[3]]
                       if (colnames(train)[1] == 'SPECIES') {
                         colnames(train)[1] <- w[1]
                         if (!is.null(test) && colnames(test)[1] == 'SPECIES') colnames(test)[1] <- w[1]
@@ -954,12 +1132,18 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='missing'),
                   }
                 }
                 
-                formula <- update(formula,as.formula(paste('~ . + coods(',paste(nxy,collapse='+'),')',sep='')))
+                formula <- update(formula,as.formula(paste('~ . + coords(',paste(nxy,collapse='+'),')',sep='')))
               }
-            } else formula <- as.formula(paste('~ . + coods(',paste(nxy,collapse='+'),')',sep=''))
+            } else formula <- as.formula(paste('~ . + coords(',paste(nxy,collapse='+'),')',sep=''))
             
-            dot <- list(...)
-            n <- tolower(names(dot))
+            #------
+            if (is.null(metadata)) metadata <- list()
+            if (!is.list(metadata)) {
+              warning('metadata is ignored (it should be a list)!')
+              metadata <- list()
+            }
+            
+            n <- tolower(names(metadata))
             for (i in seq_along(n)) {
               if (any(!is.na(pmatch(c("aut"),n[i])))) n[i] <- 'author'
               else if (any(!is.na(pmatch(c("web"),n[i])))) n[i] <- 'website'
@@ -969,14 +1153,16 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='missing'),
               else if (any(!is.na(pmatch(c("dat"),n[i])))) n[i] <- 'date'
               else if (any(!is.na(pmatch(c("lic"),n[i])))) n[i] <- 'license'
             }
-            names(dot) <- n
-            author <- dot[['author']]
-            website <- dot[['website']]
-            citation <- dot[['citation']]
-            help <- dot[['help']]
-            description <- dot[['description']]
-            date <- dot[['date']]
-            license <- dot[['license']]
+            names(metadata) <- n
+            author <- metadata[['author']]
+            website <- metadata[['website']]
+            citation <- metadata[['citation']]
+            help <- metadata[['help']]
+            description <- metadata[['description']]
+            date <- metadata[['date']]
+            license <- metadata[['license']]
+            #-----------
+            
             
             .createSdmdata(train = train, formula = formula, test = test,bg=bg,crs = crs,author=author,website=website,citation=citation,help=help,description=description,date=date,license=license) 
             
@@ -985,18 +1171,53 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='missing'),
 
 
 setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'), 
-          function(formula,train,test=NULL,predictors,bg=NULL,filename=NULL,crs=NULL,...) {
+          function(formula,train,predictors,test=NULL,bg=NULL,filename=NULL,crs=NULL,impute,metadata=NULL,...) {
             if(missing(test)) test <- NULL
             if(missing(filename)) filename <- NULL
             if(missing(crs)) crs <- NULL
+            else {
+              if (is.character(crs)) {
+                if (crs(train,asText=TRUE) == "" || is.na(crs(train,asText=TRUE))) crs(train) <- crs
+                #---
+                if (!is.null(test) && inherits(test,'Spatial') && is.na(crs(test,asText=TRUE))) crs(test) <- crs
+              }
+            }
+            
+            
             if(missing(bg)) bg <- NULL
+            if(missing(metadata)) metadata <- NULL
             #---
-            if (!.sdmOptions$getOption('sdmLoaded')) .addMethods()
+            if(missing(impute)) impute <- "neighbor"
+            else if (is.null(impute)) impute <- "none"
+            else if (is.logical(impute)) {
+              if (impute) impute <- "neighbor"
+              else impute <- "none"
+            } else if (is.character(impute)) {
+              if (impute %in% c('neigh','neighbor','neighbour','neighCell')) impute <- 'neighbor'
+              else {
+                warning('Currently, the only available imputation method is "neighbor", so the impute is changed to it...')
+                impute <- 'neighbor'
+              }
+            }
+            
             #---
+            if (!.sdmOptions$getOption('sdmLoaded')) suppressMessages(.addMethods())
+            #---
+            #-----------------------
+            if (!is.na(projection(train))) crs <- projection(train)
+            else {
+              if (!is.null(crs) && is.character(crs)) projection(train) <- crs
+              else if (projection(predictors) != "" && !is.na(projection(predictors))) {
+                projection(train) <- projection(predictors)
+              }
+            }
+            #-----
+            
+            
+            #----
             testc <- as.character(class(test))
             trainc <- as.character(class(train))
             
-            trainSP <-NULL
             errLog <- list()
             
             nxy <- coordnames(train)[1:2]
@@ -1004,6 +1225,13 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'),
            
             if (!is.null(test)) {
               if (inherits(test,'SpatialPoints')) {
+                
+                if (is.na(projection(test))) {
+                  if (!is.na(projection(train))) projection(test) <- projection(train)
+                  else if (!is.na(projection(predictors))) projection(test) <- projection(predictors)
+                }
+                
+                
                 nxyt <- coordnames(test)
                 if (testc == 'SpatialPointsDataFrame') test <- as(test,'data.frame')
                 else test <- data.frame(coordinates(test))
@@ -1037,7 +1265,7 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'),
               } else stop('the coordinate names in the train and test datasets do not match!')
             }
             
-            if (!is.na(proj4string(train))) crs <- CRS(proj4string(train))
+            
             
             if (trainc == 'SpatialPointsDataFrame') train <- as(train,'data.frame')
             else train <- coordinates(train)
@@ -1075,17 +1303,17 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'),
                 if (!all(nxy %in% all.vars(formula))) {
                   if ('.' %in% all.vars(formula)) {
                     ww <- .exFormula(formula,train)
-                    nw <- .excludeVector(colnames(train),c(ww@species,nxy))
-                    w <- as.character(.exFormula(formula,train,FALSE)@species)
+                    nw <- .excludeVector(colnames(train),c(ww@vars@species,nxy))
+                    w <- as.character(.exFormula(formula,train,FALSE)@vars@species)
                     if (length(w) == 0) formula[[2]] <- terms.formula(formula,data=train[,nw])[[2]]
-                    else formula[[3]] <- terms.formula(formula,data=train[,nw])[[3]]
+                    else formula[[3]] <- terms.formula(formula,data=train[,nw],simplify = TRUE)[[3]]
                   }
-                  formula <- update(formula,as.formula(paste('~ . + coods(',paste(nxy,collapse='+'),')',sep='')))
+                  formula <- update(formula,as.formula(paste('~ . + coords(',paste(nxy,collapse='+'),')',sep='')))
                 }
-              } else formula <- as.formula(paste('~ . + coods(',paste(nxy,collapse='+'),')',sep=''))
+              } else formula <- as.formula(paste('~ . + coords(',paste(nxy,collapse='+'),')',sep=''))
             } else {
               if (!missing(formula)) {
-                ww <- as.character(.exFormula(formula,train.p,FALSE)@species)
+                ww <- as.character(.exFormula(formula,train.p,FALSE)@vars@species)
                 if (length(ww) > 1) {
                   warning('While SpatialPoints can be used for only 1 species, more names are defined in the formula! The first name is considered!')
                   errLog <- c(errLog,'WARNING: While SpatialPoints can be used for only 1 species, more names are defined in the formula! The first name is considered!')
@@ -1096,12 +1324,12 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'),
                   
                   if ('.' %in% all.vars(formula)) {
                     if (length(ww) == 0) formula[[2]] <- terms.formula(formula,data=train.p)[[2]]
-                    else formula[[3]] <- terms.formula(formula,data=train.p)[[3]]
+                    else formula[[3]] <- terms.formula(formula,data=train.p,simplify = TRUE)[[3]]
                   }
-                  formula <- update(formula,as.formula(paste('~ . + coods(',paste(nxy,collapse='+'),')',sep='')))
+                  formula <- update(formula,as.formula(paste('~ . + coords(',paste(nxy,collapse='+'),')',sep='')))
                 }
               } else {
-                formula <- as.formula(paste('SPECIES ~ . + coods(',paste(nxy,collapse='+'),')',sep=''))
+                formula <- as.formula(paste('SPECIES ~ . + coords(',paste(nxy,collapse='+'),')',sep=''))
                 w <- 'SPECIES'
               }
               
@@ -1116,37 +1344,46 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'),
                 rm(test.p)
               }
             } 
+            ###################################
             
             if (!is.null(bg)) {
               if (inherits(bg,'list')) {
-                nbg <- names(bg)
-                nbg <- .pmatch(nbg,c('n','method','remove'))
-                if ('n' %in% nbg) n <- bg[['n']]
-                else n <- 1000
-                if ('method' %in% nbg) {
-                  if (.pmatch(bg[['method']],c('gRandom','random','rnd')) %in% c('gRandom','random','rnd')) {
-                    m <- 'gRandom'
-                  } else if (.pmatch(bg[['method']],c('eRandom','envrandom','ernd')) %in% c('eRandom','envrandom','ernd')) {
-                    m <- 'eRandom'
-                  } else if (.pmatch(bg[['method']],c('gDistance','geo')) %in% c('gDistance','geo')) {
-                    m <- 'gDist'
-                  } else if (.pmatch(bg[['method']],c('eDistance','environ','envDist')) %in% c('eDistance','environ','envDist')) {
-                    m <- 'eDist'
+                ww <- .exFormula(formula,train)
+                #--
+                #--- .p (presence locations; only needed for gDist method)
+                nsp <- ww@vars@species # name of species
+                if (length(nsp) > 0) {
+                  w <- c()
+                  for (n in nsp) {
+                    w <- c(w,which(train[,n] == 1))
                   }
-                } else m <- 'gRandom'
-                if ('remove' %in% nbg && is.logical(bg[['remove']])) r <- bg[['remove']]
-                else r <- FALSE
-                
-                bg <- .pseudo(predictors,n=n,method = m,p = if (r) train[,nxy] else NULL)
+                  w <- unique(w)
+                  .p <- train[w,nxy]
+                } else .p <- train[,nxy] # assuming all records are presence-only!
+                #----
+                #.p 
+                bg <- .pseudo.Raster(predictors,bg = bg,p = .p,factors = names(ww@vars@categorical))
                 colnames(bg)[1:2] <- nxy
               } else if (is.numeric(bg)) {
-                bg <- .pseudo(predictors,n=bg,method = 'gRandom',p = NULL)
+                bg <- .pseudo_gRandom.Raster(predictors,n=bg[1])
                 colnames(bg)[1:2] <- nxy
-              } else if (!is.data.frame(bg)) bg <- NULL
+              } else if (is.data.frame(bg) || is.matrix(bg)) bg <- data.frame(bg)
+              else {
+                bg <- NULL
+                warning('bg is not recognised so (ignored)! It should be either a list (settings of generating background), or a single number (number of background), or a data.frame (background records)')
+              }
             }
             
-            dot <- list(...)
-            n <- tolower(names(dot))
+            #################################
+            
+            #-----------
+            if (is.null(metadata)) metadata <- list()
+            if (!is.list(metadata)) {
+              warning('metadata is ignored (it should be a list)!')
+              metadata <- list()
+            }
+            
+            n <- tolower(names(metadata))
             for (i in seq_along(n)) {
               if (any(!is.na(pmatch(c("aut"),n[i])))) n[i] <- 'author'
               else if (any(!is.na(pmatch(c("web"),n[i])))) n[i] <- 'website'
@@ -1156,14 +1393,15 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'),
               else if (any(!is.na(pmatch(c("dat"),n[i])))) n[i] <- 'date'
               else if (any(!is.na(pmatch(c("lic"),n[i])))) n[i] <- 'license'
             }
-            names(dot) <- n
-            author <- dot[['author']]
-            website <- dot[['website']]
-            citation <- dot[['citation']]
-            help <- dot[['help']]
-            description <- dot[['description']]
-            date <- dot[['date']]
-            license <- dot[['license']]
+            names(metadata) <- n
+            author <- metadata[['author']]
+            website <- metadata[['website']]
+            citation <- metadata[['citation']]
+            help <- metadata[['help']]
+            description <- metadata[['description']]
+            date <- metadata[['date']]
+            license <- metadata[['license']]
+            #-----------
             
             d <- .createSdmdata(train = train, formula = formula, test = test,bg=bg,crs = crs,author=author,website=website,citation=citation,help=help,description=description,date=date,license=license)
             
@@ -1173,4 +1411,458 @@ setMethod('sdmData', signature(train='SpatialPoints',predictors='Raster'),
             d
           }
 )
+#-----------
+setMethod('sdmData', signature(train='SpatVector',predictors='SpatRaster'), 
+          function(formula,train,predictors,test=NULL,bg=NULL,filename=NULL,crs=NULL,impute=TRUE,metadata=NULL,...) {
+            if(missing(test)) test <- NULL
+            if(missing(filename)) filename <- NULL
+            
+            if(missing(crs)) crs <- NULL
+            else {
+              if (is.character(crs)) {
+                if (crs(train,proj=TRUE) == "" || is.na(crs(train,proj=TRUE))) crs(train) <- crs
+                #---
+                if (!is.null(test) && inherits(test,'SpatVector') && crs(test,proj=TRUE) == "") crs(test) <- crs
+              }
+            }
+            
+            if(missing(bg)) bg <- NULL
+            if(missing(metadata)) metadata <- NULL
+            
+            # the current imputation method is "neighbor"!
+            if(missing(impute)) impute <- "neighbor"
+            else if (is.null(impute)) impute <- "none"
+            else if (is.logical(impute)) {
+              if (impute) impute <- "neighbor"
+              else impute <- "none"
+            } else if (is.character(impute)) {
+              if (impute %in% c('neigh','neighbor','neighbour','neighCell')) impute <- 'neighbor'
+              else {
+                warning('Currently, the only available imputation method is "neighbor", so the impute is changed to it...')
+                impute <- 'neighbor'
+              }
+            }
+            
+            #---
+            if (!.sdmOptions$getOption('sdmLoaded')) suppressMessages(.addMethods())
+            #---
+            errLog <- list()
+            #----
+            #-----------------------
+            if (crs(train) != "" && !is.na(crs(train))) crs <- crs(train)
+            else {
+              if (!is.null(crs) && is.character(crs)) crs(train) <- crs
+              else if (crs(predictors) != "" && !is.na(crs(predictors))) {
+                crs(train) <- crs(predictors)
+              }
+            }
+            #-----
+            
+            nxy <- colnames(crds(train))
+            wF <- is.factor(predictors)
+            
+            if (!is.null(test)) {
+              if (inherits(test,'SpatVector')) {
+                
+                if (crs(test) == "" || is.na(crs(test))) {
+                  if (crs(train) != "" && !is.na(crs(train))) crs(test) <- crs(train)
+                  else if (crs(predictors) != "" && !is.na(crs(predictors))) crs(test) <- crs(predictors)
+                }
+                
+                testXY <- crds(test)
+                test.df <- as.data.frame(test)
+                
+                if (nrow(test.df) == 0) stop('The independent "test" dataset has NO species information (has ONLY spatial coordinates)...!')
+                
+                if (all(nxy %in% colnames(test.df))) {
+                  w <- which(colnames(test.df) %in% nxy)
+                  test.df[,-w]
+                }
+                
+                test.df <- data.frame(test.df,testXY)
+                
+                rm(testXY)
+                
+              } else if (is.data.frame(test)) {
+                if (!all(nxy %in% colnames(test))) {
+                  #warning('The records in test data have no coordinates!')
+                  errLog <- c(errLog,'The test dataset has no coordinates!')
+                }
+                test.df <- test
+              } else stop('test data should be either a data.frame or with the same class as the train data!')
+              
+              if (nxy[1] %in% colnames(test.df) & nxy[2] %in% colnames(test.df)) {
+                cells <- cellFromXY(predictors,test.df[,nxy])
+                cNA <- is.na(cells)
+                
+                if (any(cNA)) {
+                  
+                  if (all(cNA)) {
+                    if (inherits(test,'SpatVector')) {
+                      if ((crs(predictors,proj=TRUE) != "" && crs(test,proj=TRUE) != "") && (crs(predictors,proj=TRUE) != crs(test,proj=TRUE))) {
+                        test <- project(test,predictors)
+                        cells <- cellFromXY(predictors,geom(test)[,3:4])
+                        cNA <- is.na(cells)
+                        if (all(cNA)) stop('No spatial overlap between records in the "test" dataset and the predictors...!')
+                        else {
+                          test.df <- as.data.frame(test)
+                          if (all(nxy %in% colnames(test.df))) {
+                            w <- which(colnames(test.df) %in% nxy)
+                            test.df[,-w]
+                          }
+                          
+                          test.df <- data.frame(test.df,geom(test)[,3:4])
+                        }
+                      } else stop('No spatial overlap between records in the "test" dataset and the predictors...!')
+                    } else stop('No spatial overlap between records in the "test" dataset and the predictors...!')
+                  }
+                  
+                  wNA <- which(cNA)
+                  test <- test[-wNA,]
+                  test.df <- test.df[-wNA,]
+                  cells <- cells[-wNA]
+                  errLog <- c(errLog,paste(length(wNA),'records were removed from the test dataset because of they were located outside of the bounding box (extent) of the predictors.'))
+                  rm(wNA)
+                }
+                rm(cNA)
+                #---------
+                
+                
+                test.p <- data.frame(predictors[cells])
+                #if (!any(wF)) test.p <- data.frame(predictors[cells])
+                #else test.p <- .Extract(predictors,cells,which(wF))
+                rm(cells)
+                #colnames(test.p) <- names(predictors)
+                
+                wNA <- which(apply(test.p,1,function(x) any(is.na(x)))) 
+                
+                if (length(wNA) > 0) {
+                  #---- imputation method: "neighbor"
+                  if (impute == "neighbor") {
+                    for (w in wNA) {
+                      .cxy <- cellFromXY(predictors,test.df[w,nxy])
+                      if (!is.na(.cxy)) {
+                        .nec <- .getNeighCellRandom(.cxy,predictors)
+                        if (!is.na(.nec)) {
+                          x <- predictors[.nec]
+                          if (all(!is.na(x[1,]))) {
+                            test.p[w,names(x)] <- x
+                          }
+                        }
+                      }
+                    }
+                    #-------
+                    wNA <- which(apply(test.p,1,function(x) any(is.na(x)))) 
+                    if (length(wNA) > 0) {
+                      test <- test[-wNA,]
+                      test.p <- test.p[-wNA,]
+                      test.df <- test.df[-wNA,]
+                      errLog <- c(errLog,paste(length(wNA),'records were removed from the test dataset because they were located on cells with missing values (NA) in the predictors.'))
+                    }
+                  } else {
+                    test <- test[-wNA,]
+                    test.p <- test.p[-wNA,]
+                    test.df <- test.df[-wNA,]
+                    errLog <- c(errLog,paste(length(wNA),'records were removed from the test dataset because they were located on cells with missing values (NA) in the predictors.'))
+                  }
+                }
+                #----
+                
+                
+                w <- colnames(test.df) %in% colnames(test.p)
+                if (any(w)) {
+                  test.df <- test.df[,colnames(test.df)[!w]]
+                  test <- test[,names(test)[!w]]
+                  errLog <- c(errLog,paste('WARNING: The variables',colnames(test.df)[w],'were removed from the test dataset as they exist in the predictors as well.'))
+                }
+              } else stop('the coordinate names in the train and test datasets do not match!')
+              
+            }
+            #-----------------------
+            #-----------------------
+            
+            
+            .PO <- FALSE # defined to separate between SpatVectors without and With attributes (case of SpatialPoints vs SpatialPointsDataFrame)
+            
+            trainXY <- crds(train)
+            
+            if (dim(train)[2] == 0) {
+              train$SPECIES <- 1
+              .PO <- TRUE
+            }
+            
+            train.df <- as(train,'data.frame')
+            train.df <- data.frame(train.df,trainXY)
+            
+            cells <- cellFromXY(predictors,trainXY)
+            cNA <- is.na(cells)
+            
+            if (any(cNA)) {
+              if (all(cNA)) {
+                
+                if ((crs(predictors,proj=TRUE) != "" && crs(train,proj=TRUE) != "") && (crs(predictors,proj=TRUE) != crs(train,proj=TRUE))) {
+                  train <- project(train,predictors)
+                  cells <- cellFromXY(predictors,crds(train))
+                  cNA <- is.na(cells)
+                  if (all(cNA)) stop('No spatial overlap between records in the "train" dataset and the predictors...!')
+                  else {
+                    warning('The species dataset has a different CRS than the predictors dataset; so it is projected to the CRS of "predictors"...!')
+                    train.df <- as.data.frame(train)
+                    if (all(nxy %in% colnames(train.df))) {
+                      w <- which(colnames(train.df) %in% nxy)
+                      train.df[,-w]
+                    }
+                    
+                    train.df <- data.frame(train.df,crds(train))
+                  }
+                } else stop('No spatial overlap between records in the "train" dataset and the predictors...!')
+                
+              }
+              wNA <- which(cNA)
+              train <- train[-wNA,]
+              train.df <- train.df[-wNA,]
+              cells <- cells[-wNA]
+              errLog <- c(errLog,paste(length(wNA),'records were removed from the "train" dataset because of they were located outside of the bounding box (extent) of the predictors.'))
+            }
+            rm(cNA)
+            
+            
+            train.p <- predictors[cells]
+            
+            rm(cells)
+            
+            
+            #---
+            wNA <- which(apply(train.p,1,function(x) any(is.na(x)))) 
+            
+            if (length(wNA) > 0) {
+              #---- imputation method: "neighbor"
+              if (impute == "neighbor") {
+                for (w in wNA) {
+                  .cxy <- cellFromXY(predictors,train.df[w,nxy])
+                  if (!is.na(.cxy)) {
+                    .nec <- .getNeighCellRandom(.cxy,predictors)
+                    if (!is.na(.nec)) {
+                      x <- predictors[.nec]
+                      if (all(!is.na(x[1,]))) {
+                        train.p[w,names(x)] <- x
+                      }
+                    }
+                  }
+                }
+                #-------
+                wNA <- which(apply(train.p,1,function(x) any(is.na(x)))) 
+                if (length(wNA) > 0) {
+                  train <- train[-wNA,]
+                  train.p <- train.p[-wNA,]
+                  train.df <- train.df[-wNA,]
+                  errLog <- c(errLog,paste(length(wNA),'records were removed from the "train" dataset because they were located on cells with missing values (NA) in the predictors.'))
+                }
+              } else {
+                train <- train[-wNA,]
+                train.p <- train.p[-wNA,]
+                train.df <- train.df[-wNA,]
+                errLog <- c(errLog,paste(length(wNA),'records were removed from the "train" dataset because they were located on cells with missing values (NA) in the predictors.'))
+              }
+            }
+            #----
+            #---------
+            
+            
+            
+            w <- colnames(train.df) %in% colnames(train.p)
+            if (any(w)) {
+              train.df <- train.df[,colnames(train.df)[!w]]
+              train <- train[,names(train)[!w]]
+              errLog <- c(errLog,paste('WARNING: The variables',colnames(train)[w],'were removed from the train dataset as they exist in the predictors as well.'))
+            }
+            #######################################################
+            if (!.PO) {
+              train <- data.frame(train.df,train.p)
+              #rm(train.p,train.df)
+              if (!is.null(test)) {
+                test <- data.frame(test.df,test.p)
+                rm(test.p,test.df)
+              }
+              
+              if (!missing(formula)) {
+                #if ((length(formula) == 3 && formula[[2]] == '.') || length(formula) == 2) nsp <- as.character(.exFormula(formula,train.df)@vars@species)
+                if (!all(nxy %in% all.vars(formula))) {
+                  if ('.' %in% all.vars(formula)) {
+                    ww <- .exFormula(formula,train)
+                    nw <- .excludeVector(colnames(train),c(ww@vars@species,nxy))
+                    w <- as.character(.exFormula(formula,train,FALSE)@vars@species)
+                    nw <- nw[nw %in% colnames(train.p)]
+                    if (length(w) == 0) formula[[2]] <- terms.formula(formula,data=train[,nw])[[2]]
+                    else formula[[3]] <- terms.formula(formula,data=train[,nw],simplify = TRUE)[[3]]
+                  }
+                  formula <- update(formula,as.formula(paste('~ . + coords(',paste(nxy,collapse='+'),')',sep='')))
+                }
+              } else formula <- as.formula(paste('~ . + coords(',paste(nxy,collapse='+'),')',sep=''))
+            } else {
+              if (!missing(formula)) {
+                ww <- as.character(.exFormula(formula,train.p,FALSE)@vars@species)
+                if (length(ww) > 1) {
+                  warning('While SpatialPoints can be used for only 1 species, more names are defined in the formula! The first name is considered!')
+                  errLog <- c(errLog,'WARNING: While SpatialPoints can be used for only 1 species, more names are defined in the formula! The first name is considered!')
+                  w <- ww[1]
+                } else if (length(ww) == 0) w <- 'SPECIES'
+                
+                names(train) <- w
+                
+                if (!all(nxy %in% all.vars(formula))) {
+                  
+                  if ('.' %in% all.vars(formula)) {
+                    if (length(ww) == 0) formula[[2]] <- terms.formula(formula,data=train.p)[[2]]
+                    else formula[[3]] <- terms.formula(formula,data=train.p,simplify = TRUE)[[3]]
+                  }
+                  formula <- update(formula,as.formula(paste('~ . + coords(',paste(nxy,collapse='+'),')',sep='')))
+                }
+              } else {
+                formula <- as.formula(paste('SPECIES ~ . + coords(',paste(nxy,collapse='+'),')',sep=''))
+                w <- 'SPECIES'
+              }
+              
+              train <- data.frame(train)
+              #colnames(train)[1] <- w
+              train <- data.frame(train,train.p)
+              
+              
+              if (!is.null(test)) {
+                test <- data.frame(test.df,test.p)
+                rm(test.p,test.df)
+                #test <- data.frame(SPECIES=rep(1,nrow(test)),test,test.p)
+                #colnames(test)[1] <- w
+                rm(test.p)
+              }
+            } 
+            #--------------------------
+            rm(train.p,train.df)
+            
+            if (!is.null(bg)) {
+              if (inherits(bg,'list')) {
+                ww <- .exFormula(formula,train)
+                #--
+                #--- .p (presence locations; only needed for gDist method)
+                nsp <- ww@vars@species # name of species
+                if (length(nsp) > 0) {
+                  w <- c()
+                  for (n in nsp) {
+                    w <- c(w,which(train[,n] == 1))
+                  }
+                  w <- unique(w)
+                  .p <- train[w,nxy]
+                } else .p <- train[,nxy] # assuming all records are presence-only!
+                #----
+                #.p 
+                bg <- .pseudo.terra(predictors,bg = bg,p = .p,factors = names(ww@vars@categorical))
+                colnames(bg)[1:2] <- nxy
+              } else if (is.numeric(bg)) {
+                bg <- .pseudo_gRandom.Terra(predictors,n=bg[1])
+                colnames(bg)[1:2] <- nxy
+              } else if (is.data.frame(bg) || is.matrix(bg)) bg <- data.frame(bg)
+              else {
+                bg <- NULL
+                warning('bg is not recognised so (ignored)! It should be either a list (settings of generating background), or a single number (number of background), or a data.frame (background records)')
+              }
+            }
+            ########################
+            if (is.null(metadata)) metadata <- list()
+            if (!is.list(metadata)) {
+              warning('metadata is ignored (it should be a list)!')
+              metadata <- list()
+            }
+            
+            n <- tolower(names(metadata))
+            for (i in seq_along(n)) {
+              if (any(!is.na(pmatch(c("aut"),n[i])))) n[i] <- 'author'
+              else if (any(!is.na(pmatch(c("web"),n[i])))) n[i] <- 'website'
+              else if (any(!is.na(pmatch(c("cit"),n[i])))) n[i] <- 'citation'
+              else if (any(!is.na(pmatch(c("hel"),n[i])))) n[i] <- 'help'
+              else if (any(!is.na(pmatch(c("des"),n[i])))) n[i] <- 'description'
+              else if (any(!is.na(pmatch(c("dat"),n[i])))) n[i] <- 'date'
+              else if (any(!is.na(pmatch(c("lic"),n[i])))) n[i] <- 'license'
+            }
+            names(metadata) <- n
+            author <- metadata[['author']]
+            website <- metadata[['website']]
+            citation <- metadata[['citation']]
+            help <- metadata[['help']]
+            description <- metadata[['description']]
+            date <- metadata[['date']]
+            license <- metadata[['license']]
+            #-----------
+            
+            d <- .createSdmdata(train = train, formula = formula, test = test,bg=bg,crs = crs,author=author,website=website,citation=citation,help=help,description=description,date=date,license=license)
+            
+            if (length(errLog) > 0) {
+              for (i in seq_along(errLog)) .addLog(d) <- errLog[[i]]
+            }
+            d
+          }
+)
+#---------
 
+setMethod('sdmData', signature(train='data.frame',predictors='SpatRaster'), 
+          function(formula,train,predictors,test=NULL,bg=NULL,filename=NULL,crs=NULL,impute=TRUE,metadata=NULL,...) {
+            if(missing(test)) test <- NULL
+            if(missing(filename)) filename <- NULL
+            if(missing(crs) || !is.character(crs)) crs <- ""
+            
+            if(missing(bg)) bg <- NULL
+            if(missing(metadata)) metadata <- NULL
+            
+            # the current imputation method is "neighbor"!
+            if(missing(impute)) impute <- "neighbor"
+            else if (is.null(impute)) impute <- "none"
+            else if (is.logical(impute)) {
+              if (impute) impute <- "neighbor"
+              else impute <- "none"
+            } else if (is.character(impute)) {
+              if (impute %in% c('neigh','neighbor','neighbour','neighCell')) impute <- 'neighbor'
+              else {
+                warning('Currently, the only available imputation method is "neighbor", so the impute is changed to it...')
+                impute <- 'neighbor'
+              }
+            }
+            #---
+            if (inherits(train,'sf')) {
+              
+              train <- vect(train)
+              
+              if (!is.null(test)) {
+                if (inherits(test,'sf')) {
+                  test <- vect(test)
+                } else if (inherits(train,'data.frame')) {
+                  nxy <- .which.is.coords(colnames(test))
+                  test <- vect(test,geom=nxy)
+                } else stop('(Independent) test data should be either data.frame (with coordinates) or a spatial points object (e.g., SpatVector, sf, SpatialPoints)')
+              }
+              
+            } else {
+              if (!missing(formula)) {
+                .tmp <- cbind(train[1:5,],spatSample(predictors,size=5,na.rm=TRUE))
+                ww <- .exFormula(formula,.tmp)
+                if (!is.null(ww@vars@others) && "x_coordinate" %in% ww@vars@others$type) {
+                  nxy <- ww@vars@others$name[c(which(ww@vars@others$type == "x_coordinate"),which(ww@vars@others$type == "y_coordinate"))]
+                  train <- vect(train,geom=nxy,crs=crs)
+                  
+                  if (!is.null(test)) {
+                    if (inherits(test,'sf') || inherits(test,'SpatialPoints')) {
+                      test <- vect(test)
+                    } else if (inherits(test,'data.frame')) {
+                      if (!all(nxy %in% colnames(test))) stop('coordinates columns do not exist in test data!')
+                      test <- vect(test,geom=nxy,crs=crs)
+                    } else {
+                      if (!inherits(test,'SpatVector')) stop('test data should be either data.frame (with coordinates) or a spatial points object (e.g., SpatVector, sf, SpatialPoints)')
+                    }
+                  }
+                  formula <- .rmCoordsInFormula(formula)
+                } else stop("You need to have coordinates (which should be introduced in the formula using 'coords(x+y)') in the species data.frame (train) when predictors is a Raster object!")
+            } else stop('Since train data is a data.frame, you need to specify coordinates columns in the formula argument...!')
+            #----
+            }
+            
+            sdmData(formula=formula, train=train,predictors=predictors,test=test,bg=bg,filename=filename,crs=crs,metadata=metadata,impute=impute,...)
+          }
+)

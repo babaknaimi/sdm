@@ -10,11 +10,11 @@
 \title{Combine (merge) two sdmModels into a single object}
 
 \description{
-If two sets of models fitted in two separate sdmModels objects, they can be merged into a single sdmModels objects using `+`
+If two sets of models fitted in two separate sdmModels objects, they can be merged into a single sdmModels object using `+`.
 }
 
 \value{
- an object of class \code{sdmModels}
+ An object of class \code{sdmModels}.
 }
 
 \references{
@@ -25,7 +25,7 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 \url{https://www.r-gis.net/}
 
-\url{https://www.biogeoinformatics.org}
+\url{https://www.biogeoinformatics.org/}
 }
 
 
@@ -38,17 +38,17 @@ df <- read.csv(file)
 
 head(df) 
 
-d <- sdmData(sp~b15+NDVI,train=df)
+d <- sdmData(sp ~ b15 + NDVI, train = df)
 
 d
 #----
 
 
-m1 <- sdm(sp~b15+NDVI,data=d,methods=c('glm','gbm'))
+m1 <- sdm(sp ~ b15 + NDVI, data = d, methods = c('glm', 'gbm'))
 
 m1
 
-m2 <- sdm(sp~b15+NDVI,data=d,methods=c('svm'))
+m2 <- sdm(sp ~ b15 + NDVI, data = d, methods = c('svm'))
 
 m2
 

@@ -1,16 +1,16 @@
 import(sp,methods)
 importFrom("graphics", "abline", "legend", "par", "points","lines","boxplot","barplot","arrows","segments","text","axis")
 importFrom("grDevices", "colorRampPalette")
-importFrom("stats", "as.formula", "cor", "cov", "formula", "glm",
-             "mahalanobis", "predict.glm", "supsmu", "terms",
-             "wilcox.test","princomp","plogis","model.frame","model.matrix",
-           "terms.formula","poly","quantile","sd","cor.test","coefficients",
-           "lm","optim","density","median")
+importFrom("stats", "as.formula", "cor", "cov","cor.test","coefficients", "density","formula", "glm",
+             "lm","kmeans","mahalanobis","median","model.frame","model.matrix","optim","plogis","poly","princomp","predict.glm","qt","quantile",
+           "supsmu", "sd","terms","terms.formula","wilcox.test")
 importFrom("utils", "combn", "data", "read.csv","object.size","install.packages","remove.packages","write.csv")
 importFrom("parallel", "makeForkCluster", "makePSOCKcluster", "detectCores","clusterExport","clusterEvalQ","stopCluster","parLapply")
-importFrom("raster",  "raster", "stack" ,"brick","cellFromXY","cellFromRowCol","ncell","trim","extract","extent","as.data.frame","predict",
-           "writeRaster","calc","addLayer","setZ","extension","sampleRandom","values","subset","update","getValues","nlayers")
-exportClasses(sdmdata, sdmFormula,sdmEvaluate,sdmModels,sdmCorrelativeMethod)
-exportMethods(sdmData,sdm,sdmSetting,evaluates,roc,getRoc,add,getmethodNames,getmethod,getModelInfo,getModelId,
-              getEvaluation,read.sdm,write.sdm,installAll,gui,getVarImp,ensemble,subset,rcurve,getResponseCurve,niche)
+importFrom("raster", "addLayer","brick","calc","coordinates","extent","extension","getValues","nlayers","predict","projection","projection<-", "raster", "stack" ,"setZ","sampleRandom",
+           "sampleStratified","scale","setValues","Which")
+importFrom("terra", "adjacent","app","as.data.frame","blocks","cells","cellFromXY","cellFromRowCol" ,"concats","crds","crs<-","crs","extract","gridDist","gridDistance","geom","hasValues","head","ifel","mean","median","metags<-","ncell","nlyr","predict","project","rast","readStart","readStop","readValues","scale","stdev","set.values","sources","spatSample","subset","tapp","trim","values","vect","update","weighted.mean","writeRaster","writeStart","writeStop","writeValues","xyFromCell")
+
+#exportClasses(sdmdata, sdmFormula,sdmEvaluate,sdmModels,sdmCorrelativeMethod,.pcaObject)
+#exportMethods(sdmData,sdm,sdmSetting,evaluates,roc,getRoc,add,getmethodNames,getmethod,getModelInfo,getModelId,
+#              getEvaluation,read.sdm,write.sdm,installAll,gui,getVarImp,ensemble,subset,rcurve,getResponseCurve,niche,pca)
 exportPattern("^[[:alpha:]]+")

@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Last Update :  Nov. 2021
-# Version 1.9
+# Last Update :  Jan 2024
+# Version 2.0
 # Licence GPL v3
 #--------
 
@@ -42,7 +42,7 @@
     p <- p[!p == '.tmp']
     pkgs <- c(pkgs,p)
   }
-  p <- c('shiny','rgdal','raster','shinyBS','leaflet','usdm','devtools','mmap','ggplot2','gridExtra')
+  p <- c('shiny','raster','shinyBS','leaflet','usdm','devtools','mmap','ggplot2','gridExtra')
   unique(c(pkgs,p))
 }
 #------------- 

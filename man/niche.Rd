@@ -6,6 +6,10 @@
 \alias{niche,RasterStackBrick,sdmdata-method}
 \alias{niche,sdmdata,ANY-method}
 \alias{plot,.nicheRaster-method}
+\alias{plot,.nicheSpatRaster-method}
+\alias{niche,SpatRaster,SpatRaster-method}
+\alias{niche,SpatRaster,SpatVector-method}
+\alias{niche,SpatRaster,sdmdata-method}
 
 
 \title{Generate and plot Ecological Niche}
@@ -50,7 +54,7 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 \url{https://www.r-gis.net/}
 
-\url{https://www.biogeoinformatics.org}
+\url{https://www.biogeoinformatics.org/}
 }
 
 

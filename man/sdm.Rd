@@ -32,6 +32,28 @@ User should make sure that the methods are available and the required packages f
 A new method can be adopted and added to the package by a user using \code{\link{add}} function. It is also possible to get an instance of an existing method, override the setting and definition, and then add it with a new name (e.g., my.glm).
 
 The output would be a single object (\code{sdmModels}) that can be read/reproduced everywhere (e.g., on a new machine). A setting object can also be taken (exported) out of the output \code{sdmModels} object, that can be used to reproduce the same practice but given new conditions (i.e., new dataset, area. etc.)
+
+For speed up the model fitting, you may use parallel processing (a high-performance computing solution) by providing a list of items can be passed to \code{parallelSetting} argument. The items in the list includes:
+
+\code{ncore}: defines the number of cores (it can also be specified outside of this list
+
+\code{method}: defines the parallelising engine. Currently, three options are available including 'parallel', 'foreach', and 'future'. default is 'parallel'
+
+\code{doParallel}: Optional, definition to register for a backend for parallel processing (needed when method='foreach'). It should be provided as an R expression like the following example:
+
+expression(registerDoParallel(parallelSetting@cl))
+
+The above example is based on the function available in doParallel package. Other packages can also be used to provide and register backend technologies (e.g., doMC)
+
+\code{cluster}: Optional; in case a cluster is created and available (e.g., using cl <- parallel::makeCluster(2)), the cluster object can be introduced here to be used as the parallel processing engine, otherwise, it is handled by the sdm package.
+
+\code{hosts}: Optional; To use remote machines/clusters in the parallel processing, a character vector with the addresses (names or IPs) of the accessible (on the network) remote clusters can be provided here to be registered and used in parallel processing (still under development so it may not work appropriately!)
+
+\code{fork}: Logical, Available for non-windows operating system and specifies whether a fork solution should be used for the parallelisation. Default is TRUE for non-windows OS and FALSE for windows.
+
+NOTE: Only use parallelSetting when you deal with a big dataset or large number of models otherwise, it make the procedure slower rather than faster if the procedure is quick without parallelising!
+
+
 }
 
 \value{
@@ -46,7 +68,7 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 \url{https://www.r-gis.net/}
 
-\url{https://www.biogeoinformatics.org}
+\url{https://www.biogeoinformatics.org/}
 }
 
 
