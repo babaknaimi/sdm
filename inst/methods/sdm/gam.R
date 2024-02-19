@@ -1,13 +1,13 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  May 2020
-# Version 1.3
+# Date (last update):  Feb 2024
+# Version 1.4
 # Licence GPL v3
 
 #-------------
 methodInfo <-list(name=c('gam','GAM'),
            packages='mgcv',
            modelTypes = c('pa','pb','ab','n'),
-           fitParams = list(v='sdmVariables',data='sdmDataFrame'),
+           fitParams = list(v='sdmVariables',data='data.frame'),
            fitSettings = list(family=binomial(link='logit'),k=-1,bs='tp',weights=NULL,subset=NULL,na.action='na.omit',offset=NULL,method='GCV.Cp',optimizer=c("outer","newton"),select=FALSE,knots=NULL,sp=NULL,min.sp=NULL,H=NULL,gamma=1,fit=TRUE,paraPen=NULL,G=NULL),
            fitFunction = function(v,data,k=-1,bs='tp',...) {
              .f <- .getFormula.gammgcv(n=c(v@response,v@variables$numeric),nFact = v@variables$nFact,k=k,bs=bs)
@@ -20,7 +20,7 @@ methodInfo <-list(name=c('gam','GAM'),
              list(fitSettings=f)
            },
            tuneParams = NULL,
-           predictParams=list(object='model',newdata='sdmDataFrame'),
+           predictParams=list(object='model',newdata='data.frame'),
            predictSettings=list(type='response'),
            predictFunction='predict.gam',
            #------ metadata (optional):

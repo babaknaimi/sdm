@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Jan 2024
-# Version 6.5
+# Date (last update):  Feb 2024
+# Version 6.8
 # Licence GPL v3
 
 
@@ -629,13 +629,13 @@ setRefClass('.sdmMethodsContainer',
                     if (!is.null(x@dataArgument.names)) .self$MethodDefinitions[i,4] <- paste(x@dataArgument.names,collapse=';')
                     else {
                       nfit <- npred <- nt <- NULL
-                      w <- which(x@fitParams %in% c('sdmDataFrame','sdmX','sdmDataFrame.norm','sdmX.norm','sdmY','sdmRaster','sdmMatrix','sdmMatrix.norm'))
+                      w <- which(x@fitParams %in% c('data.frame','sdmDataFrame','sdmX','sdmDataFrame.norm','sdmX.norm','sdmY','sdmRaster','sdmMatrix','sdmMatrix.norm'))
                       if (length(w) > 0) {
                         nt <- x@fitParams[w]
                         nfit <- names(x@fitParams)[w]
                       }
                       
-                      w <- which(x@predictParams %in% c('sdmDataFrame','sdmX','sdmDataFrame.norm','sdmX.norm','sdmY','sdmRaster','sdmMatrix','sdmMatrix.norm'))
+                      w <- which(x@predictParams %in% c('data.frame','sdmDataFrame','sdmX','sdmDataFrame.norm','sdmX.norm','sdmY','sdmRaster','sdmMatrix','sdmMatrix.norm'))
                       if (length(w) > 0) {
                         npred <- names(x@predictParams)[w]
                         nt <- c(nt,x@predictParams[w])
@@ -904,6 +904,14 @@ setRefClass(".workload",
                   .self$sdmVariables[[sp]]
                 }
               },
+              getDataFrame=function(id=NULL,train=TRUE,sp=NULL,grp=NULL) {
+                if (is.null(id)) {
+                  if (train) as.data.frame(.self$data,grp='train',sp=sp)
+                  else as.data.frame(.self$data,grp=grp,sp=sp)
+                } else {
+                  as.data.frame(.self$data,ind=id,sp=sp,grp=grp)
+                }
+              },
               generateParams=function(n,sp,train=TRUE,data=TRUE) {
                 # if data=FALSE, the type of data is returned rather than data object (i.e., sdmDataFrame)
                 for (i in seq_along(n)) {
@@ -911,6 +919,11 @@ setRefClass(".workload",
                     if (data) {
                       if (train) n[[i]] <- .self$train[[sp]]$sdmDataFrame
                       else n[[i]] <- .self$test[[sp]]$sdmDataFrame
+                    } #else n[[i]] <- 'sdmDataFrame'
+                  } else if (n[[i]] == 'data.frame') {
+                    if (data) {
+                      if (train) n[[i]] <- .self$getDataFrame(train=TRUE,sp=sp)
+                      else n[[i]] <- .self$getDataFrame(train=FALSE,grp='test',sp=sp)
                     } #else n[[i]] <- 'sdmDataFrame'
                   } else if (n[[i]] == 'sdmVariables') {
                     n[[i]] <- getSdmVariables(sp)
@@ -990,7 +1003,7 @@ setRefClass(".workload",
                 } else .self$test[[sp]][[d]]
               },
               getReseved.names=function() {
-                c('sdmdata','sdmDataFrame','sdmX','sdmY','sdmRaster','sdmVariables','standard.formula','gam.mgcv.furmula','sdmMatrix','sdmMatrix.norm','sdmDataFrame.norm','sdmX.norm','sdmNrRecords','sdmSetting')
+                c('sdmdata','data.frame','sdmDataFrame','sdmX','sdmY','sdmRaster','sdmVariables','standard.formula','gam.mgcv.furmula','sdmMatrix','sdmMatrix.norm','sdmDataFrame.norm','sdmX.norm','sdmNrRecords','sdmSetting')
               },
               getFitArgs=function(sp,mo) {
                 o <- list()
@@ -1206,7 +1219,8 @@ setRefClass(".workloadPredict",
                   p[[2]] <- .frame
                   
                   m <- try(.self$funs[[.self$runTasks$method[i]]](p),silent=TRUE)
-                  m
+                  if (!inherits(m,'try-error')) as.numeric(m)
+                  else m
                 })
                 options(warn=0)
                 m
@@ -1221,7 +1235,8 @@ setRefClass(".workloadPredict",
                 
                 m <- try(.self$funs[[.self$runTasks$method[i]]](p),silent=TRUE)
                 options(warn=0)
-                m
+                if (!inherits(m,'try-error')) as.numeric(m)
+                else m
               },
               generateParams=function(n,sp=NULL) {
                 if (n == 'sdmDataFrame') {

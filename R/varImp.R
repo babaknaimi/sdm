@@ -1,25 +1,62 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July 2016
-# Last update :  Dec. 2020
-# Version 3.2
+# Last update :  Feb 2024
+# Version 3.3
 # Licence GPL v3
 
 
+
+# ._varImp <- function(pv,pred,sp,nsim=5) {
+#   # if the datatype is different than sdmDataFrame, then it should be updated to support...
+#   ww <- names(pv[[2]])[which(names(pv[[2]]) != sp)]
+#   dd <- pv[[2]]
+#   obs <- pv[[2]][,sp]
+#   d1 <- pred(pv)
+#   vi <- vj <- rep(NA,nsim)
+#   varImp1 <- varImp2 <- rep(NA,length(ww))
+#   names(varImp1) <- names(varImp2) <- ww
+#   a1 <- .auc(obs,d1)
+#   for (v in ww) {
+#     for (i in 1:nsim) {
+#       pv[[2]][,v] <- dd[sample(nrow(dd)),v]
+#       d2 <- pred(pv)
+#       cr <- cor(d1,d2,use="complete.obs")
+#       if (cr < 0) cr <- 0
+#       vi[i] <- 1 - cr
+#       a2 <- .auc(obs,d2)
+#       a2 <- (a1-a2)*2
+#       if (a2 > 1) a2 <- 1
+#       else if (a2 < 0) a2 <- 0
+#       vj[i] <- a2
+#     }
+#     varImp1[v] <- round(mean(vi,na.rm=TRUE),4)
+#     varImp2[v] <- round(mean(vj,na.rm=TRUE),4)
+#     pv[[2]] <- dd
+#   }
+#   new('.varImportance',variables=ww,varImportance=data.frame(variables=ww,corTest=varImp1,AUCtest=varImp2))
+# }
+# #---------
+
+
 # for internal use in .workLoad
-# pv is pred.par
-._varImp <- function(pv,pred,sp,nsim=5) {
+# # pv is pred.par
+# vn: names of main predictor variables (without transformation)
+# frame: featureGenerator Function
+._varImp <- function(pv=pred.par,pred,sp,nsim=5,.df,vn,frame) {
   # if the datatype is different than sdmDataFrame, then it should be updated to support...
-  ww <- names(pv[[2]])[which(names(pv[[2]]) != sp)]
   dd <- pv[[2]]
   obs <- pv[[2]][,sp]
   d1 <- pred(pv)
   vi <- vj <- rep(NA,nsim)
-  varImp1 <- varImp2 <- rep(NA,length(ww))
-  names(varImp1) <- names(varImp2) <- ww
+  varImp1 <- varImp2 <- rep(NA,length(vn))
+  names(varImp1) <- names(varImp2) <- vn
   a1 <- .auc(obs,d1)
-  for (v in ww) {
+  .df2 <- .df
+  
+  for (v in vn) {
     for (i in 1:nsim) {
-      pv[[2]][,v] <- dd[sample(nrow(dd)),v]
+      .df2[,v] <- .df[sample(nrow(.df)),v]
+      pv[[2]] <- frame(.df2)
       d2 <- pred(pv)
       cr <- cor(d1,d2,use="complete.obs")
       if (cr < 0) cr <- 0
@@ -32,11 +69,11 @@
     }
     varImp1[v] <- round(mean(vi,na.rm=TRUE),4)
     varImp2[v] <- round(mean(vj,na.rm=TRUE),4)
-    pv[[2]] <- dd
+    .df2 <- .df
   }
-  new('.varImportance',variables=ww,varImportance=data.frame(variables=ww,corTest=varImp1,AUCtest=varImp2))
+  new('.varImportance',variables=vn,varImportance=data.frame(variables=vn,corTest=varImp1,AUCtest=varImp2))
 }
-#---------
+#------
 
 # .getVarImpObject <- function(x,id,wtest) {
 #   # stat can be 1 (threshold-independent) OR 2 (threshold-dependent)

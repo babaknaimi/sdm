@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date:  June 2018
-# Last update:  Jan 2024
-# Version 1.3
+# Last update:  Feb 2024
+# Version 1.4
 # Licence GPL v3
 
 
@@ -14,8 +14,8 @@
 
 
 
-.responseCurve1 <- function(m,id,si=100,includeTest=FALSE,.fun=mean) {
-  if (missing(.fun) || !is.function(.fun)) .fun <- mean
+.responseCurve1 <- function(m,id,si=100,includeTest=FALSE,.fun=base::mean) {
+  if (missing(.fun) || !is.function(.fun)) .fun <- base::mean
   
   mi <- m@run.info[m@run.info$modelID == id,]
   if (nrow(mi) != 1) stop('the model with the specified id does not exist!')
@@ -111,8 +111,8 @@
 #-----------
 
 
-.responseCurve <- function(m,id,si=100,includeTest=FALSE,.fun=mean) {
-  if (missing(.fun) || !is.function(.fun)) .fun <- mean
+.responseCurve <- function(m,id,si=100,includeTest=FALSE,.fun=base::mean) {
+  if (missing(.fun) || !is.function(.fun)) .fun <- base::mean
   
   mi <- m@run.info[m@run.info$modelID %in% id,]
   
@@ -239,21 +239,21 @@ if (!isGeneric("getResponseCurve")) {
 
 setMethod("getResponseCurve", signature(x='sdmModels'),
           function(x,id,size=100,includeTest=FALSE,fun='mean',...) {
-            if (missing(fun)) fun <- mean
+            if (missing(fun)) fun <- base::mean
             else {
               if (is.character(fun)) {
                 fun <- fun[1]
-                if (fun == 'mean') fun <- mean
+                if (fun == 'mean') fun <- base::mean
                 else if (fun == 'median') fun <- median
                 else if (fun == 'max') fun <- max
                 else if (fun == 'min') fun <- min
                 else {
                   warning('fun should be one of c("mean","median","max","min") or a function (default="mean" is considered)!')
-                  fun <- mean
+                  fun <- base::mean
                 }
               } else if (!is.function(fun)) {
                 warning('fun should be one of c("mean","median","max","min") or a function (default="mean" is considered)!')
-                fun <- mean
+                fun <- base::mean
               }
             }
             
@@ -282,21 +282,23 @@ if (!isGeneric("rcurve")) {
 setMethod("rcurve", signature(x='sdmModels'),
           function(x,n,id,mean,fun,confidence,gg,size,includeTest,...) {
             
-            if (missing(fun)) fun <- mean
+            if (missing(mean)) mean <- TRUE
+            
+            if (missing(fun)) fun <- base::mean
             else {
               if (is.character(fun)) {
                 fun <- fun[1]
-                if (fun == 'mean') fun <- mean
+                if (fun == 'mean') fun <- base::mean
                 else if (fun == 'median') fun <- median
                 else if (fun == 'max') fun <- max
                 else if (fun == 'min') fun <- min
                 else {
                   warning('fun should be one of c("mean","median","max","min") or a function (default="mean" is considered)!')
-                  fun <- mean
+                  fun <- base::mean
                 }
               } else if (!is.function(fun)) {
                 warning('fun should be one of c("mean","median","max","min") or a function (default="mean" is considered)!')
-                fun <- mean
+                fun <- base::mean
               }
             }
             # if (missing(id)) {
@@ -317,7 +319,7 @@ setMethod("rcurve", signature(x='sdmModels'),
             
             if (missing(includeTest)) includeTest <- FALSE
             
-            if (missing(mean)) mean <- TRUE
+            
             
             if (missing(confidence)) {
               if (length(id) == 1) confidence <- FALSE

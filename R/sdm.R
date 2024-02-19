@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Jan 2024
-# Version 5.1
+# Date (last update):  Feb 2024
+# Version 5.2
 # Licence GPL v3
 #--------
 
@@ -769,7 +769,7 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
     if (!inherits(ev, "try-error")) mo@evaluation[['training']] <- ev
     else mo@errorLog[['evaluation']][['training']] <- ev
     
-    vi <- try(._varImp(pred.par,pred=pred,sp=sp,nsim = 5),silent=TRUE)
+    vi <- try(._varImp(pred.par,pred=pred,sp=sp,nsim = 5,.df=w$getDataFrame(train=FALSE),vn=w$frame@predictors,frame=w$frame@featureGenerator),silent=TRUE)
     if (!inherits(vi, "try-error")) mo@varImportance[['training']] <- vi
     else mo@errorLog[['varImportance']][['training']] <- vi
     
@@ -779,7 +779,8 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
     if (!inherits(ev, "try-error")) mo@evaluation[['test.dep']] <- ev
     else mo@errorLog[['evaluation']][['test.dep']] <- ev
     
-    vi <- try(._varImp(pred.par,pred=pred,sp=sp,nsim = 5),silent=TRUE)
+    # varImp for all data is done (should be fixed to avoid copying the same vi to 3 slots (training, test.dep, and test.indep)!)
+    #vi <- try(._varImp(pred.par,pred=pred,sp=sp,nsim = 5),silent=TRUE)
     if (!inherits(vi, "try-error")) mo@varImportance[['test.dep']] <- vi
     else mo@errorLog[['varImportance']][['test.dep']] <- vi
     
@@ -789,7 +790,7 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
     if (!inherits(ev, "try-error")) mo@evaluation[['test.indep']] <- ev
     else mo@errorLog[['evaluation']][['test.indep']] <- ev
     
-    vi <- try(._varImp(pred.par,pred=pred,sp=sp,nsim = 5),silent=TRUE)
+    #vi <- try(._varImp(pred.par,pred=pred,sp=sp,nsim = 5,.df=w$getDataFrame(),vn=w$frame@predictors,frame=w$frame@featureGenerator),silent=TRUE)
     if (!inherits(vi, "try-error")) mo@varImportance[['test.indep']] <- vi
     else mo@errorLog[['varImportance']][['test.indep']] <- vi
   } else mo@errorLog[['fit']] <- mo@object
@@ -815,7 +816,7 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
     if (!inherits(ev, "try-error")) mo@evaluation[['training']] <- ev
     else mo@errorLog[['evaluation']][['training']] <- ev
     
-    vi <- try(._varImp(pred.par,pred=pred,sp=sp,nsim = 10),silent=TRUE)
+    vi <- try(._varImp(pred.par,pred=pred,sp=sp,nsim = 10,.df=w$getDataFrame(train=FALSE),vn=w$frame@predictors,frame=w$frame@featureGenerator),silent=TRUE)
     if (!inherits(vi, "try-error")) mo@varImportance[['training']] <- vi
     else mo@errorLog[['varImportance']][['training']] <- vi
     
@@ -825,7 +826,7 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
     if (!inherits(ev, "try-error")) mo@evaluation[['test.indep']] <- ev
     else mo@errorLog[['evaluation']][['test.indep']] <- ev
     
-    vi <- try(._varImp(pred.par,pred=pred,sp=sp,nsim = 10),silent=TRUE)
+    #vi <- try(._varImp(pred.par,pred=pred,sp=sp,nsim = 10),silent=TRUE)
     if (!inherits(vi, "try-error")) mo@varImportance[['test.indep']] <- vi
     else mo@errorLog[['varImportance']][['test.indep']] <- vi
     
@@ -850,7 +851,7 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
     if (!inherits(ev, "try-error")) mo@evaluation[['training']] <- ev
     else mo@errorLog[['evaluation']][['training']] <- ev
     
-    vi <- try(._varImp(pred.par,pred=pred,sp=sp,nsim = 10),silent=TRUE)
+    vi <- try(._varImp(pred.par,pred=pred,sp=sp,nsim = 10,.df=w$getDataFrame(train=FALSE),vn=w$frame@predictors,frame=w$frame@featureGenerator),silent=TRUE)
     if (!inherits(vi, "try-error")) mo@varImportance[['training']] <- vi
     else mo@errorLog[['varImportance']][['training']] <- vi
     
@@ -860,7 +861,7 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
     if (!inherits(ev, "try-error")) mo@evaluation[['test.dep']] <- ev
     else mo@errorLog[['evaluation']][['test.dep']] <- ev
     
-    vi <- try(._varImp(pred.par,pred=pred,sp=sp,nsim = 10),silent=TRUE)
+    #vi <- try(._varImp(pred.par,pred=pred,sp=sp,nsim = 10),silent=TRUE)
     if (!inherits(vi, "try-error")) mo@varImportance[['test.dep']] <- vi
     else mo@errorLog[['varImportance']][['test.dep']] <- vi
     
@@ -884,7 +885,7 @@ setMethod('sdm', signature(formula='sdmdata',data='.sdmCorSetting',methods='ANY'
     if (!inherits(ev, "try-error")) mo@evaluation[['training']] <- ev
     else mo@errorLog[['evaluation']][['training']] <- ev
     
-    vi <- try(._varImp(pred.par,pred=pred,sp=sp,nsim = 10),silent=TRUE)
+    vi <- try(._varImp(pred.par,pred=pred,sp=sp,nsim = 10,.df=w$getDataFrame(train=FALSE),vn=w$frame@predictors,frame=w$frame@featureGenerator),silent=TRUE)
     if (!inherits(vi, "try-error")) mo@varImportance[['training']] <- vi
     else mo@errorLog[['varImportance']][['training']] <- vi
     
