@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  Oct. 2016
 # Last Update :  Feb. 2024
-# Version 3.5
+# Version 3.6
 # Licence GPL v3
 #-------------------
 
@@ -623,8 +623,6 @@ setMethod('ensemble', signature(x='sdmModels',newdata='data.frame'),
                 w <- paste0('ensemble_',method)
               }
             }
-            
-            rm(.method); gc()
             
             colnames(.ens) <- w
             

@@ -1,9 +1,9 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July 2016
 # Last update :  Feb 2024
-# Version 3.3
+# Version 3.4
 # Licence GPL v3
-
+#----------------------
 
 
 # ._varImp <- function(pv,pred,sp,nsim=5) {
@@ -44,8 +44,8 @@
 # frame: featureGenerator Function
 ._varImp <- function(pv=pred.par,pred,sp,nsim=5,.df,vn,frame) {
   # if the datatype is different than sdmDataFrame, then it should be updated to support...
-  dd <- pv[[2]]
-  obs <- pv[[2]][,sp]
+  obs <- .df[,sp]
+  pv[[2]] <- frame(.df)
   d1 <- pred(pv)
   vi <- vj <- rep(NA,nsim)
   varImp1 <- varImp2 <- rep(NA,length(vn))
@@ -75,6 +75,49 @@
 }
 #------
 
+# This is for calculation of varImp based on ensemble approach!
+.varImpEns <- function(m,sp=NULL,nsim=5,setting,...) {
+  vn <- m@setting@featureFrame@predictors
+  
+  if (is.null(sp)) sp <- m@setting@featureFrame@responses[1]
+  
+  if (missing(setting) || is.null(setting)) setting <- list(method='weighted',stat='auc')
+  
+  
+  dd <- as.data.frame(m@data,sp=sp,...)
+  obs <- dd[,sp]
+  dd <- dd[,vn,drop=FALSE]
+  options(warn = -1)
+  d1 <- ensemble(m,dd,setting = setting)[,1]
+  
+  
+  vi <- vj <- rep(NA,nsim)
+  varImp1 <- varImp2 <- rep(NA,length(vn))
+  names(varImp1) <- names(varImp2) <- vn
+  a1 <- .auc(obs,d1)
+  dd2 <- dd
+  
+  for (v in vn) {
+    for (i in 1:nsim) {
+      dd2[,v] <- dd[sample(nrow(dd)),v]
+      d2 <- ensemble(m,dd2,setting = setting)[,1]
+      cr <- cor(d1,d2,use="complete.obs")
+      if (cr < 0) cr <- 0
+      vi[i] <- 1 - cr
+      a2 <- .auc(obs,d2)
+      a2 <- (a1-a2)*2
+      if (a2 > 1) a2 <- 1
+      else if (a2 < 0) a2 <- 0
+      vj[i] <- a2
+    }
+    varImp1[v] <- round(mean(vi,na.rm=TRUE),4)
+    varImp2[v] <- round(mean(vj,na.rm=TRUE),4)
+    dd2 <- dd
+  }
+  options(warn = 0)
+  new('.varImportance',variables=vn,varImportance=data.frame(variables=vn,corTest=varImp1,AUCtest=varImp2))
+}
+#------
 # .getVarImpObject <- function(x,id,wtest) {
 #   # stat can be 1 (threshold-independent) OR 2 (threshold-dependent)
 #   mi <- x@run.info
@@ -153,13 +196,16 @@
 
 #--------
 if (!isGeneric("getVarImp")) {
-  setGeneric("getVarImp", function(x,id, wtest, ...)
+  setGeneric("getVarImp", function(x,id, wtest, setting, ...)
     standardGeneric("getVarImp"))
 }  
 
 setMethod('getVarImp', signature(x='sdmModels'),
-          function(x, id, wtest,...) {
+          function(x, id, wtest,setting=NULL,...) {
+            if (missing(setting)) setting <- NULL
+            
             mi <- x@run.info[x@run.info$success,]
+            
             if (nrow(mi) == 0) stop('No successfully fitted models exist in the sdmModels object!')
             
             if (missing(id) || is.null(id)) {
@@ -167,30 +213,55 @@ setMethod('getVarImp', signature(x='sdmModels'),
               if (length(id) == 0) stop('No successfully fitted models is selected!')
               else if (length(id) > 1 && length(id) == nrow(mi)) cat('\nThe variable importance for all the models are combined (averaged)... \n')
               else cat(paste0('\nThe values of relative variable importance are generated from ', length(id),' models... \n'))
+              
+              
+              if (missing(wtest)) wtest <- NULL
+              
+              .getVarImpObject(x,id,wtest)
+              
             } else {
-              
-              if (!any(id %in% mi$modelID)) stop('No successfully fitted models corresspond to the specified modelIDs (id)!')
-              
-              if (!all(id %in% mi$modelID)) {
-                id <- id[id %in% mi$modelID]
-                if (length(id) == 1) cat(paste0('Only the id  = ',id,' does exist in the list of successfully fitted models. \n'))
-                else if (length(id) > 1) cat(paste0('Some of the specified modelIDs (id) are not available; ', length(id),' models are considered...! \n'))
+              if (is.character(id)) {
+                if (!tolower(id[1]) %in% c('ens','ensemble','ensmble','ensmbl','en','ensembl','e')) stop('id should be either "ensemble" (character) or a numeric vector specifying model IDs!')
+                
+                id <- getModelId(x, success = TRUE, ...)
+                
+                if (length(id) == 0) stop('No successfully fitted models is selected!')
+                
+                sp <- as.character(unique(mi$species[mi$modelID %in% id]))
+                
+                if (length(sp) > 1) {
+                  sp <- sp[1]
+                  warning('More than one species are avaialble in the sdmModels object; the first species is considered (or use species="speciesName" in the function to select the certain species)...!')
+                }
+                
+                .varImpEns(x,sp=sp,nsim=5,setting = setting)
+              } else {
+                if (!any(id %in% mi$modelID)) stop('No successfully fitted models corresspond to the specified modelIDs (id)!')
+                
+                if (!all(id %in% mi$modelID)) {
+                  id <- id[id %in% mi$modelID]
+                  if (length(id) == 1) cat(paste0('Only the id  = ',id,' does exist in the list of successfully fitted models. \n'))
+                  else if (length(id) > 1) cat(paste0('Some of the specified modelIDs (id) are not available; ', length(id),' models are considered...! \n'))
+                }
+                
+                mi <- mi[mi$modelID %in% id,]
+                
+                if (length(unique(mi$species)) > 1) {
+                  warning('Consider that the specified modelIDs in id are related to several species!')
+                }
+                
+                if (length(unique(mi$method)) > 1) {
+                  warning('Consider that the specified modelIDs in id are related to several methods!')
+                }
+                if (missing(wtest)) wtest <- NULL
+                
+                .getVarImpObject(x,id,wtest)
+                
               }
               
-              mi <- mi[mi$modelID %in% id,]
-              
-              if (length(unique(mi$species)) > 1) {
-                warning('Consider that the specified modelIDs in id are related to several species!')
-              }
-              
-              if (length(unique(mi$method)) > 1) {
-                warning('Consider that the specified modelIDs in id are related to several methods!')
-              }
             }
             #--------------
-            if (missing(wtest)) wtest <- NULL
             
-            .getVarImpObject(x,id,wtest)
             
           }
 )
