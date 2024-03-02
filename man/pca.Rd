@@ -44,7 +44,7 @@ a list including data (a data.frame or a RasterStack depending on the type of x)
 
 \url{https://r-gis.net/}
 
-\url{https://biogeoinformatics.org/}
+\url{https://www.biogeoinformatics.org/}
 
 }
 

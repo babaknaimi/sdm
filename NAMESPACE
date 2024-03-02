@@ -6,9 +6,9 @@ importFrom("stats", "as.formula", "cor", "cov","cor.test","coefficients", "densi
            "supsmu", "sd","terms","terms.formula","wilcox.test")
 importFrom("utils", "combn", "data", "read.csv","object.size","install.packages","remove.packages","write.csv")
 importFrom("parallel", "makeForkCluster", "makePSOCKcluster", "detectCores","clusterExport","clusterEvalQ","stopCluster","parLapply")
-importFrom("raster", "addLayer","brick","calc","coordinates","extent","extension","getValues","nlayers","predict","projection","projection<-", "raster", "stack" ,"setZ","sampleRandom",
+importFrom("raster", "addLayer","brick","calc","coordinates","density","extent","extension","getValues","nlayers","predict","projection","projection<-", "raster", "stack" ,"setZ","sampleRandom",
            "sampleStratified","scale","setValues","Which")
-importFrom("terra", "adjacent","app","as.data.frame","blocks","cells","cellFromXY","cellFromRowCol" ,"concats","crds","crs<-","crs","extract","global","gridDist","gridDistance","geom","hasValues","head","ifel","mean","median","metags<-","ncell","nlyr","predict","project","rast","readStart","readStop","readValues","scale","stdev","set.values","sources","spatSample","subset","tapp","trim","values","vect","update","weighted.mean","writeRaster","writeStart","writeStop","writeValues","xyFromCell")
+importFrom("terra", "adjacent","app","as.data.frame","blocks","boxplot","cells","cellFromXY","cellFromRowCol" ,"concats","crds","crs<-","crs","extract","global","gridDist","gridDistance","geom","hasValues","head","ifel","mean","median","metags<-","ncell","nlyr","predict","project","rast","readStart","readStop","readValues","scale","stdev","set.values","sources","spatSample","subset","tapp","trim","values","vect","update","weighted.mean","writeRaster","writeStart","writeStop","writeValues","xyFromCell")
 
 #exportClasses(sdmdata, sdmFormula,sdmEvaluate,sdmModels,sdmCorrelativeMethod,.pcaObject)
 #exportMethods(sdmData,sdm,sdmSetting,evaluates,roc,getRoc,add,getmethodNames,getmethod,getModelInfo,getModelId,
