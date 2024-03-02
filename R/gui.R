@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  July 2016
-# last update: Oct. 2021
-# Version 2.9
+# last update: Feb. 2024
+# Version 3.0
 # Licence GPL v3
 
 
@@ -19,7 +19,7 @@
   
   wtSel <- c()
   
-  thStats <- names(getEvaluation(x,w=x@run.info[which(x@run.info[,7])[1],1],stat=2,wtest='training'))
+  thStats <- names(getEvaluation(x,id=x@run.info[which(x@run.info[,7])[1],1],stat=2,wtest='training'))
   thStats <- thStats[3:length(thStats)]
   
   ui <- shiny::fluidPage(
@@ -299,7 +299,7 @@
           shiny::updateSelectInput(session,'modelID6',selected = input$modelID6)
           
           output$thTable <- shiny::renderTable({
-            getEvaluation(x,w=as.numeric(input$modelID6),stat=2,wtest=as.character(input$wtest6))
+            getEvaluation(x,id=as.numeric(input$modelID6),stat=2,wtest=as.character(input$wtest6))
           })
         }
         
@@ -312,7 +312,7 @@
           shiny::updateTextInput(session,'replication_name6',value=as.character(sinfo[3]))
           shiny::updateSelectInput(session,'modelID7',selected = input$modelID7)
           
-          s1 <- getEvaluation(x,w=as.numeric(input$modelID7),stat=1,wtest=as.character(input$wtest7))
+          s1 <- getEvaluation(x,id=as.numeric(input$modelID7),stat=1,wtest=as.character(input$wtest7))
           
           s2 <- NULL
           

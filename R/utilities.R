@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date of last update :  January 2024
-# Version 1.2
+# Date of last update :  Feb 2024
+# Version 1.3
 # Licence GPL v3
 
 #------
@@ -278,3 +278,25 @@
   c(.s:(nr*.nc))
 }
 #---
+#--------
+.trim <- function(x) {
+  x <- strsplit(x,'')[[1]]
+  if (x[1] == ' ') {
+    i <- 1
+    while(x[i] == ' ') {
+      i <- i+1
+    }
+    x <- x[i:length(x)]
+  }
+  #-----
+  if (x[length(x)] == ' ') {
+    i <- length(x)
+    while(x[i] == ' ') {
+      i <- i-1
+    }
+    x <- x[1:i]
+  }
+  #----
+  paste(x,collapse='')
+}
+#-------

@@ -42,7 +42,7 @@
 # # pv is pred.par
 # vn: names of main predictor variables (without transformation)
 # frame: featureGenerator Function
-._varImp <- function(pv=pred.par,pred,sp,nsim=5,.df,vn,frame) {
+._varImp <- function(pv,pred,sp,nsim=5,.df,vn,frame) {
   # if the datatype is different than sdmDataFrame, then it should be updated to support...
   obs <- .df[,sp]
   pv[[2]] <- frame(.df)

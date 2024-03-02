@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Jan 2024
-# Version 1.2
+# Date (last update):  Feb 2024
+# Version 1.3
 # Licence GPL v3
 #--------
 
@@ -97,7 +97,29 @@ setMethod('sdmSetting', signature(formula='ANY','sdmdata','character'),
               } else s@sdmFormula <- data@sdmFormula
             }
             
-            s@featureFrame <- .getFeatureFrame(s@sdmFormula,data = as.data.frame(data)[,-1]) #.getFeaturetype(data,s@sdmFormula)  
+            s@featureFrame <- .getFeatureFrame(s@sdmFormula,data = as.data.frame(data)[,-1])
+            
+            
+            if (any(!s@featureFrame@numeric$names %in% s@sdmFormula@vars@numeric$names)) {
+              # variables in featureFrame NOT in model.terms:
+              .vN <- s@featureFrame@numeric$names[which(!s@featureFrame@numeric$names %in% s@sdmFormula@vars@numeric$names)]
+              
+              # variables in model.terms NOT in featureFrame:
+              #.vMn <- s@sdmFormula@vars@numeric$names[!s@sdmFormula@vars@numeric$names %in% s@featureFrame@numeric$names]
+              
+              .mcl <- sapply(s@sdmFormula@model.terms,class)
+              if ('.var' %in% .mcl) {
+                for (.vn in .vN) {
+                  s@sdmFormula@model.terms <- c(s@sdmFormula@model.terms,new('.var',name=.vn))
+                }
+                s@featureFrame <- .getFeatureFrame(s@sdmFormula,data = as.data.frame(data)[,-1])
+              } else if (all(.mcl == '.factor')) {
+                for (.vn in .vN) {
+                  s@sdmFormula@model.terms <- c(s@sdmFormula@model.terms,new('.var',name=.vn))
+                }
+                s@featureFrame <- .getFeatureFrame(s@sdmFormula,data = as.data.frame(data)[,-1])
+              }
+            }
             #---------
             s@distribution <- .getSpeciesDistribution(data,sp=s@sdmFormula@vars@species)
             #---------

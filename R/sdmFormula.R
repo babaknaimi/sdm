@@ -816,12 +816,6 @@
   n
 }
 #----
-#--------
-.trim <- function(x) {
-  x <- strsplit(x,'')[[1]]
-  paste(x[x != ' '],collapse='')
-}
-#-------
 
 ########
 

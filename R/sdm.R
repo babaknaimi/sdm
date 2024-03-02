@@ -277,21 +277,6 @@
   names(mo) <- mo
   w$dataObject.names <- lapply(mo, .sdmMethods$getDataArgumentNames)
   w$settingRules <- lapply(mo,function(x) .sdmMethods$Methods[[x]]@settingRules)
-  #-----------
-  
-  # .w <- sapply(w$settingRules,is.null)
-  # if (any(!.w)) {
-  #   .w <- names(.w[!.w])
-  #   for (sp in s@sdmFormula@vars@species) {
-  #     for (mo in .w) {
-  #       f <- w$settingRules[[mo]](w$sdmVariables[[sp]],w$arguments$fit[[mo]]$settings)
-  #       if ('fitSettings' %in% names(f)) w$arguments$fit[[mo]]$settings <- f$fitSettings
-  #       
-  #       if ('predictSettings' %in% names(f)) w$arguments$predict[[mo]]$settings <- f$predictSettings
-  #       
-  #     }
-  #   }
-  # }
   #------ applying the setting rules & overriding the user settings:
   for (mo in w$setting@methods) {
     .u <- NULL

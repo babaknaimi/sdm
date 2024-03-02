@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Nov 2023
-# Version 1.0
+# Date (last update):  Feb. 2024
+# Version 1.1
 # Licence GPL v3
 #-------
 
@@ -844,7 +844,7 @@
       else ff@transformers <- .getPCAfunction(data,.v,n = .pc@n,.scale = ff@transformers)
       
       .tmp <- ff@transformers(data[,.v$names])
-      
+
       if (all(ff@numeric$names %in% .v$names)) {
         ff@numeric <- .getDataParams(.tmp)
       } else {

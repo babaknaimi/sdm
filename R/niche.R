@@ -390,7 +390,7 @@ setMethod('niche', signature(x='RasterStackBrick',h='sdmdata'),
                   .nh <- .nh[1]
                   warning('More than one species name is specified in n; the first one is considered!')
                 }
-              }
+              } else .nh <- h@species.names[1]
               n <- n[n %in% nf]
               if (length(n) > 2) {
                 n <- n[1:2]
@@ -484,6 +484,7 @@ setMethod('niche', signature(x='SpatRaster',h='SpatVector'),
             #----- If it is not specified appropriately, it may be guessed, or the warning/error may be generated!
             if (missing(n)) {
               n <- names(x)[1:2]
+              .nh <- n[n %in% names(h)]
               if (.po) {
                 warning('Since n is not specified, niche is generated based on the first two layers in x!')
               } else {
@@ -528,6 +529,7 @@ setMethod('niche', signature(x='SpatRaster',h='SpatVector'),
                 } else if (length(n) == 3) {
                   if (.po) {
                     n <- n[1:2]
+                    .nh <- n[n %in% names(h)]
                     warning('The first two names in n are used!')
                   } else {
                     .nh <- n[n %in% names(h)]
@@ -624,7 +626,7 @@ setMethod('niche', signature(x='SpatRaster',h='SpatVector'),
               .niche <- .nicheSpace(h=c(rep(0,length(.ca)),rep(1,length(.cp))),env1 = hv[,n[1]],env2 = hv[,n[2]],names=n)
             } else {
               hv <- data.frame(extract(x,h,ID=FALSE))
-              .niche <- .nicheSpace(h=h@data[,.nh],env1 = hv[,n[1]],env2 = hv[,n[2]],names=n)
+              .niche <- .nicheSpace(h=h[,.nh],env1 = hv[,n[1]],env2 = hv[,n[2]],names=n)
             }
             
             if (plot) {
@@ -661,6 +663,8 @@ setMethod('niche', signature(x='SpatRaster',h='sdmdata'),
                   .nh <- .nh[1]
                   warning('More than one species name is specified in n; the first one is considered!')
                 }
+              } else {
+                .nh <- h@species.names[1]
               }
               n <- n[n %in% nf]
               if (length(n) > 2) {

@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Jan 2024
-# Version 3.2
+# Date (last update):  Feb 2024
+# Version 3.3
 # Licence GPL v3
 #---------------------
 
@@ -609,7 +609,7 @@ setMethod("plot", signature(x='.nicheSpatRaster'),
             .lab2 <- round(as.vector(seq(x@scaleParams[1,2], x@scaleParams[2,2], length.out = 6)),rnd)
             #--------
             if (gg) {
-              drc <- as.data.frame(x@nicheRaster,xy=TRUE,na.rm=TRUE)
+              drc <- as.data.frame(x@nicheRaster,xy=TRUE,na.rm=FALSE)
               p1 <- "ggplot(drc,aes(x=x,y=y,fill=niche)) +geom_raster() + coord_quickmap() + 
                     scale_y_continuous(breaks=seq(0, 1, length.out = 6),name = ylab,labels=.lab2) + scale_x_continuous(breaks=seq(0, 1, length.out = 6),name = xlab,labels=.lab1) + ggtitle(main) +
                     scale_fill_gradientn(colours=col,na.value='white') + theme_bw() +

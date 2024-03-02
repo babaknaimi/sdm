@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  Oct. 2016
 # Last Update :  Feb. 2024
-# Version 3.6
+# Version 3.7
 # Licence GPL v3
 #-------------------
 
@@ -23,7 +23,7 @@
 .getWeights <- function(x, mi, wtest, id, stat, opt) {
   mi <- mi[mi$modelID %in% id,]
   if (all(mi[,wtest[1]])) {
-    weight <- getEvaluation(x,w = id,wtest = wtest[1],stat = stat,opt = opt)[,2]
+    weight <- getEvaluation(x,id = id,wtest = wtest[1],stat = stat,opt = opt)[,2]
   } else {
     id1 <- mi$modelID[mi[,wtest[1]]]
     if (length(wtest) > 1) {
