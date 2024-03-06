@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Feb. 2024
-# Version 1.1
+# Date (last update):  March 2024
+# Version 1.2
 # Licence GPL v3
 #-------
 
@@ -195,10 +195,11 @@
       .vi <- .vi / sum(.vi)
       .vi <- cumsum(.vi)
       n <- max(c(1,which(.vi >= n)[1]))
+      rm(.vi)
     }
     
   } else stop('PCA cannot be done for a dataset with a single numeric variable!')
-  rm(x,.vi); gc()
+  rm(x); gc()
   if (is.function(.scale)) {
     function(x) {
       if (inherits(x,'data.frame')) {
@@ -840,7 +841,7 @@
       }
       #--
       
-      if (is.null(ff@transformers)) ff@transformers[['pca']] <- .getPCAfunction(data,.v,n = .pc@n,.scale = TRUE)
+      if (is.null(ff@transformers)) ff@transformers <- .getPCAfunction(data,.v,n = .pc@n,.scale = TRUE)
       else ff@transformers <- .getPCAfunction(data,.v,n = .pc@n,.scale = ff@transformers)
       
       .tmp <- ff@transformers(data[,.v$names])

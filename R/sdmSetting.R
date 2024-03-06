@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Feb 2024
-# Version 1.3
+# Date (last update):  March 2024
+# Version 1.4
 # Licence GPL v3
 #--------
 
@@ -33,15 +33,6 @@ setMethod('sdmSetting', signature(formula='ANY','sdmdata','character'),
                 dot <- dot[-which(ndot == '')]
                 ndot <- names(dot)
               }
-              
-              #a <- c('interaction.depth','replication','cv.folds','test.percent','bg','bg.n','var.importance','response.curve','var.selection','ncore','modelSettings','seed','setting','parallelSetting')
-              #ndot <- .pmatch(ndot,a)
-              #w <- !is.na(ndot)
-              # if (length(w) > 0) {
-              #   dot <- dot[w]
-              #   ndot <- ndot[w]
-              #   names(dot) <- ndot
-              # }
               
               if ('setting' %in% names(dot) && inherits(dot[['setting']],'.sdmCorSetting')) {
                 sobj <- dot[['setting']]
