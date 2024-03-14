@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date of last update :  Feb 2024
-# Version 1.3
+# Date of last update :  March 2024
+# Version 1.4
 # Licence GPL v3
 
 #------
@@ -274,8 +274,8 @@
 }
 #----
 .getCells <- function(.nc,r,nr) {
-  .s <- (r-1)*.nc+1
-  c(.s:(nr*.nc))
+  .s <- (r-1)*.nc
+  c((.s+1):(.s + (nr*.nc)))
 }
 #---
 #--------

@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Jan 2024
-# Version 3.6
+# Date (last update):  March 2024
+# Version 3.7
 # Licence GPL v3
 
 
@@ -481,7 +481,7 @@ setMethod('predict', signature(object='sdmModels'),
               names(.out) <- rnames
               metags(.out) <- cbind(rnames,fullnames)
               
-              if (filename == "" && .canProcessInMemory(.out[[1]],max(nlyr(.out), nlyr(newdata))*3)) {
+              if (filename == "" && .canProcessInMemory(.out[[1]],max(nlyr(.out), nlyr(newdata))*2)) {
                 .d <- as.data.frame(newdata,cells=TRUE,na.rm=TRUE)
                 .c <- .d$cell
                 .d <- object@setting@featureFrame@featureGenerator(.d) # features
@@ -558,94 +558,96 @@ setMethod('predict', signature(object='sdmModels'),
                   .d <- readValues(newdata, b$row[i], b$nrows[i], 1, .nc, TRUE, TRUE)
                   .c <- .getCells(.nc,b$row[i], b$nrows[i])
                   .wna <- which(!apply(.d,1,function(x) any(is.na(x))))
-                  
-                  .d <- object@setting@featureFrame@featureGenerator(.d[.wna,]) # features
-                  if (!is.null(parallelSetting) && parallelSetting@ncore > 1) {
-                    if (parallelSetting@strategy == 'auto') {
-                      if (length(unique(w$runTasks$method)) >= parallelSetting@ncore &&  (nrow(.d) / parallelSetting@ncore) < 20000) parallelSetting@strategy <- 'model'
-                      else parallelSetting@strategy <- 'data'
-                    }
-                    #---------
-                    if (parallelSetting@strategy == 'data') {
-                      .ds <- split(.d, rep(1:parallelSetting@ncore, each=ceiling(nrow(.d)/parallelSetting@ncore), length.out=nrow(.d)))
-                      .ds <- try(.lapply(.ds,function(x) w$predictMID(mid,.frame = x),cl = .cl),silent = TRUE)
-                      
-                      if (!inherits(.ds,'try-error')) {
-                        .d <- vector('list',length(mid))
-                        for (j in 1:length(.ds[[1]])) {
-                          for (k in 1:length(.ds)) {
-                            .d[[j]] <- c(.d[[j]],.ds[[k]][[j]])
+                  if (length(.wna) > 0) {
+                    .d <- object@setting@featureFrame@featureGenerator(.d[.wna,]) # features
+                    if (!is.null(parallelSetting) && parallelSetting@ncore > 1) {
+                      if (parallelSetting@strategy == 'auto') {
+                        if (length(unique(w$runTasks$method)) >= parallelSetting@ncore &&  (nrow(.d) / parallelSetting@ncore) < 20000) parallelSetting@strategy <- 'model'
+                        else parallelSetting@strategy <- 'data'
+                      }
+                      #---------
+                      if (parallelSetting@strategy == 'data') {
+                        .ds <- split(.d, rep(1:parallelSetting@ncore, each=ceiling(nrow(.d)/parallelSetting@ncore), length.out=nrow(.d)))
+                        .ds <- try(.lapply(.ds,function(x) w$predictMID(mid,.frame = x),cl = .cl),silent = TRUE)
+                        
+                        if (!inherits(.ds,'try-error')) {
+                          .d <- vector('list',length(mid))
+                          for (j in 1:length(.ds[[1]])) {
+                            for (k in 1:length(.ds)) {
+                              .d[[j]] <- c(.d[[j]],.ds[[k]][[j]])
+                            }
                           }
+                        } else {
+                          warning('error in parallelized procedure (non-parallel predict is re-executed...)!')
+                          .d <- w$predictMID(IDs = mid,.frame = .d)
                         }
+                        rm(.ds); gc()
                       } else {
-                        warning('error in parallelized procedure (non-parallel predict is re-executed...)!')
-                        .d <- w$predictMID(IDs = mid,.frame = .d)
+                        .ds <- try(.lapply(mid,function(i,.d) w$predictID(i,.frame = .d),cl=.cl,.d=.d),silent = TRUE)
+                        if (!inherits(.ds,'try-error')) .d <- .ds
+                        else {
+                          warning('error in parallelized procedure (non-parallel predict is re-executed...)!')
+                          .d <- w$predictMID(IDs = mid,.frame = .d)
+                        }
                       }
-                      rm(.ds); gc()
                     } else {
-                      .ds <- try(.lapply(mid,function(i,.d) w$predictID(i,.frame = .d),cl=.cl,.d=.d),silent = TRUE)
-                      if (!inherits(.ds,'try-error')) .d <- .ds
-                      else {
-                        warning('error in parallelized procedure (non-parallel predict is re-executed...)!')
-                        .d <- w$predictMID(IDs = mid,.frame = .d)
-                      }
-                    }
-                  } else {
-                    .d <- w$predictMID(IDs = mid,.frame = .d)
-                  }
-                  
-                  .tmp <- rep(NA,length(.c))
-                  .v <- c()
-                  
-                  .success <- sapply(.d, function(x) !inherits(x,'try-error'))
-                  names(.d) <- names(.success) <- mid
-                  
-                  if (mean) {
-                    for (j in 1:nrow(.mi)) {
-                      .vtmp <- NULL
-                      .w <- as.character(mid[w$runTasks$species == .mi$species[j] & w$runTasks$method == .mi$method[j] & w$runTasks$replication == .mi$replication[j]])
-                      
-                      if (length(which(.success[.w])) > 1) {
-                        .vtmp <- .tmp
-                        .vtmp[.wna] <- rowMeans(data.frame(.d[.success[.w]]))
-                        .v <- c(.v,.vtmp)
-                        success[j] <- TRUE
-                      } else if (length(which(.success[.w])) == 1) {
-                        .vtmp <- .tmp
-                        .vtmp[.wna] <- .d[[.w[.success[.w]]]]
-                        .v <- c(.v,.vtmp)
-                        success[j] <- TRUE
-                      } else {
-                        .v <- c(.v,.tmp)
-                        errLog <- c(errLog,paste0('Error in predictions for method ',.mi$method[j],' and replication ',.mi$replication[j]))
-                      }
+                      .d <- w$predictMID(IDs = mid,.frame = .d)
                     }
                     
-                  } else {
-                    .vtmp <- NULL
-                    for (j in 1:length(.d)) {
-                      if (.success[j]) {
-                        .vtmp <- .tmp
-                        .vtmp[.wna] <- .d[[j]]
-                        .v <- c(.v,.vtmp)
-                        success[j] <- TRUE
-                      } else {
-                        .v <- c(.v,.tmp)
-                        errLog <- c(errLog,.d[[j]])
+                    .tmp <- rep(NA,length(.c))
+                    .v <- c()
+                    
+                    .success <- sapply(.d, function(x) !inherits(x,'try-error'))
+                    names(.d) <- names(.success) <- mid
+                    
+                    if (mean) {
+                      for (j in 1:nrow(.mi)) {
+                        .vtmp <- NULL
+                        .w <- as.character(mid[w$runTasks$species == .mi$species[j] & w$runTasks$method == .mi$method[j] & w$runTasks$replication == .mi$replication[j]])
+                        
+                        if (length(which(.success[.w])) > 1) {
+                          .vtmp <- .tmp
+                          .vtmp[.wna] <- rowMeans(data.frame(.d[.success[.w]]))
+                          .v <- c(.v,.vtmp)
+                          success[j] <- TRUE
+                        } else if (length(which(.success[.w])) == 1) {
+                          .vtmp <- .tmp
+                          .vtmp[.wna] <- .d[[.w[.success[.w]]]]
+                          .v <- c(.v,.vtmp)
+                          success[j] <- TRUE
+                        } else {
+                          .v <- c(.v,.tmp)
+                          errLog <- c(errLog,paste0('Error in predictions for method ',.mi$method[j],' and replication ',.mi$replication[j]))
+                        }
+                      }
+                      
+                    } else {
+                      .vtmp <- NULL
+                      for (j in 1:length(.d)) {
+                        if (.success[j]) {
+                          .vtmp <- .tmp
+                          .vtmp[.wna] <- .d[[j]]
+                          .v <- c(.v,.vtmp)
+                          success[j] <- TRUE
+                        } else {
+                          .v <- c(.v,.tmp)
+                          errLog <- c(errLog,.d[[j]])
+                        }
                       }
                     }
+                    #---
+                    if (length(.v) != prod(b$nrows[i], .nc, nr)) {
+                      msg <- "the number of values returned by the predict does not match the number of cells in newdata!"
+                      writeStop(.out)
+                      rm(.out)
+                      if (filename != "") unlink(filename)
+                      gc()
+                      stop(paste("predict", msg))
+                    }
+                    writeValues(.out, .v, b$row[i], b$nrows[i])
+                    rm(.tmp,.vtmp,.d,.wna,.c,.v); gc()
                   }
-                  #---
-                  if (length(.v) != prod(b$nrows[i], .nc, nr)) {
-                    msg <- "the number of values returned by the predict does not match the number of cells in newdata!"
-                    writeStop(.out)
-                    rm(.out)
-                    if (filename != "") unlink(filename)
-                    gc()
-                    stop(paste("predict", msg))
-                  }
-                  writeValues(.out, .v, b$row[i], b$nrows[i])
-                  rm(.tmp,.vtmp,.d,.wna,.c,.v); gc()
+                  
                 }
                 
                 writeStop(.out)
