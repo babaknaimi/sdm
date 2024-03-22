@@ -45,7 +45,7 @@ A list of settings can be introduced in the \code{setting} argument including:
 
 - \code{wtest}: specifies which test dataset ("training","test.dep","test.indep") should be used to extract the statistic (stat) values as weights (if a relevant method is specified)
 
-- \code{opt}: if a thershold_based metric is used in  is selected in \code{stat} or in \code{expr}, \code{opt} specifies the threshold selection criterion. The possible value can be between 1 to 10 for \code{"sp=se", "max(se+sp)", "min(cost)", "minROCdist", "max(kappa)", "max(ppv+npv)", "ppv=npv", "max(NMI)", "max(ccr)", "prevalence"} criteria, respectively.
+- \code{opt}: if a thershold_based metric is used in  is selected in \code{stat} or in \code{expr}, \code{opt} specifies the threshold selection criterion. The possible value can be between 1 to 14 for \code{"sp=se", "max(se+sp)", "min(cost)", "minROCdist", "max(kappa)", "max(ppv+npv)", "ppv=npv", "max(NMI)", "max(ccr)", "prevalence", "P10", "P5", "P1", "P0"} criteria, respectively.
 
 - \code{power}: default: 1, a numeric value to which the weights are raised. Greater value than 1 affects weighting scheme (for the methods e.g., "weighted") to increase the weights for the models with greater weight. For example, if weights are c(0.2,0.2,0.2,0.4), raising them to power 2 would be resulted to new weights as c(0.1428571,0.1428571, 0.1428571, 0.5714286) that causes greater contribution of the models with  greater performances to the ensemble output.
 

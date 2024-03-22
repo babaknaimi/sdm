@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Feb. 2024
-# Version 1.9
+# Date (last update):  March 2024
+# Version 2.0
 # Licence GPL v3
 #--------
 
@@ -79,10 +79,15 @@
   # 11: Fixed_sensitivity:
   #w11 <- which.min(e[,"sensitivity"] > se)
   
-  th.criteria <- c("sp=se","max(se+sp)","min(cost)","minROCdist","max(kappa)","max(ppv+npv)","ppv=npv","max(NMI)","max(ccr)","prevalence")
+  w <- which(o == 1)
+  q <- quantile(p[w],probs=c(0.1,0.05,0.01,0),na.rm=TRUE)
+  
+  
+  th.criteria <- c("sp=se","max(se+sp)","min(cost)","minROCdist","max(kappa)","max(ppv+npv)","ppv=npv","max(NMI)","max(ccr)","prevalence","P10","P5","P1","P0")
   
   th <- e[c(w1,w2,w3,w4,w5,w6,w7,w8,w9,w10),unique(c(1,stat+1))]
-  data.frame(criteria=th.criteria,th)
+  th <- c(th,q)
+  data.frame(criteria=th.criteria,round(th,7))
 }
 
 
