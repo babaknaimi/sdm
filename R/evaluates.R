@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date (last update):  March 2024
-# Version 2.0
+# Version 2.2
 # Licence GPL v3
 #--------
 
@@ -82,12 +82,23 @@
   w <- which(o == 1)
   q <- quantile(p[w],probs=c(0.1,0.05,0.01,0),na.rm=TRUE)
   
+  e2 <-matrix(nrow=length(q),ncol=16)
+  colnames(e2) <- c('threshold','sensitivity','specificity','TSS','Kappa','NMI','phi','ppv','npv','ccr',
+                    'mcr','or','ommission','commission','prevalence','obsPrevalence')
+  
+  e2[,1] <- q
+  for (i in seq_along(q)) {
+    w <- which(p >= q[i])
+    pt <- rep(0,length(p))
+    pt[w] <- 1
+    e2[i,2:16] <- sdm:::.evaluate.cmx(sdm:::.cmx(o,pt))
+  }
   
   th.criteria <- c("sp=se","max(se+sp)","min(cost)","minROCdist","max(kappa)","max(ppv+npv)","ppv=npv","max(NMI)","max(ccr)","prevalence","P10","P5","P1","P0")
   
   th <- e[c(w1,w2,w3,w4,w5,w6,w7,w8,w9,w10),unique(c(1,stat+1))]
-  th <- c(th,q)
-  data.frame(criteria=th.criteria,round(th,7))
+  th2 <- e2[,unique(c(1,stat+1))]
+  data.frame(criteria=th.criteria,round(rbind(th,th2),7))
 }
 
 
@@ -351,7 +362,7 @@ setMethod('evaluates', signature(x='vector',p='vector'),
     if (length(s2) == 0) s2 <- NULL
   }
   
-  th.criteria <- c("sp=se","max(se+sp)","min(cost)","minROCdist","max(kappa)","max(ppv+npv)","ppv=npv","max(NMI)","max(ccr)","prevalence")
+  th.criteria <- c("sp=se","max(se+sp)","min(cost)","minROCdist","max(kappa)","max(ppv+npv)","ppv=npv","max(NMI)","max(ccr)","prevalence","P10","P5","P1","P0")
   if (!is.null(opt)) {
     if (is.numeric(opt)) {
       if (!opt %in% 1:10) {
