@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Last Update :  June 2023
-# Version 1.1
+# Last Update :  April 2024
+# Version 1.2
 # Licence GPL v3
 #---------------------
 
@@ -90,8 +90,7 @@ setMethod('pca', signature(x='SpatRaster'),
             n <- nlyr(x)
             if (n < 2) stop('The input data, x, should have at least 2 numeric layers...!')
             if (scale) x <- scale(x)
-            nc <- 1:ncell(x)
-            nc <- nc[which(!is.na(x[[1]][]))]
+            nc <- cells(x)
             d <- x[nc]
             d <- princomp(d,...)
             for (i in 1:n) x[[i]][nc] <- d$scores[,i]

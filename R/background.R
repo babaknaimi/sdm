@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date of last update :  Feb. 2024
-# Version 1.5
+# Date of last update :  May 2024
+# Version 1.7
 # Licence GPL v3
 #--------------
 
@@ -205,19 +205,20 @@
     #--- The method of binning should be modified because of the method of concats
     # currently, this method only works based on the first two predictor layers!!!
     
-    if (nlyr(preds) > 2) warning('In the current version, the binning approach for eRandom background generation can work based on two predictors, so only the first 2 layers are considered!')
+    #if (nlyr(preds) > 2) warning('In the current version, the binning approach for eRandom background generation can work based on two predictors, so only the first 2 layers are considered!')
     
+    if (nlyr(preds) > 2) preds <- pca(preds,TRUE)@data[[1:2]]
     
-    prc <- .eval('categorize(pr[[1:2]],nc = nclass)',env = environment())
+    prc <- .eval('categorize(preds,nc = nclass)',env = environment())
     
     prc <- as.factor(prc)
     x <- concats(prc[[1]],prc[[2]]) # it is only for two layers 
     xx <- as.numeric(x)
-    .n <- table(values(xx))
-    .nx <- as.numeric(names(.n)[.n == 1])
-    if (length(.nx) > 0) xx <- ifel(xx %in% .nx,xx@ptr@.xData$range_max,xx)
+    .n <- freq(xx)
+    .nx <- .n$value[.n$count == 1]
+    if (length(.nx) > 0) xx <- ifel(xx %in% .nx,xx@cpp@.xData$range_max,xx)
     
-    s <- spatSample(xx,size=ceiling(n / length(.n)),method='stratified',na.rm=TRUE,cells=TRUE,replace=TRUE)
+    s <- spatSample(xx,size=ceiling(n / nrow(.n)),method='stratified',na.rm=TRUE,cells=TRUE,replace=TRUE)
     .xy <- xyFromCell(preds,s$cell)
     data.frame(.xy,preds[s$cell])
     
@@ -319,7 +320,7 @@
     s <- solve(cov(.d[,names(preds)]))
     .ex <- as.matrix(extract(preds,p))[,names(preds)]
     
-    di <- mahalanobis(.d[,names(preds)],colMeans(.ex), cov=s,inverted = TRUE)
+    di <- mahalanobis(.d[,names(preds)],colMeans(.ex,na.rm = TRUE), cov=s,inverted = TRUE)
     #-----
     if (length(di) < n) {
       warning(paste('the size of background (n) is less than the available pixels, so n is changed to:'),length(di))
@@ -373,7 +374,8 @@
     .xy <- .d[,c(1:2)]
     .d <- data.frame(cell=cellFromXY(preds,.xy),.d[,-c(1:2)])
     s <- solve(cov(.d[,names(preds)]))
-    di <- mahalanobis(.d[,names(preds)],colMeans(extract(preds,p)[,names(preds)]), cov=s,inverted = TRUE)
+    .ex <- extract(preds,p)[,names(preds)]
+    di <- mahalanobis(.d[,names(preds)],colMeans(.ex,na.rm = TRUE), cov=s,inverted = TRUE)
     #-----
     if (length(di) < n) {
       warning(paste('the size of background (n) is less than the available pixels, so n is changed to:'),length(di))
