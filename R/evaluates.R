@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  March 2024
-# Version 2.2
+# Date (last update):  May 2024
+# Version 2.3
 # Licence GPL v3
 #--------
 
@@ -91,7 +91,7 @@
     w <- which(p >= q[i])
     pt <- rep(0,length(p))
     pt[w] <- 1
-    e2[i,2:16] <- sdm:::.evaluate.cmx(sdm:::.cmx(o,pt))
+    e2[i,2:16] <- .evaluate.cmx(.cmx(o,pt))
   }
   
   th.criteria <- c("sp=se","max(se+sp)","min(cost)","minROCdist","max(kappa)","max(ppv+npv)","ppv=npv","max(NMI)","max(ccr)","prevalence","P10","P5","P1","P0")
