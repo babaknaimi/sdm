@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Feb 2024
-# Version 6.8
+# Date (last update):  May 2024
+# Version 7.0
 # Licence GPL v3
 
 
@@ -1213,7 +1213,7 @@ setRefClass(".workloadPredict",
                 options(warn=-1)
                 IDs <- which(.self$runTasks$modelID %in% IDs)
                 m <- lapply(IDs,function(i) {
-                  p <- .self$getPredictArgs(.self$runTasks$species[i],.self$runTasks$method[i])
+                  p <- .self$getPredictArgs(.self$runTasks$species[i],.self$runTasks$method[i],.frame)
                   p[[1]] <- .self$obj[[.self$runTasks$species[i]]][[.self$runTasks$method[i]]][[.self$runTasks$mIDChar[i]]]@object
                   
                   p[[2]] <- .frame
@@ -1228,7 +1228,7 @@ setRefClass(".workloadPredict",
               predictID=function(i,.frame) {
                 options(warn=-1)
                 i <- which(.self$runTasks$modelID == i)
-                p <- .self$getPredictArgs(.self$runTasks$species[i],.self$runTasks$method[i])
+                p <- .self$getPredictArgs(.self$runTasks$species[i],.self$runTasks$method[i],.frame)
                 p[[1]] <- .self$obj[[.self$runTasks$species[i]]][[.self$runTasks$method[i]]][[.self$runTasks$mIDChar[i]]]@object
                 
                 p[[2]] <- .frame
@@ -1238,13 +1238,13 @@ setRefClass(".workloadPredict",
                 if (!inherits(m,'try-error')) as.numeric(m)
                 else m
               },
-              generateParams=function(n,sp=NULL) {
+              generateParams=function(n,sp=NULL,.frame=NULL) {
                 if (n == 'sdmDataFrame') {
-                  .self$modelFrame
+                  .frame
                 } else if (n %in% c('newdata','data.frame')) {
-                  .self$newdata$data.frame
+                  .frame
                 } else if (n == 'standard.formula') {
-                  .getFormula(c(sp,colnames(.self$generateParams('sdmDataFrame',sp))),env=parent.frame(2))
+                  .getFormula(c(sp,colnames(.self$generateParams('sdmDataFrame',sp,.frame))),env=parent.frame(2))
                 } else if (n == 'sdmX') {
                   #####
                   
@@ -1261,7 +1261,7 @@ setRefClass(".workloadPredict",
               getReseved.names=function() {
                 c('sdmDataFrame','sdmX','sdmY','sdmRaster','sdmVariables','standard.formula','gam.mgcv.furmula')
               },
-              getPredictArgs=function(sp,mo) {
+              getPredictArgs=function(sp,mo,.frame=NULL) {
                 # return a list in which the first element is reserved for 'model'
                 # and the second element is reserved for data e.g., 'newdata'
                 # these two elements will be updated before putting in the predict function
@@ -1279,7 +1279,7 @@ setRefClass(".workloadPredict",
                 pa<- pa[-ww]
                 
                 if (length(n) > 0) {
-                  for (nn in n) o[[nn]] <- .self$generateParams(pa[[nn]],sp)
+                  for (nn in n) o[[nn]] <- .self$generateParams(pa[[nn]],sp,.frame)
                 }
                 
                 o <- c(o,.self$arguments[[mo]]$settings)
