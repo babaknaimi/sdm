@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date of last update :  May 2024
-# Version 1.7
+# Version 1.8
 # Licence GPL v3
 #--------------
 
@@ -216,7 +216,9 @@
     xx <- as.numeric(x)
     .n <- freq(xx)
     .nx <- .n$value[.n$count == 1]
-    if (length(.nx) > 0) xx <- ifel(xx %in% .nx,xx@cpp@.xData$range_max,xx)
+    #if (length(.nx) > 0) xx <- ifel(xx %in% .nx,xx@cpp@.xData$range_max,xx)
+    if (length(.nx) > 0) xx <- ifel(xx %in% .nx,slot(xx,slotNames(xx)[1])$range_max,xx)
+    
     
     s <- spatSample(xx,size=ceiling(n / nrow(.n)),method='stratified',na.rm=TRUE,cells=TRUE,replace=TRUE)
     .xy <- xyFromCell(preds,s$cell)
