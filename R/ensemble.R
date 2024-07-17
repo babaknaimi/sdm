@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  Oct. 2016
-# Last Update :  Feb. 2024
-# Version 3.7
+# Last Update :  July 2024
+# Version 3.8
 # Licence GPL v3
 #-------------------
 
@@ -148,7 +148,7 @@
 #----
 # weighted mean for data.frame (length of w should be equal to ncol(df) and sum(w) == 1)
 .wm <- function(df,w) {
-  colSums(t(df) * w)
+  colSums(t(df) * w,na.rm = TRUE)
 }
 #----
 

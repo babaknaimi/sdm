@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  May 2024
-# Version 2.3
+# Date (last update):  June 2024
+# Version 2.4
 # Licence GPL v3
 #--------
 
@@ -8,10 +8,10 @@
 
 .statFix <- function(x) {
   if (is.numeric(x)) {
-    x <- ifelse(x > 15,15,x)
+    x <- ifelse(x > 17,17,x)
     x <- ifelse(x < 1,1,x)
     x <- unique(x)
-    x <- c('sensitivity','specificity','TSS','Kappa','NMI','phi','ppv','npv','ccr','mcr','or','ommission','commission','predicted.prevalence')[x]
+    x <- c('sensitivity','specificity','TSS','MCC','F1','Kappa','NMI','phi','ppv','npv','ccr','mcr','or','ommission','commission','predicted.prevalence')[x]
   } else {
     x <- tolower(x)
     for (i in seq_along(x)) {
@@ -22,8 +22,10 @@
       else if (any(!is.na(pmatch(c("nm"),x[i])))) x[i] <- 'NMI'
       else if (any(!is.na(pmatch(c("pp"),x[i])))) x[i] <- 'ppv'
       else if (any(!is.na(pmatch(c("np"),x[i])))) x[i] <- 'npv'
-      else if (any(!is.na(pmatch(c("cc"),x[i])))) x[i] <- 'ccr'
-      else if (any(!is.na(pmatch(c("mc"),x[i])))) x[i] <- 'mcr'
+      else if (any(!is.na(pmatch(c("ccr"),x[i])))) x[i] <- 'ccr'
+      else if (any(!is.na(pmatch(c("mcr"),x[i])))) x[i] <- 'mcr'
+      else if (any(!is.na(pmatch(c("mcc"),x[i])))) x[i] <- 'MCC'
+      else if (any(!is.na(pmatch(c("f1"),x[i])))) x[i] <- 'F1'
       else if (any(!is.na(pmatch(c("or"),x[i])))) x[i] <- 'or'
       else if (any(!is.na(pmatch(c("om"),x[i])))) x[i] <- 'ommission'
       else if (any(!is.na(pmatch(c("com"),x[i])))) x[i] <- 'commission'
@@ -31,7 +33,7 @@
       else if (any(!is.na(pmatch(c("ph"),x[i])))) x[i] <- 'phi'
     }
     x <- unique(x)
-    w <- which(x %in% c('sensitivity','specificity','TSS','Kappa','NMI','phi','ppv','npv','ccr','mcr','or','ommission','commission','predicted.prevalence'))
+    w <- which(x %in% c('sensitivity','specificity','TSS','MCC','F1','Kappa','NMI','phi','ppv','npv','ccr','mcr','or','ommission','commission','predicted.prevalence'))
     x <- x[w]
   }
   x
@@ -41,8 +43,8 @@
 .threshold <- function(o,p,th,stat=0) {
   if (missing(th)) th <- sort(unique(p))
   else th <- sort(unique(th))
-  e <- matrix(nrow=length(th),ncol=16)
-  colnames(e) <- c('threshold','sensitivity','specificity','TSS','Kappa','NMI','phi','ppv','npv','ccr',
+  e <- matrix(nrow=length(th),ncol=18)
+  colnames(e) <- c('threshold','sensitivity','specificity','TSS','MCC','F1','Kappa','NMI','phi','ppv','npv','ccr',
                    'mcr','or','ommission','commission','prevalence','obsPrevalence')
   
   e[,1] <- th
@@ -50,7 +52,7 @@
     w <- which(p >= th[i])
     pt <- rep(0,length(p))
     pt[w] <- 1
-    e[i,2:16] <- .evaluate.cmx(.cmx(o,pt))
+    e[i,2:18] <- .evaluate.cmx(.cmx(o,pt))
   }
   
   w <- which(is.na(e[,"ppv"]) | is.na(e[,'npv']))
@@ -78,27 +80,28 @@
   w10 <- which.min(abs(e[,"prevalence"] - e[,"obsPrevalence"]))
   # 11: Fixed_sensitivity:
   #w11 <- which.min(e[,"sensitivity"] > se)
+  # Max(MCC):
+  w11 <- which.max(e[,"MCC"])
   
   w <- which(o == 1)
   q <- quantile(p[w],probs=c(0.1,0.05,0.01,0),na.rm=TRUE)
   
-  e2 <-matrix(nrow=length(q),ncol=16)
-  colnames(e2) <- c('threshold','sensitivity','specificity','TSS','Kappa','NMI','phi','ppv','npv','ccr',
+  e2 <-matrix(nrow=length(q),ncol=18)
+  colnames(e2) <- c('threshold','sensitivity','specificity','TSS','MCC','F1','Kappa','NMI','phi','ppv','npv','ccr',
                     'mcr','or','ommission','commission','prevalence','obsPrevalence')
-  
   e2[,1] <- q
   for (i in seq_along(q)) {
     w <- which(p >= q[i])
     pt <- rep(0,length(p))
     pt[w] <- 1
-    e2[i,2:16] <- .evaluate.cmx(.cmx(o,pt))
+    e2[i,2:18] <- .evaluate.cmx(.cmx(o,pt))
   }
   
-  th.criteria <- c("sp=se","max(se+sp)","min(cost)","minROCdist","max(kappa)","max(ppv+npv)","ppv=npv","max(NMI)","max(ccr)","prevalence","P10","P5","P1","P0")
+  th.criteria <- c("sp=se","max(se+sp)","min(cost)","minROCdist","max(kappa)","max(ppv+npv)","ppv=npv","max(NMI)","max(ccr)","prevalence","max(MCC)","P10","P5","P1","P0")
   
-  th <- e[c(w1,w2,w3,w4,w5,w6,w7,w8,w9,w10),unique(c(1,stat+1))]
+  th <- e[c(w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11),unique(c(1,stat+1))]
   th2 <- e2[,unique(c(1,stat+1))]
-  data.frame(criteria=th.criteria,round(rbind(th,th2),7))
+  data.frame(criteria=th.criteria,round(rbind(th,th2),5))
 }
 
 
@@ -189,7 +192,7 @@
   N <- sum(cmx)
   prev <- (TP+FN) / N
   pred.prev <- (TP + FP) / N
-  ccr <- (TP+TN) / N
+  ccr <- (TP + TN) / N
   sens <- TP / (TP + FN)
   spec <- TN / (FP + TN)
   ppv <- TP / (TP + FP)
@@ -197,20 +200,23 @@
   or <- (TP * TN) / (FP * FN)
   commission = FP/(FP + TN)
   ommission = FN/(TP + FN)
-  mcr = (FP + FN)/N
+  mcr = (FP + FN) / N
   phi <- (TP*TN - FP*FN)/(sqrt((TP+FN)*(TN+FP)*(TP+FP)*(TN+FN)))
   
   Kappa <- ((TN + TP) - ((((TP + FN)*(TP + FP)) + ((FP + TN)*(FN + TN))) /N)) / 
     (N-((((TP+FN)*(TP+FP))+((FP+TN)*(FN+TN)))/N))
   
+  mcc <- ((TP * TN) - (FP * FN)) / sqrt((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))
+  f1s <- (2 * TP) / ((2*TP) + FP + FN)
   v <- as.vector(cmx) ; pp <- apply(cmx,1,sum) ; op <- apply(cmx,2,sum)
   v <- ifelse(v == 0,0.00001,v)
   pp <- ifelse(pp == 0,0.00001,pp)
   op <- ifelse(op == 0,0.00001,op)
   NMI <- 1-((-sum(v*log(v)) + sum(pp*log(pp))) / (N*log(N) - sum(op*log(op))))
   TSS <- sens+spec-1
-  return(round(c(sensitivity=sens,specificity=spec,TSS=TSS,Kappa=Kappa,NMI=NMI,phi=phi,ppv=ppv,npv=npv,ccr=ccr,
-                 mcr=mcr,or=or,ommission=ommission,commission=commission,predicted.prevalence=pred.prev,prevalence=prev),3))
+  
+  return(round(c(sensitivity=sens,specificity=spec,TSS=TSS,MCC=mcc,F1=f1s,Kappa=Kappa,NMI=NMI,phi=phi,ppv=ppv,npv=npv,ccr=ccr,
+                 mcr=mcr,or=or,ommission=ommission,commission=commission,predicted.prevalence=pred.prev,prevalence=prev),4))
 }
 #---- 
 #-----------
@@ -268,7 +274,7 @@
   e@statistics[['AUC']] <- .auc(o,p)
   e@statistics[['COR']] <- .cor(o,p)
   e@statistics[['Deviance']] <- .deviance_binomial(o,p)
-  e@threshold_based <- .threshold(o,p,stat=c(1:9,14))
+  e@threshold_based <- .threshold(o,p,stat = c(1:12,14:16))
   e
 }
 #-------
@@ -333,7 +339,7 @@ setMethod('evaluates', signature(x='vector',p='vector'),
   if (.dist == 'binomial') {
     s1 <- c('AUC','COR','Deviance','obs.prevalence')
     
-    s2 <- c('threshold','sensitivity','specificity','TSS','Kappa','NMI','phi','ppv','npv','ccr','prevalence')
+    s2 <- c('threshold','sensitivity','specificity','TSS','MCC','F1','Kappa','NMI','phi','ppv','npv','ccr','mcr','ommission', 'commission', 'prevalence')
     
   } else {
     s1 <- c('RMSE','COR','MAE','Deviance')
@@ -347,9 +353,9 @@ setMethod('evaluates', signature(x='vector',p='vector'),
   if (!is.null(stat)) {
     stat <- .pmatch(stat,c(s1,s2))
     stat <- stat[!is.na(stat)]
-    if (length(stat) == 0) stat <- c('AUC','COR','Deviance','TSS')
+    if (length(stat) == 0) stat <- c('AUC','COR','Deviance','TSS','MCC','F1')
   } else {
-    if (.dist == 'binomial') stat <- c('AUC','COR','Deviance','TSS')
+    if (.dist == 'binomial') stat <- c('AUC','COR','Deviance','TSS','MCC','F1')
     else stat <- c('RMSE','COR','MAE','Deviance')
   }
   
@@ -362,12 +368,12 @@ setMethod('evaluates', signature(x='vector',p='vector'),
     if (length(s2) == 0) s2 <- NULL
   }
   
-  th.criteria <- c("sp=se","max(se+sp)","min(cost)","minROCdist","max(kappa)","max(ppv+npv)","ppv=npv","max(NMI)","max(ccr)","prevalence","P10","P5","P1","P0")
+  th.criteria <- c("sp=se","max(se+sp)","min(cost)","minROCdist","max(kappa)","max(ppv+npv)","ppv=npv","max(NMI)","max(ccr)","prevalence","max(MCC)","P10","P5","P1","P0")
   if (!is.null(opt)) {
     if (is.numeric(opt)) {
-      if (!opt %in% 1:10) {
+      if (!opt %in% 1:15) {
         opt <- 2
-        warning('opt (the criteria for optimum threshold) should be a number between 1:10; opt=2 is considered (i.e., max(se+sp))')
+        warning('opt (the criteria for optimum threshold) should be a number between 1:15; opt=2 is considered (i.e., max(se+sp))')
       }
     } else {
       opt <- .pmatch(opt,th.criteria)
@@ -489,7 +495,7 @@ setMethod('getEvaluation', signature(x='sdmModels'),
             if (missing(id)) id <- NULL
             if (missing(wtest)) wtest <- NULL
             if (missing(stat)) {
-              if (.dist == 'binomial') stat <-c('AUC','COR','Deviance','TSS')
+              if (.dist == 'binomial') stat <-c('AUC','COR','Deviance','TSS','MCC','F1')
               else stat <- c('RMSE','COR','MAE','Deviance')
             }
             if (missing(opt)) opt <- 2

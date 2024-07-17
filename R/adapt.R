@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Feb 2024
-# Version 1.0
+# Date (last update):  July 2024
+# Version 1.1
 # Licence GPL v3
 #--------
 
@@ -41,6 +41,23 @@ setMethod('sdmAdapt', signature(x='sdmModels'),
                              parallelSetting = x@setting@parallelSettings)
             x@data <- d
             x@setting <- .s
+            #----------
+            # adapt the evaluation object in the model:
+            for (sp in names(x@models)) {
+              for (m in names(x@models[[sp]])) {
+                for (id in names(x@models[[sp]][[m]])) {
+                  ev <- x@models[[sp]][[m]][[id]]@evaluation
+                  if (!is.null(ev)) {
+                    for (wt in names(ev)) {
+                      .e <- evaluates(ev[[wt]]@observed,ev[[wt]]@predicted)
+                      x@models[[sp]][[m]][[id]]@evaluation[[wt]] <- .e
+                    }
+                  }
+                }
+              }
+            }
+            #-----
+            
             x
           }
 )
