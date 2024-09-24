@@ -1,11 +1,11 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  Jan 2024
 # last update: Jan 2024
-# Version 1.0
+# Version 1.1
 # Licence GPL v3
 #-------------
 
-methodInfo <- list(name=c('mexNet','maxnet','mnet','mNet'),
+methodInfo <- list(name=c('maxNet','maxnet','mnet','mNet'),
                    packages='maxnet',
                    modelTypes = c('pb'),
                    fitParams = list(formula='standard.formula',data='sdmDataFrame'),

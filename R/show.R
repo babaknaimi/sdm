@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Jan 2024
-# Version 2.5
+# Date (last update):  Sep 2024
+# Version 2.6
 # Licence GPL v3
 
 setMethod ('show' , 'sdmdata',
@@ -25,7 +25,7 @@ setMethod ('show' , 'sdmdata',
              hasTest <- 'test' %in% .getGroupNames(object,levels=TRUE)
              hasTrain <- 'train' %in% .getGroupNames(object,levels=TRUE)
              cat('type                                  : ', if (length(typ) > 3) paste(c(typ[1:3],'...'),collapse=', ') else paste(typ,collapse=', '), '\n')
-             cat('has independet test data?             : ' , hasTest, '\n')
+             cat('has independent test data?             : ' , hasTest, '\n')
              if (hasTrain) {
                cat('number of records                     : ', if (hasTest) paste('train-> ',length(.getGroupIndex(object,'train')),"; ",'test-> ',length(.getGroupIndex(object,'test')),sep='') else length(.getSpeciesIndex(object)),'\n')
              } else

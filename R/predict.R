@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  March 2024
-# Version 3.7
+# Date (last update):  September 2024
+# Version 3.8
 # Licence GPL v3
 
 
@@ -528,7 +528,7 @@ setMethod('predict', signature(object='sdmModels'),
                     .w <- as.character(mid[w$runTasks$species == .mi$species[j] & w$runTasks$method == .mi$method[j] & w$runTasks$replication == .mi$replication[j]])
                     
                     if (length(which(.success[.w])) > 1) {
-                      set.values(.out,.c,rowMeans(data.frame(.d[.success[.w]])),layer=j)
+                      set.values(.out,.c,rowMeans(data.frame(.d[.w[.success[.w]]]),na.rm=TRUE),layer=j)
                       success[j] <- TRUE
                     } else if (length(which(.success[.w])) == 1) {
                       set.values(.out,.c,.d[[.w[.success[.w]]]],layer=j)
@@ -607,7 +607,7 @@ setMethod('predict', signature(object='sdmModels'),
                         
                         if (length(which(.success[.w])) > 1) {
                           .vtmp <- .tmp
-                          .vtmp[.wna] <- rowMeans(data.frame(.d[.success[.w]]))
+                          .vtmp[.wna] <- rowMeans(data.frame(.d[.w[.success[.w]]]),na.rm=TRUE)
                           .v <- c(.v,.vtmp)
                           success[j] <- TRUE
                         } else if (length(which(.success[.w])) == 1) {
@@ -716,7 +716,7 @@ setMethod('predict', signature(object='sdmModels'),
                   .w <- mid[w$runTasks$species == .mi$species[j] & w$runTasks$method == .mi$method[j] & w$runTasks$replication == .mi$replication[j]]
                   
                   if (length(which(.success[.w])) > 1) {
-                    .vtmp <- rowMeans(data.frame(.d[.success[.w]]))
+                    .vtmp <- rowMeans(data.frame(.d[.w[.success[.w]]]),na.rm=TRUE)
                     .out <- cbind(.out,.vtmp)
                     success[j] <- TRUE
                   } else if (length(which(.success[.w])) == 1) {
