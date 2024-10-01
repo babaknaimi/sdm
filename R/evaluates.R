@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  June 2024
-# Version 2.4
+# Date (last update):  Oct. 2024
+# Version 2.5
 # Licence GPL v3
 #--------
 
@@ -250,6 +250,71 @@
   o <- o - p
   mean(abs(o))
 }
+#-----------
+
+
+# computation part of CBI (continuous boyce index):
+.cbi <- function(x,pr,wi,wh,method='spearman') {
+  
+  .nx <- length(x) # number of presence points
+  .ny <- length(pr) # number of background points
+  
+  Fi <- rep(NA,length(wi))
+  
+  for (i in seq_along(wi)) {
+    pi <- sum(as.numeric(x >= wi[i] & x <= wh[i])) / .nx
+    ei <- sum(as.numeric(pr >= wi[i] & pr <= wh[i])) / .ny
+    Fi[i] <- pi / ei
+  }
+  #-------
+  .msuit <- (wi + wh) / 2 # mean suitability for each bin!
+  
+  
+  .keep <- which(Fi != "NaN" & !is.na(Fi) & !is.infinite(Fi))
+  #Fi <- Fi[.keep]
+  .keep <- .keep[which(Fi[.keep] != c(Fi[.keep][-1],TRUE))]
+  .stat <- cor(.msuit[.keep],Fi[.keep],method = method,use='complete.obs')
+  
+  list(CBI=.stat,Fi=Fi[.keep],suitability=.msuit)
+}
+#-----------
+.boyce <- function(obs, pr, win=NULL,n=101,method='spearman') {
+  # continuous boyce index
+  # obs: presence-background data (background should represent the whole study area)
+  # pr: predicted suitability corresponding to obs
+  # win: windows width (default: NULL -> 10% of range)
+  # n: number of bins (default: 101 )
+  # correlation method (default: "spearman")
+  #-------------
+  
+  
+  if (length(obs) != length(pr)) stop('lengths of obs and pr are not the same!')
+  
+  if (length(which(pr > 0 & pr < 1)) == 0) stop('"pr" should be a vector of predicted probabilities!')
+  
+  
+  
+  .min <- min(pr,na.rm = TRUE)
+  .max <- max(pr, na.rm = TRUE)
+  
+  if (is.null(win)) {
+    win <- (.max - .min) / 10
+  }
+  #------
+  if (length(win) > 1 || win > 0.9 || win < 0) {
+    win <- (.max - .min) / 10
+    warning(paste0('the selected value for "win" seems not reasonable and it is ignored; default (',round(win,4),') is replaced!'))
+  }
+  #--------
+  wi <- seq(.min, .max - win, length.out = n)
+  wh <- wi + win
+  #----------------
+  .x <- pr[obs == 1] # probability of presence locations
+  
+  .cbi(.x,pr,wi,wh,method=method)
+}
+
+
 
 #-----------
 # 
