@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date of last update :  Sep. 2023
-# Version 3.7
+# Date of last update :  Oct. 2023
+# Version 3.8
 # Licence GPL v3
 
 #------
@@ -718,6 +718,8 @@ setReplaceMethod('.addLog','sdmdata',
     bg$rID <- (nrow(train)+1):(nrow(bg)+nrow(train))
     train <- rbind(train[,c('rID',nall)],bg[,c('rID',nall)])
     bg <- bg$rID
+    exf <- .exFormula(formula,train)
+    d@sdmFormula <- exf
   }
   
   if (!is.null(test)) {
@@ -1763,7 +1765,7 @@ setMethod('sdmData', signature(train='SpatVector',predictors='SpatRaster'),
               } else if (is.data.frame(bg) || is.matrix(bg)) bg <- data.frame(bg)
               else {
                 bg <- NULL
-                warning('bg is not recognised so (ignored)! It should be either a list (settings of generating background), or a single number (number of background), or a data.frame (background records)')
+                warning('bg is not recognised so (ignored)! It should be either a list of settings used to generate background, or a data.frame of background records')
               }
             }
             ########################
