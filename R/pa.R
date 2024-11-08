@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  March 2024
-# last update: March 2024
-# Version 1.0
+# last update: October 2024
+# Version 1.1
 # Licence GPL v3
 #-----------------
 
@@ -27,7 +27,7 @@ setMethod('pa', signature(x='SpatRaster',y='sdmModels'),
                 } else stop('The number of raster layers in x is not the same as the number of models y!')
               }
             } else if (is.character(id)) {
-              if (any(c('ens','en','ensemble','ensmble','ensmbl') %in% tolower(id))) id <- 'ensemble'
+              if (any(c('ens','en','ensemble','ensmble','ensmbl','ensembl','ensembel') %in% tolower(id))) id <- 'ensemble'
             } else if (!is.numeric(id)) {
               .id <- getModelId(y,success = TRUE)
               if (is.logical(id) && length(id) == length(.id) && length(which(id)) == nlyr(x)) id <- .id[id]
@@ -51,11 +51,31 @@ setMethod('pa', signature(x='SpatRaster',y='sdmModels'),
               } else stop('the length of thresholds extracted from the sdmModels object is not the same as the nlyr(x)...!')
             } else if (is.character(id)) {
               if (nlyr(x) == 1) {
-                th <- evaluates(y@data,x)@threshold_based$threshold[opt]
-                pa <- x
-                pa <- ifel(pa >= th,1,0)
+                #th <- evaluates(y@data,x)@threshold_based$threshold[opt]
+                th <- threshold(y, id='ensemble',opt=opt,...)
+                pa <- ifel(x >= th,1,0)
               } else stop('when id="ensemble", the nlyr(x) should be 1')
             }
+            #-------------
+            pa
+          }
+)
+
+#--------------
+
+setMethod('pa', signature(x='SpatRaster',y='sdmdata'), 
+          function(x,y,id,opt,...) {
+            if (missing(opt)) opt <- 2
+            
+            if (nlyr(x) == 1) {
+              r <- global(x,'range',na.rm=TRUE)
+              if (r[1,1] >= 0 & r[1,2] <= 1) {
+                th <- evaluates(y,x)@threshold_based$threshold[opt]
+                pa <- x
+                pa <- ifel(pa >= th,1,0)
+              } else stop('The range of values in x should be between 0 and 1...!')
+            } else stop('x should have one layer!')
+            
             #-------------
             pa
           }

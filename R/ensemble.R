@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  Oct. 2016
-# Last Update :  July 2024
-# Version 3.8
+# Last Update : Oct. 2024
+# Version 3.9
 # Licence GPL v3
 #-------------------
 
@@ -810,8 +810,9 @@ setMethod('ensemble', signature(x='sdmModels',newdata='SpatRaster'),
             if (!all(x@setting@featureFrame@predictors %in% .n)) {
               if (length(.n) == length(id)) {
                 if (!all(grepl('id_([[:digit:]]+)__sp',.n))) {
-                  cat('\n ......... the input Raster object is considered as the predicted probabilities...\n')
-                  names(newdata) <- paste0('id_',id,'__sp_',mi$species,'__m_',mi$method)
+                  stop('the newdata does not contain some or all the predictor variables required by the model...')
+                  #cat('\n ......... the input Raster object is considered as the predicted probabilities...\n')
+                  #names(newdata) <- paste0('id_',id,'__sp_',mi$species,'__m_',mi$method)
                 } else {
                   if (!all(.getID_From_ModelNames(.n) %in% id)) {
                     warning('It seems that the predicted rasters (in newdata) for some modelIDs (id) are not available..!')
