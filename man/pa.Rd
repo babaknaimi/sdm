@@ -1,6 +1,7 @@
 \name{pa}
 \alias{pa}
 \alias{pa,SpatRaster,sdmModels-method}
+\alias{pa,SpatRaster,sdmdata-method}
 \alias{pa,SpatRaster,numeric-method}
 
 \title{Converting probability of occurrence to Presence-absence}

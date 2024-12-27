@@ -1,4 +1,5 @@
 \name{threshold}
+\alias{threshold}
 \alias{getThreshold}
 \alias{threshold,sdmModels,numeric-method}
 \alias{threshold,sdmModels,character-method}
@@ -13,8 +14,8 @@ To transform the values of predicted probability of occurrence (habitat suitabil
 }
 
 \usage{
-threshold(x,id,opt,species=NULL,...)
-getThreshold(x,id,opt,species=NULL,...)
+threshold(x,id,opt,species,...)
+getThreshold(x,id,opt,species,...)
 }
 
 \arguments{

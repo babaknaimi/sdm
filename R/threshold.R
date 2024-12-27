@@ -1,20 +1,20 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  October 2024
-# last update: October 2024
-# Version 1.0
+# last update: December 2024
+# Version 1.1
 # Licence GPL v3
 #-----------------
 
 
 
 if (!isGeneric("getThreshold")) {
-  setGeneric("getThreshold", function(x,id,opt,...)
+  setGeneric("getThreshold", function(x,id,opt,species,...)
     standardGeneric("getThreshold"))
 }
 
 
 if (!isGeneric("threshold")) {
-  setGeneric("threshold", function(x,id,opt,...)
+  setGeneric("threshold", function(x,id,opt,species,...)
     standardGeneric("threshold"))
 }
 
