@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Oct. 2024
-# Version 2.5
+# Date (last update):  Jan. 2025
+# Version 2.6
 # Licence GPL v3
 #--------
 
@@ -657,6 +657,77 @@ setMethod('evaluates', signature(x='sdmdata',p='SpatRaster'),
             p <- extract(p,d[,colnames(coords(x))],ID=FALSE)[,1]
             
             evaluates(o, p, distribution = distribution)
+          }
+)
+#------------
+setMethod('evaluates', signature(x='sdmModels',p='SpatRaster'),
+          function(x, p,distribution,wtest=NULL,...) {
+            if (missing(distribution)) {
+              if (x@data@species[[1]]@type %in% c('Abundance')) distribution <- 'poisson'
+              else if (x@data@species[[1]]@type %in% c('Numerical')) distribution <- 'gaussian'
+              else if (x@data@species[[1]]@type %in% c('Presence-Absence','Presence-Background')) distribution <- 'binomial'
+              else distribution <- NULL
+            }
+            
+            if (missing(wtest)) wtest <- NULL
+            
+            evaluates(x@data,p,distribution=distribution,wtest=wtest,...)
+          }
+)
+
+#-------------
+setMethod('evaluates', signature(x='sdmModels',p='missing'),
+          function(x, p,distribution,wtest=NULL,species=NULL,...) {
+            if (missing(distribution)) {
+              if (x@data@species[[1]]@type %in% c('Abundance')) distribution <- 'poisson'
+              else if (x@data@species[[1]]@type %in% c('Numerical')) distribution <- 'gaussian'
+              else if (x@data@species[[1]]@type %in% c('Presence-Absence','Presence-Background')) distribution <- 'binomial'
+              else distribution <- NULL
+            }
+            
+            if (missing(wtest)) wtest <- NULL
+            
+            
+            if (missing(species)) species <- NULL
+            
+            
+            n <- x@data@species.names
+            
+            if (length(n) > 1) {
+              if (is.null(species)) {
+                warning('multiple species are available in the model and the species is not specified in the "species" argument. The first species is considered!')
+                n <- n[1]
+              } else {
+                if (length(species) > 1) stop('only one species should be specified in the "species" argument!')
+                else {
+                  if (is.numeric(species)) {
+                    if (length(n) < species) stop('The specified species is not available (species argument)!')
+                    else n <- n[species]
+                  } else if (is.character(species)) {
+                    w <- which(n == species)
+                    if (length(w) == 1) n <- n[w]
+                    else stop('The specified species (in the "species" argument) is not available!')
+                  } else stop('"species" should be a character or numeric!')
+                }
+              }
+            }
+            #---------
+            en <- as.data.frame(x@data,sp=n)
+            
+            obs <- en[,n]
+            
+            en <- ensemble(x, en,...)
+            if (length(x@data@species.names) > 1) {
+              w <- which(grepl(n,colnames(en)))
+              if (length(w) == 1) en <- en[,w]
+              else {
+                w <- which(x@data@species.names == n)
+                en <- en[,w]
+              }
+            } else en <- en[,1]
+            
+            evaluates(obs,en, distribution = distribution)
+            
           }
 )
 

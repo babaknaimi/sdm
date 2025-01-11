@@ -6,8 +6,12 @@
 \alias{evaluates,vector,vector-method}
 \alias{evaluates,sdmdata,RasterLayer-method}
 \alias{evaluates,sdmdata,SpatRaster-method}
+\alias{evaluates,sdmModels,SpatRaster-method}
+\alias{evaluates,sdmModels,missing-method}
 \alias{getEvaluation,sdmModels-method}
 \alias{getReplication,sdmModels-method}
+\alias{show,sdmEvaluate-method}
+
 
 \title{evaluate for accuracy}
 

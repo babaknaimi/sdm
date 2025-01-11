@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Sep 2024
-# Version 2.6
+# Date (last update):  Jan. 2025
+# Version 2.7
 # Licence GPL v3
 
 setMethod ('show' , 'sdmdata',
@@ -411,4 +411,33 @@ setMethod ('show' , '.pcaObject',
 )
 #-----------
 
+
+
+setMethod ('show' , 'sdmEvaluate',
+           function ( object ) {
+             cat('class                                 :' , class(object), '\n')
+             cat('===========================================================','\n')
+             cat('number of records                     : ' , length(object@observed) , '\n')
+             cat('----------------------------------------------','\n')
+             cat('Evaluation metrics (threshold_Independent)...                          \n')
+             cat('----------------------------------------------','\n')
+             print(object@statistics)
+             cat('----------------------------------------------','\n')
+             if (!is.null(object@threshold_based)) {
+               cat('Threshold_based metrics (part of the table is printed here...)\n')
+               cat('----------------------------------------------','\n')
+               print(object@threshold_based[c(1,2,4,13,14),c(1,2,3,4,5,6,7)])
+               #for ( i in c())
+               cat('=============================================================','\n')
+             }
+             
+           }
+)
+#-----------
+# paste(colnames(e@threshold_based[1,c(2,3,4,5,6,7)]),collapse = ' | ')
+# paste(e@threshold_based[2,1],'   |  ',paste(round(as.numeric(e@threshold_based[2,c(2,3,4,5,6,7)]),3),collapse = '   | '),'| ...')
+# 
+# .w <- length(strsplit(e@threshold_based[2,1],'')[[1]])
+# paste(c(rep(' ',14-.w),'|'),collapse = '')
+# c("Criteria  |  thr.    |  sen.   |  spe.   |   TSS   |   MCC   |   F1  | ...")
 

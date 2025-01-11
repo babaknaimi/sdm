@@ -1,10 +1,16 @@
 Package: sdm
 Type: Package
 Title: Species Distribution Modelling
-Version: 1.2-54
-Date: 2024-12-27
-Author: Babak Naimi, Miguel B. Araujo
-Maintainer: Babak Naimi <naimi.b@gmail.com>
+Version: 1.2-55
+Date: 2025-01-11
+Authors@R: c(person(given = "Babak",
+                      family = "Naimi",
+                      role = c("aut", "cre"),
+                      email = "naimi.b@gmail.com",
+                      comment = c(ORCID = "0000-0001-5431-2729")),
+               person(given = c("Miguel", "B."),
+                      family = "Araujo",
+                      role = "aut"))
 Depends: methods, R (>= 3.5.0), terra
 Imports: sp, raster
 Suggests: R.rsp, shinyBS, shiny, dismo
