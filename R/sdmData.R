@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date of last update :  Oct. 2023
-# Version 3.8
+# Date of last update :  Jan. 2025
+# Version 3.9
 # Licence GPL v3
 
 #------
@@ -718,7 +718,7 @@ setReplaceMethod('.addLog','sdmdata',
     bg$rID <- (nrow(train)+1):(nrow(bg)+nrow(train))
     train <- rbind(train[,c('rID',nall)],bg[,c('rID',nall)])
     bg <- bg$rID
-    exf <- .exFormula(formula,train)
+    exf <- .exFormula(formula,train[,-which(colnames(train) == 'rID')])
     d@sdmFormula <- exf
   }
   
