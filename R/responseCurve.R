@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date:  June 2018
-# Last update:  March 2024
-# Version 1.5
+# Last update:  May 2025
+# Version 1.6
 # Licence GPL v3
 
 
@@ -307,7 +307,7 @@
         dv[,n] <- u[i]
         p <- try(predict(m,newdata=dv,id=mi$modelID),silent = TRUE)
         if (!inherits(p,'try-error')) {
-          for (j in 1:ncol(p)) dc[,j+1] <- p[,j]
+          for (j in 1:ncol(p)) dc[i,j+1] <- p[,j]
         }
       }
       
