@@ -34,8 +34,8 @@ https://groups.google.com/d/forum/rsdm
 
 The authors of the package (Miguel Araujo & Babak Naimi) organise a summer school (usually for PhDs and Postdocs) every year, where both the conceptual theories and practices of species distribution modelling are well discussed. If you are interested, you can find more information on the next course at https://www.maraujolab.eu; see for example: 
 
-https://www.maraujolab.eu/9th-edition-of-the-sdm-course/
-
+[https://www.maraujolab.eu/9th-edition-of-the-sdm-course/
+](https://www.maraujolab.eu/2025/02/13/2025-species-distributions-modelling-course/)
 ### More information about the authors of the package:
 
 Babak Naimi: https://www.biogeoinformatics.org/about-me/
