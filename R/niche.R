@@ -627,7 +627,7 @@ setMethod('niche', signature(x='SpatRaster',h='SpatVector'),
               .niche <- .nicheSpace(h=c(rep(0,length(.ca)),rep(1,length(.cp))),env1 = hv[,n[1]],env2 = hv[,n[2]],names=n)
             } else {
               hv <- data.frame(extract(x,h,ID=FALSE))
-              .niche <- .nicheSpace(h=h[,.nh],env1 = hv[,n[1]],env2 = hv[,n[2]],names=n)
+              .niche <- .nicheSpace(h=data.frame(h[, names(h)[1]])[,1], env1 = hv[,n[1]], env2 = hv[,n[2]], names=n)
             }
             
             if (plot) {
@@ -684,7 +684,7 @@ setMethod('niche', signature(x='SpatRaster',h='sdmdata'),
               df <- df[,nxy]
               df <- vect(df,nxy)
             } else {
-              df <- df[,c(nxy,.nh)]
+              df <- data.frame(df[,c(nxy,.nh)]) # Wrapped this to a dataframe
               df <- vect(df,nxy)
             }
             #----
