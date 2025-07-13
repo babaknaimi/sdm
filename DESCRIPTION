@@ -1,7 +1,7 @@
 Package: sdm
 Type: Package
 Title: Species Distribution Modelling
-Version: 1.2-58
+Version: 1.2-59
 Date: 2025-07-13
 Authors@R: c(person(given = "Babak",
                       family = "Naimi",
