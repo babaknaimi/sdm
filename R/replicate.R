@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  April 2015
-# last update: August 2017
-# Version 2.2
+# last update: July 2025
+# Version 2.3
 # Licence GPL v3
 
 
@@ -100,7 +100,7 @@
                                                       }
                                                     }
                                                     o[[1]] <- ifelse(w,1,2)
-                                                    o[[2]] <- s
+                                                    o[[2]] <- c(1:n)
                                                     o
                                                   }
                                                   o <- .s(x)

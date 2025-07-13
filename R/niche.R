@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  Feb. 2019
-# Last update: Jan 2024
-# Version 1.2
+# Last update: July 2025
+# Version 1.3
 # Licence GPL v3
 #-----------------------------
 
@@ -51,6 +51,7 @@
 #---
 .getNicheSpatRaster <- function(x,y,h) {
   out <- rast(matrix(NA,nrow=100,ncol=100))
+  ext(out) <- c(0,1,0,1)
   rc <- data.frame(row=101 - y,col=x)
   
   cells <- cellFromRowCol(out,rc[,1],rc[,2])
