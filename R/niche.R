@@ -1,7 +1,7 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  Feb. 2019
 # Last update: July 2025
-# Version 1.3
+# Version 1.4
 # Licence GPL v3
 #-----------------------------
 
@@ -627,7 +627,7 @@ setMethod('niche', signature(x='SpatRaster',h='SpatVector'),
               .niche <- .nicheSpace(h=c(rep(0,length(.ca)),rep(1,length(.cp))),env1 = hv[,n[1]],env2 = hv[,n[2]],names=n)
             } else {
               hv <- data.frame(extract(x,h,ID=FALSE))
-              .niche <- .nicheSpace(h=h[,.nh],env1 = hv[,n[1]],env2 = hv[,n[2]],names=n)
+              .niche <- .nicheSpace(h=h[[.nh]][,1],env1 = hv[,n[1]],env2 = hv[,n[2]],names=n)
             }
             
             if (plot) {
