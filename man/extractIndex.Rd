@@ -10,7 +10,7 @@
 
 \description{
 
-This function extracts records of a \code{sdmdata} object and generates a new object of the same type (if drop=FALSE; otherwise a data.frame).
+This function extracts records of a \code{sdmdata} object and generates a new object of the same type (if drop = FALSE; otherwise a data.frame).
 In \code{sdmdata}, rID is the unique ID for each record.
 }
 
@@ -22,7 +22,7 @@ Arguments
 \tabular{rll}{
 \tab \code{x} \tab a Raster* object \cr
 \tab \code{i} \tab an index: record id (rID) in sdmdata object \cr
-\tab \code{drop} \tab  If \code{TRUE}, a \code{data.frame} is returned, otherwise a \code{sdmdata} object is returned. \cr
+\tab \code{drop} \tab  logical, if \code{TRUE}, a \code{data.frame} is returned, otherwise a \code{sdmdata} object is returned. \cr
 }
 
 }}
@@ -41,9 +41,9 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 \examples{
 
-file <- system.file("external/data.sdd", package="sdm")
+file <- system.file("external/data.sdd", package = "sdm")
 
-d <- read.sdm(file)
+d <- read.sdm(filename = file)
 
 # see the number of records:
 d 
@@ -52,7 +52,7 @@ d2 <- d[1:10]
 
 d2
  
-d3 <- d[1:10,drop=TRUE]
+d3 <- d[1:10, drop = TRUE]
  
 d3
 

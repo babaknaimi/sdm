@@ -19,11 +19,11 @@ Converts a \code{sdmdata} object to a \code{data.frame}. By including additional
  \item{...}{Additional arguments (optional, see details)} 
 }
 \details{
-The following additional arguments can optionally be used to get a subset of data by specifying record IDs; or make a query by specifying the name of species, and/or the name of data groups, and/or a range of time period (if time is available in data):
+The following additional arguments can optionally be used to get a subset of data by specifying record IDs; or make a query by specifying the name of species, and/or the name of data groups, and/or a range of time period (if time is available in the training data):
 
 \code{ind}: an integer vector with record Ids;
 
-\code{sp}: a character vector with the name of species;
+\code{sp}: a character vector with the name(s) of species;
 
 \code{grp}: a character vector specifying groups of data (e.g., 'test', if independent test data is available)
 

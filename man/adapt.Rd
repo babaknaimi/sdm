@@ -43,11 +43,11 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 \examples{
 \dontrun{
-file <- system.file("external/model.sdm", package="sdm")
+file <- system.file("external/model.sdm", package = "sdm")
 
-m <- read.sdm(file) # an sdmModels Object (fitted using old version of sdm)
+m <- read.sdm(filename = file) # an sdmModels Object (fitted using old version of sdm)
 
-m <- sdmAdapt(m)
+m <- sdmAdaptx = m)
 
 m
 

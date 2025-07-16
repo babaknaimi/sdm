@@ -4,20 +4,20 @@
 \alias{installAll,ANY-method}
 
 
-\title{install all packages that may be required by the package}
+\title{Install all packages that may be required by the package}
 
 \description{
-This function facilitates to install the required packages that some functions are dependent on in the sdm package. It first checks whether the package is already installed, and if not, it installs the packages. If update=TRUE is used, the packages re-installed if they were already installed.
+This function facilitates installation of the required packages that some functions are dependent on in the sdm package. It first checks whether the packages are already installed, and if not, it installs the packages. If update = TRUE is used, the packages are re-installed if they were already installed.
 }
 
 \usage{
-installAll(pkgs,update,...)
+installAll(pkgs, update,...)
 
 }
 
 \arguments{
   \item{pkgs}{optional. the user provided list of packages (not required for the purpose of this function)}
-  \item{update}{logical (default=FALSE), specifies whether the packages re-installed if they are already installed on the machine}
+  \item{update}{logical (default = FALSE), specifies whether the packages should be re-installed if they are already installed on the machine}
   \item{...}{Additional arguments passed to the \code{\link{install.packages}} function }
   }
 

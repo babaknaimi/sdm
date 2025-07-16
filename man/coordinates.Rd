@@ -7,10 +7,10 @@
 \alias{coords,sdmModels-method}
 \alias{coords<-,sdmdata-method}
   
-\title{get or set spatial coordinates of species data}
+\title{Get or set spatial coordinates of species data}
 
 \description{
-Get or set spatial coordiates of a \code{sdmdata} object. 
+Get or set spatial coordinates of a \code{sdmdata} object. 
 }
 
 \usage{
@@ -23,7 +23,7 @@ Get or set spatial coordiates of a \code{sdmdata} object.
 \arguments{
   \item{obj}{speciesData (either of singleSpecies, multiple Species or SpeciesDataList) object}
   \item{object}{same as obj}
-  \item{value}{spatial coordinates either a matrix, or data.frame, or as character to change the names of coordinates}
+  \item{value}{spatial coordinates, either a matrix, or data.frame, or as character to change the names of coordinates}
   \item{...}{Additional arguments}
 }
 
@@ -45,8 +45,8 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 
 \examples{
-file <- system.file("external/data.sdd", package="sdm")
-d <- read.sdm(file)
+file <- system.file("external/data.sdd", package = "sdm")
+d <- read.sdm(filename = file)
 
 d # a sdmdata object
 
