@@ -25,12 +25,12 @@ setMethod ('show' , 'sdmdata',
              hasTest <- 'test' %in% .getGroupNames(object,levels=TRUE)
              hasTrain <- 'train' %in% .getGroupNames(object,levels=TRUE)
              cat('type                                  : ', if (length(typ) > 3) paste(c(typ[1:3],'...'),collapse=', ') else paste(typ,collapse=', '), '\n')
-             cat('has independent test data?             : ' , hasTest, '\n')
+             cat('has independent test data?             : ', hasTest, '\n')
              if (hasTrain) {
                cat('number of records                     : ', if (hasTest) paste('train-> ',length(.getGroupIndex(object,'train')),"; ",'test-> ',length(.getGroupIndex(object,'test')),sep='') else length(.getSpeciesIndex(object)),'\n')
              } else
              cat('number of records                     : ', if (is.null(object@features)) '0' else nrow(object@features),'\n')
-             cat('has Coordinates?                      : ' , !is.null(object@info) && !is.null(object@info@coords)  , '\n')
+             cat('has coordinates?                      : ' , !is.null(object@info) && !is.null(object@info@coords)  , '\n')
            }
 )
 #-----------
@@ -90,7 +90,7 @@ setMethod ('show' , 'sdmModels',
                
                cat('replicate.methods (data partitioning) : ' , paste(unique(mi$replication),collapse=','), '\n')
                cat('number of replicates (each method)    : ' , object@setting@n.replicates, '\n')
-               cat('toral number of replicates per model  : ' , paste(n,'(per species)'), '\n')
+               cat('total number of replicates per model  : ' , paste(n,'(per species)'), '\n')
                if ('subsampling' %in% unique(mi$replication))
                  cat('test percentage (in subsampling)      : ' , object@setting@test.percentage, '\n')
                

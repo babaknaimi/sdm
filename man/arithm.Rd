@@ -10,7 +10,7 @@
 \title{Combine (merge) two sdmModels into a single object}
 
 \description{
-If two sets of models fitted in two separate sdmModels objects, they can be merged into a single sdmModels object using `+`.
+If two sets of models are fitted in two separate sdmModels objects, they can be merged into a single sdmModels object using `+` operator.
 }
 
 \value{
@@ -32,7 +32,7 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 \examples{
 \dontrun{
-file <- system.file("external/pa_df.csv", package="sdm")
+file <- system.file("external/pa_df.csv", package = "sdm")
 
 df <- read.csv(file)
 
@@ -48,11 +48,11 @@ m1 <- sdm(sp ~ b15 + NDVI, data = d, methods = c('glm', 'gbm'))
 
 m1
 
-m2 <- sdm(sp ~ b15 + NDVI, data = d, methods = c('svm'))
+m2 <- sdm(sp ~ b15 + NDVI, data = d, methods = 'svm')
 
 m2
 
-m <- m1 + m2
+m <- m1 + m2 # combining two sdmModels objects into one
 
 m
 

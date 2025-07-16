@@ -15,27 +15,27 @@ When SDMs are fitted using the \code{\link{sdm}} function, a \code{sdmModels} ob
 }
 
 \usage{
-getModelId(x,success,species,method,replication, run)
+getModelId(x, success, species, method, replication, run)
 
 getModelInfo(x,...)
 
-getModelObject(x,id,species,method,replication, run)
+getModelObject(x, id, species, method, replication, run)
 
 
 }
 
 \arguments{
-  \item{x}{a \code{sdmModel} object}
-  \item{success}{logical; specifies whether the info/ids should be returned only for the models that are successfully fitted or not (default is TRUE)}
-  \item{species}{optional; a character vector specifies the name of species for which the info should be returned (default is NULL meaning for all species)}
-  \item{method}{optional; a character vector specifies the name of methods for which the info should be returned (default is NULL meaning for all methods)}
+  \item{x}{a \code{sdmModels} object}
+  \item{success}{logical (default: TRUE), specifies whether the info/ids should be returned only for the models that are successfully fitted or not}
+  \item{species}{optional, a character vector, specifies the name of species for which the info should be returned (default is NULL meaning for all species)}
+  \item{method}{optional, a character vector, specifies the name of methods for which the info should be returned (default is NULL meaning for all methods)}
   \item{replication}{optional; a character vector specifies the name of replication method for which the info should be returned (default is NULL meaning for all species)}
-  \item{run}{optional; a numeric vector specifies for which replication runs the info should be returned (default is NULL meaning for all runs)}
+  \item{run}{optional, a numeric vector, specifies for which replication runs the info should be returned (default is NULL meaning for all runs)}
   \item{id}{a single numeric value specifying the modelID}
   \item{...}{additional arguments. see details}
   }
 \details{
-in \code{getModelInfo}, as additional arguments, you can use the arguments in the function \code{getModelId} to specify which records should be returned.
+In \code{getModelInfo}, as additional arguments, you can use the arguments in the function \code{getModelId} to specify which records should be returned.
 
 }
 
@@ -60,19 +60,19 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 \examples{
 
-file <- system.file("external/model.sdm", package="sdm")
+file <- system.file("external/model.sdm", package = "sdm")
 
-m <- read.sdm(file)
+m <- read.sdm(filename = file)
 
-getModelInfo(m)
+getModelInfo(x = m)
 
-# getModelId(m)
+# getModelId(x = m)
 
-# getModelId(m,method='brt')
+# getModelId(x = m, method = 'brt')
 
-obj <- getModelInfo(m, id=3) # obj is the fitted BRT model (through the package of gbm)
+obj <- getModelInfo(x = m, id = 3) # obj is the fitted BRT model (through the gbm package)
 
-class(obj) # The class of the model object
+class(obj) # the class of the model object
 
 summary(obj)
 

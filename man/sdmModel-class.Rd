@@ -39,15 +39,15 @@ Slots for sdmModels objects:
 	\describe{
 \item{\code{data}}{a sdmdata object}
 
-\item{\code{recordIDs}}{Contains the species data}
+\item{\code{recordIDs}}{contains the species data}
 
-\item{\code{setting}}{A data.frame containing predictor variables}
+\item{\code{setting}}{a data.frame containing predictor variables}
 
 \item{\code{run.info}}{a data.frame containing info on runs}
 
-\item{\code{replicates}}{The names of categorical variables (if any)}
+\item{\code{replicates}}{the names of categorical variables (if any)}
 
-\item{\code{models}}{a list contains all fitted objects and relevant information (e.g., evaluation) }
+\item{\code{models}}{a list, contains all fitted objects and relevant information (e.g., evaluation) }
 
 
 

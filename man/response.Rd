@@ -14,23 +14,23 @@ Calculate the response of species to the range of values in each predictor varia
 }
 
 \usage{
-rcurve(x,n,id,mean,fun,confidence,gg,...)
+rcurve(x, n, id, mean, fun, confidence, gg,...)
      
-getResponseCurve(x,id,...)
+getResponseCurve(x, id,...)
 }
 
 \arguments{
-  \item{x}{A \code{sdmModels} object; in the function response, it can be a \code{.responseCurve} object which is the output of the \code{getResponse} function }
-  \item{id}{specifies the modelIDs corresponding to the models in the sdmModels object for which the response curves should be generated}
-  \item{n}{A vector with the name of variables for which the response curve should be generated}
-  \item{mean}{logical, specifies whether a mean should be calculated over responses to a variable when multiple models are specified in ids}
-  \item{fun}{character or function, (default="mean") specifies what function should be used to calculate the value of the variables over the presence locations (except the variable of interest)}
+  \item{x}{a \code{sdmModels} object, in the function response, it can be a \code{.responseCurve} object which is the output of the \code{getResponse} function }
+  \item{id}{numeric vector, specifies the modelIDs corresponding to the models in the sdmModels object for which the response curves should be generated}
+  \item{n}{a character vector with the name of variables for which the response curve should be generated}
+  \item{mean}{logical, specifies whether a mean should be calculated over responses to a variable when multiple models are specified in the id argument}
+  \item{fun}{character or function (default: "mean"), specifies what function should be used to calculate the value of the variables over the presence locations (except the variable of interest)}
   \item{confidence}{logical, specifies whether a confidence interval should be added to the curve when the mean response curve is calculated based on multiple models}
   \item{gg}{logical, specifies whether the plot should be generated using the ggplot2 package (if the package is installed)}
   \item{...}{additional arguments passed to plot function}
   }
 \details{
-\code{getResponseCurve} calculates the responses for the models that are specified in \code{id} argument, and put the results in a \code{.responseCurve} object. This object can be used as an input in the \code{plot} function, or \code{rcurve} function.
+\code{getResponseCurve} calculates the responses for the models that are specified in \code{id} argument, and puts the results in a \code{.responseCurve} object. This object can be used as an input in the \code{plot} function, or \code{rcurve} function.
 
 If you just need the response curve graphs (plots), you can put a \code{sdmModels} object directly in the \code{rcurve} function, and do not need to first use \code{getResponseCurve} function.
 
@@ -65,19 +65,19 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 \examples{
 \dontrun{
-file <- system.file("external/model.sdm", package="sdm")
+file <- system.file("external/model.sdm", package = "sdm")
 
-m <- read.sdm(file) # a sdmModels Object (fitted using sdm function)
+m <- read.sdm(filename = file) # a sdmModels object (fitted using sdm function)
 
 
 
-rcurve(m)
+rcurve(x = m)
 
-rcurve(m,id=1) # for the first model
+rcurve(x = m, id = 1) # for the first model
 
-rcurve(m, id=1:2)
+rcurve(x = m, id = 1:2)
 
-rcurve(m,method = 'glm',smooth = T) # only for models fitted using glm method & with smoothed curve
+rcurve(x = m, method = 'glm', smooth = TRUE) # only for models fitted using glm method & with smoothed curve
 
 
 }

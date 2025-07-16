@@ -21,7 +21,7 @@ Get or set the names of the species of a \code{sdmdata} object
 }
 
 \arguments{
-  \item{x}{A sdm data object (\code{sdmdata}}
+  \item{x}{A sdm data object (\code{sdmdata})}
   \item{value}{character (vector)}
 }
 
@@ -45,13 +45,13 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 
 
 \examples{
-file <- system.file("external/data.sdd", package="sdm")
+file <- system.file("external/data.sdd", package = "sdm")
 
-d <- read.sdm(file)
+d <- read.sdm(filename = file)
 
 d
 
-names(d) # returns the names of species
+names(x = d) # returns the names of species
 }
 
 \keyword{spatial}
