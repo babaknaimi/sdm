@@ -12,32 +12,32 @@
 \alias{sdmData,ANY,SpatVector,SpatRaster-method}
 \alias{sdmData,ANY,data.frame,SpatRaster-method}
 
-\title{creating sdm Data object}
+\title{Creating sdmdata object}
 
 \description{
-Creates an \code{sdmdata} object that holds (single or multiple) species records  and explanatory variates. In addition, more information such as spatial coordinates, time, grouping variables, and metadata (e.g., author, date, reference, etc.) can be included.
+Creates an \code{sdmdata} object that holds (single or multiple) species records  and explanatory variables. In addition, more information such as spatial coordinates, time, grouping variables, and metadata (e.g., author, date, reference, etc.) can be included.
 }
 
 \usage{
-sdmData(formula,train,predictors,test,bg,filename,crs,impute,metadata,...)
+sdmData(formula, train, predictors, test, bg, filename, crs, impute, metadata,...)
 }
 
 \arguments{
-  \item{formula}{Specifies which species and explanatory variables should be taken from the input data.  Other information (e.g., spatial coordinates, grouping variables, time, etc.) can be determined as well}
-  \item{train}{Training data containing species observations as a \code{data.frame}, or \code{SpatVector}, or \code{SpatialPoints}, or \code{SpatialPointsDataFrames}. It may contain predictor variables as well}
-  \item{test}{Independent test data with the same structure as the train data}
-  \item{predictors}{ explanatory variables (predictors), defined as a raster object (\code{RasterStack} or \code{RasterBrick} or \code{SpatRaster}). Required if train data only contain species records, or background records (pseudo-absences) should be generated}
+  \item{formula}{specifies which species and explanatory variables should be taken from the input data.  Other information (e.g., spatial coordinates, grouping variables, time, etc.) can be determined as well}
+  \item{train}{training data containing species observations as a \code{data.frame}, or \code{SpatVector}, or \code{SpatialPoints}, or \code{SpatialPointsDataFrames}. It may contain predictor variables as well}
+  \item{test}{independent test data with the same structure as the train data}
+  \item{predictors}{ explanatory variables (predictors), defined as a raster object (\code{RasterStack} or \code{RasterBrick} or \code{SpatRaster}). Required if train data only contain species records, or background or pseudo-absence records should be generated}
   
   
-  \item{bg}{Background data (pseudo-absence), as a data.frame. It can also be a list contains the settings to generate background data (a Raster object is required in the predictors argument)}
+  \item{bg}{background data (pseudo-absence), as a data.frame. It can also be a list containing the settings to generate background data (a Raster object is required in the predictors argument) or output of background function}
   \item{filename}{filename of the sdm data object to store in the disk }
   \item{crs}{optional, coordinate reference system}
-  \item{impute}{logical or character, specifies whether missing values for predictor variables should be imputed. It can be a character specifies imputation method. default is "neighbor"}
+  \item{impute}{logical or character (default: "neighbor"), specifies whether missing values for predictor variables should be imputed. It can be a character specifying the imputation method.}
   \item{metadata}{Additional arguments (optional) that are used to create a metadata object. See details }
   \item{...}{Not implemented yet.}
   }
 \details{
-sdmData creates a data object, for single or multiple species. It can automatically detect the variables containing species data (if a data.frame is provided in \code{train}), but it is recommended to use formula through which all species (in the left hand side, e.g., sp1+sp2+sp3 ~ .), and the explanatory variables (in the right hand side) can be determined. If there are additional information such as spatial coordinates, time, or some variables based on which the observation can be grouped, they can be determined in the right hand side of the formula in a flexsible way (e.g., \code{~ . + coords(x+y) + g(var)}; This right hand side formula, simply determines all variables (\code{.}) + \code{x} and \code{y} as spatial coordinates + grouping observations based on the variable \code{var}; for grouping, the variable (\code{var} in this example) should be categorical, i.e., \code{factor} ).
+sdmData creates a data object, for single or multiple species. It can automatically detect the variables containing species data (if a data.frame is provided in \code{train}), but it is recommended to use formula through which all species (in the left hand side, e.g., sp1+sp2+sp3 ~ .), and the explanatory variables (in the right hand side) can be determined. If there are additional information such as spatial coordinates, time, or some variables based on which the observations can be grouped, they can be determined in the right hand side of the formula in a flexible way (e.g., \code{~ . + coords(x+y) + g(var)}; This right hand side formula, simply determines all variables (\code{.}) + \code{x} and \code{y} as spatial coordinates + grouping observations based on the variable \code{var}; for grouping, the variable (\code{var} in this example) should be categorical, i.e., \code{factor} ).
 
 Additional items can be provided as a list in the \code{metadata} argument including:
 \code{author}, \code{website}, \code{citation}, \code{help}, \code{description}, \code{date}, and \code{license}
@@ -63,18 +63,18 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 \dontrun{
 # Example 1: a data.frame containing records for a species (sp) and two predictors (b15 & NDVI):
 
-file <- system.file("external/pa_df.csv", package="sdm")
+file <- system.file("external/pa_df.csv", package = "sdm")
 
-df <- read.csv(file)
+df <- read.csv(file = file)
 
-head(df) 
+head(x = df) 
 
-d <- sdmData(sp~b15+NDVI,train=df)
+d <- sdmData(formula = sp ~ b15 + NDVI, train = df)
 
 d
 
 # or simply:
-d <- sdmData(sp~.,train=df)
+d <- sdmData(formula = sp ~., train = df)
 
 d
 
@@ -82,12 +82,12 @@ d
 # if formula is not specified, function tries to detect species and covariates, it works well only
 # if dataset contains no additional columns but species and covariates!
 
-d <- sdmData(train=df)
+d <- sdmData(train = df)
 
 d
 
-# # only right hand side of the formula is specified (one covariate), so function detects species:
-d <- sdmData(~NDVI,train=df) 
+# # only right hand side of the formula is specified (one covariate), so the function detects species:
+d <- sdmData(~ NDVI, train = df) 
 
 d 
 
@@ -108,34 +108,34 @@ d
 #----
 # categoric1 and categoric2 are categorical variables (factors), if not sure the data.frame has 
 # them as factor, it can be specified in the formula:
-d <- sdmData(sp~b15+NDVI+f(categoric1)+f(categoric2)+coords(x+y),train=df) 
+d <- sdmData(formula = sp ~ b15 + NDVI + f(categoric1) + f(categoric2) + coords(x + y), train = df) 
 
 d
 # more simple forms of the formula:
-d <- sdmData(sp~.+coords(x+y),train=df) 
+d <- sdmData(formula = sp ~. + coords(x + y), train = df) 
 
 d
 
-d <- sdmData(~.+coords(x+y),train=df)  # function detects the species
+d <- sdmData(~. + coords(x + y), train = df)  # function detects the species
 
 d
 ##############
 # Example 3: a data.frame containing presence-absence records for 10 species:
 
-file <- system.file("external/multi_pa_df.csv", package="sdm")
+file <- system.file("external/multi_pa_df.csv", package = "sdm")
 
-df <- read.csv(file)
+df <- read.csv(file = file)
 
-head(df) 
+head(x = df) 
 
 # in the following formula, spatial coordinates columns are specified, and the rest is asked to
 # be detected by the function:
-d <- sdmData(~.+coords(x+y),train=df)  
+d <- sdmData(~. + coords(x + y), train = df)  
 
 d
 
 #--- or it can be customized wich species and which covariates are needed:
-d <- sdmData(sp1+sp2+sp3~b15+NDVI+f(categoric1) + coords(x+y),train=df) 
+d <- sdmData(formula = sp1 + sp2 + sp3 ~ b15 + NDVI + f(categoric1) + coords(x + y), train = df) 
 
 d # 3 species, 3 covariates, and coordinates
 # just be careful that if you put "." in the right hand side, while not all species columns or 
@@ -145,38 +145,38 @@ d # 3 species, 3 covariates, and coordinates
 #########
 # Example 4: Spatial data:
 
-file <- system.file("external/pa_spatial_points.shp", package="sdm") # path to a shapefile
+file <- system.file("external/pa_spatial_points.shp", package = "sdm") # path to a shapefile
 
 # use the vect function in terra to read the shapefile:
 
-p <- vect(file)
+p <- vect(x = file)
 
-class(p) # a "SpatVector"
+class(x = p) # a "SpatVector"
 
-plot(p)
+plot(x = p)
 
-head(p) # it contains data for 3 species
+head(x = p) # it contains data for 3 species
 
 # presence-absence plot for the first species (i.e., sp1)
 
-plot(p[p$sp1 == 1,], col = 'blue', pch=16, main = 'Presence-Absence for sp1')
+plot(x = p[p$sp1 == 1,], col = 'blue', pch = 16, main = 'Presence-Absence for sp1')
 
-points(p[p$sp1 == 0,],col='red',pch=16)
+points(x = p[p$sp1 == 0,], col = 'red', pch = 16)
 
 
 # Let's read raster dataset containing predictor variables for this study area:
 
-file <- system.file("external/predictors.tif", package="sdm") # path to a raster object
+file <- system.file("external/predictors.tif", package = "sdm") # path to a raster object
 
-r <- rast(file)
+r <- rast(x = file)
 
 r # a SpatRaster object including 2 rasters (covariates)
 
-plot(r)
+plot(x = r)
 
 # now, we can use the species points and predictor rasters in sdmData function:
 
-d <- sdmData(sp1 + sp2 + sp3 ~ b15 + NDVI, train = p, predictors = r)
+d <- sdmData(formula = sp1 + sp2 + sp3 ~ b15 + NDVI, train = p, predictors = r)
 
 d
 
@@ -184,15 +184,15 @@ d
 # Example 5: presence-only records:
 
 
-file <- system.file("external/po_spatial_points.shp", package="sdm") # path to a shapefile
+file <- system.file("external/po_spatial_points.shp", package = "sdm") # path to a shapefile
 
-po <- vect(file)
-
-
-head(po) # it contains data for one species (sp4) and the dataset has only presence records!
+po <- vect(x = file)
 
 
-d <- sdmData(sp4 ~ b15 + NDVI, train = po, predictors = r)
+head(x = po) # it contains data for one species (sp4) and the dataset has only presence records!
+
+
+d <- sdmData(formula = sp4 ~ b15 + NDVI, train = po, predictors = r)
 
 d # as you see in the type, the data is Presence-Only
 
@@ -203,7 +203,7 @@ d # as you see in the type, the data is Presence-Only
 #------ background generation; gRandom refers to random in geographic space), and remove (whether 
 #------ points located in presence sites should be removed).
 
-d <- sdmData(sp4 ~ b15 + NDVI, train = po, predictors = r, bg = list(n=1000,method = 'gRandom'))
+d <- sdmData(formula = sp4 ~ b15 + NDVI, train = po, predictors = r, bg = list(n = 1000, method = 'gRandom'))
 
 d       # as you see in the type, the data is Presence-Background
 

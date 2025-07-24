@@ -8,23 +8,23 @@ An S4 class representing sdm dataset
 \section{Slots}{
 
 \describe{
-\item{\code{name}}{Modelling method name}
+\item{\code{name}}{modelling method name}
 
-\item{\code{aliases}}{Alternative names for the method}
+\item{\code{aliases}}{alternative names for the method}
 
-\item{\code{dataArgument.names}}{A list keeps the name of data agruments in both fit and predict functions}
+\item{\code{dataArgument.names}}{a list, keeps the name of data agruments in both fit and predict functions}
 
-\item{\code{packages}}{The required external package by the method}
+\item{\code{packages}}{the required external packages by the method}
 
-\item{\code{modelTypes}}{Specifies whether the model is presence-absence, presence-only, abundance, or multinomial}
+\item{\code{modelTypes}}{specifies whether the model is presence-absence, presence-only, abundance, or multinomial}
 
 \item{\code{fitParams}}{a list of parameters needed by the method}
 
 \item{\code{fitSettings}}{a list of setting parameters for the method}
 
-\item{\code{settingRules}}{a function that adjust the setting parameters according to data}
+\item{\code{settingRules}}{a function that adjusts the setting parameters according to data}
 
-\item{\code{fitFunction}}{The main function use for fitting the model}
+\item{\code{fitFunction}}{the main function used for fitting the model}
 
 \item{\code{tuneParams}}{a list of parameters to be tuned before the final fitting}
 

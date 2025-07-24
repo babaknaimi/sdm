@@ -16,19 +16,19 @@ Read an sdm object from a file, or write it to a file.
 \usage{
 read.sdm(filename,...)
 
-write.sdm(x,filename,overwrite,...)
+write.sdm(x, filename, overwrite,...)
 
 
 }
 
 \arguments{
-  \item{filename}{ Filename (character)}
-  \item{x}{a sdm object (e.g., sdmModels,sdmdata or sdmSetting)}
-  \item{overwrite}{Logical. If \code{TRUE}, "filename" will be overwritten if it exists (default is \code{FALSE}) }
+  \item{filename}{ filename (character)}
+  \item{x}{a sdm object (e.g., sdmModels, sdmdata or sdmSetting)}
+  \item{overwrite}{logical. If \code{TRUE}, "filename" will be overwritten if it exists (default is \code{FALSE}) }
   \item{...}{additional arguments}
   }
 \details{
- \code{read.sdm} function reads any files that has been writed by \code{write.sdm}.  These functions use \code{\link[base]{saveRDS}} and \code{\link[base]{readRDS}} to write and read the sdm objects. Additional arguments \code{...} pass to these functions. An \code{sdmModels} object is saved to a file with an extension of ".sdm". The file extensions for \code{sdmdata} and \code{sdmSetting} object are ".sdd", and "sds", respectively.
+ \code{read.sdm} function reads any files that have been written by \code{write.sdm}.  These functions use \code{\link[base]{saveRDS}} and \code{\link[base]{readRDS}} to write and read the sdm objects. Additional arguments \code{...} passed to these functions. An \code{sdmModels} object is saved to a file with an extension of ".sdm". The file extensions for \code{sdmdata} and \code{sdmSetting} object are ".sdd", and "sds", respectively.
 }
 
 
@@ -49,17 +49,17 @@ Naimi, B., Araujo, M.B. (2016) sdm: a reproducible and extensible R platform for
 \examples{
 \dontrun{
 
-file <- system.file("external/data.sdd", package="sdm")
+file <- system.file("external/data.sdd", package = "sdm")
 
-d <- read.sdm(file)
+d <- read.sdm(filename = file)
 
 d
 # can be used to read sdm models (sdmModels) and sdmSettings as well.
 
-write.sdm(d,'dataset') 
-# extension is created for data, model and settings as .sdd, .sds, and .sdm respectively.
+write.sdm(x = d, filename = 'dataset') 
+# extension is created for data, model, and settings as .sdd, .sds, and .sdm respectively.
 
-list.files(pattern='dataset')
+list.files(pattern = 'dataset')
 }
 }
 

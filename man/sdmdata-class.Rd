@@ -10,23 +10,23 @@ An S4 class representing sdm dataset \code{sdmdata}
 \section{Slots}{
 
 \describe{
-\item{\code{species.names}}{The names of species}
+\item{\code{species.names}}{the names of species}
 
-\item{\code{species}}{Contains the species data}
+\item{\code{species}}{contains the species data}
 
-\item{\code{features.name}}{The names of predictor variables}
+\item{\code{features.name}}{the names of predictor variables}
 
-\item{\code{features}}{A data.frame containing predictor variables}
+\item{\code{features}}{a data.frame containing predictor variables}
 
-\item{\code{factors}}{The names of categorical variables (if any)}
+\item{\code{factors}}{the names of categorical variables (if any)}
 
-\item{\code{info}}{Other information such as coordinates, metadata, etc.}
+\item{\code{info}}{other information such as coordinates, metadata, etc.}
 
-\item{\code{groups}}{A list including information on groups in the dataset}
+\item{\code{groups}}{a list including information on groups in the dataset}
 
-\item{\code{sdmFormula}}{An object of class sdmFormula containing the formula and its' terms defined by user}
+\item{\code{sdmFormula}}{an object of class sdmFormula containing the formula and its' terms defined by user}
 
-\item{\code{errorLog}}{Reports on errors in the data raised throgh data cleaning (e.g., NA, duplications, etc.)}
+\item{\code{errorLog}}{reports on errors in the data raised through data cleaning (e.g., NA, duplications, etc.)}
 }}
 
 \references{
