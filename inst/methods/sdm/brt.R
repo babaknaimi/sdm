@@ -5,7 +5,7 @@
 
 #-------------
 methodInfo <- list(name=c('brt','BRT','gbm','GBM'),
-                  packages='gbm',
+                  packages='gbm3',
                   modelTypes = c('pa','pb','ab','n'),
                   fitParams = list(formula='standard.formula',data='sdmDataFrame'),
                   fitSettings = list(distribution='bernoulli',
@@ -36,7 +36,7 @@ methodInfo <- list(name=c('brt','BRT','gbm','GBM'),
                   tuneParams = NULL,
                   predictParams=list(object='model',newdata='sdmDataFrame'),
                   predictSettings=list(n.trees=1000,type='response'),
-                  predictFunction='predict.gbm',
+                  predictFunction='predict',
                   #------ metadata (optional):
                   title='Boosted Regression Trees',
                   creator='Babak Naimi',

@@ -23,7 +23,7 @@ methodInfo <- list(name=c('ranger','rangerRF','rangerForest'),
                    predictParams=list(object='model',data='sdmDataFrame'),
                    predictSettings=list(type='response',num.threads=1,se.method = "infjack",verbose=FALSE,seed=NULL),
                    predictFunction=function(object,data,type,num.threads,se.method,verbose,seed) {
-                     predict(object,data=data,type=type,num.threads=num.threads,verbose=verbose,seed=seed)$predictions
+                     predict(object,data=data,type=type,num.threads=num.threads,verbose=verbose,seed=seed)$predictions[,2]
                    },
                    #------ metadata (optional):
                    title='Random Forest (Ranger)',
