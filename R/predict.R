@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  September 2024
-# Version 3.8
+# Date (last update):  August 2025
+# Version 3.9
 # Licence GPL v3
 
 
@@ -268,9 +268,11 @@ setMethod('predict', signature(object='sdmModels'),
                 names(parallelSetting) <- nparallel
               }
               #--
+              .parSetting <- new('.parallelSetting')
+              
               if ('cluster' %in% nparallel && inherits(parallelSetting$cluster,'cluster')) .parSetting@cl <- parallelSetting$cluster
               #--
-              .parSetting <- new('.parallelSetting')
+              
               if ('ncore' %in% nparallel) .parSetting@ncore <- min(c(parallelSetting$ncore,parallel::detectCores()))
               else {
                 if (!is.null(.parSetting@cl)) .parSetting@ncore <- length(.parSetting@cl)

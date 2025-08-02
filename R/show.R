@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Jan. 2025
-# Version 2.7
+# Date (last update):  August 2025
+# Version 2.8
 # Licence GPL v3
 
 setMethod ('show' , 'sdmdata',
@@ -195,15 +195,23 @@ setMethod ('show' , 'sdmModels',
              }
              
              if (object@setting@distribution[1] == 'binomial') {
+               if (object@data@species[[1]]@type == 'Presence-Background') .s1 <- c('AUC','cBoyce','TSS','COR')
+               else .s1 <- c('AUC','COR','TSS','Deviance')
+               
                for (spp in sp) {
                  
                  cat('\n ## species   : ',spp,'\n')
                  cat('=========================\n\n')
-                 if (lb > 10) cat(paste('methods',paste(rep(' ',(lb/3+1)),collapse=''),' : ',paste(rep(' ',lb/3),collapse=''),sep='')  , paste(c('AUC','COR','TSS','Deviance'),collapse='     |     '), '\n')
-                 else cat(paste('methods',paste(rep(' ',3),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , paste(c('AUC','COR','TSS','Deviance'),collapse='     |     '), '\n')
+                 # if (lb > 10) cat(paste('methods',paste(rep(' ',(lb/3+1)),collapse=''),' : ',paste(rep(' ',lb/3),collapse=''),sep='')  , paste(.s1,collapse='     |     '), '\n')
+                 # else cat(paste('methods',paste(rep(' ',3),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , paste(.s1,collapse='     |     '), '\n')
+                 
+                 if (lb > 10) cat(paste('methods',paste(rep(' ',(lb/3+1)),collapse=''),' : ',paste(rep(' ',lb/3),collapse=''),sep='')  , .pasteCollapse(.s1,sep='|',space = 11), '\n')
+                 else cat(paste('methods',paste(rep(' ',3),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , .pasteCollapse(.s1,sep='|',space = 11), '\n')
+                 
+                 
                  cat('-------------------------------------------------------------------------\n')
                  for (i in seq_along(mo)) {
-                   cat(paste(mo[i],paste(rep(' ',lb - length(unlist(strsplit(mo[i],'')))),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , p(mo[i],spp), '\n')
+                   cat(paste(mo[i],paste(rep(' ',lb - length(unlist(strsplit(mo[i],'')))),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , p(mo[i],spp,s1 = .s1[-3]), '\n')
                  }
                }
              } else {
@@ -211,8 +219,11 @@ setMethod ('show' , 'sdmModels',
                  
                  cat('\n ## species   : ',spp,'\n')
                  cat('=========================\n\n')
-                 if (lb > 10) cat(paste('methods',paste(rep(' ',(lb/3+1)),collapse=''),' : ',paste(rep(' ',lb/3),collapse=''),sep='')  , paste(c('RMSE','COR','MAE','Deviance'),collapse='     |     '), '\n')
-                 else cat(paste('methods',paste(rep(' ',3),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , paste(c('RMSE','COR','MAE','Deviance'),collapse='     |     '), '\n')
+                 # if (lb > 10) cat(paste('methods',paste(rep(' ',(lb/3+1)),collapse=''),' : ',paste(rep(' ',lb/3),collapse=''),sep='')  , paste(c('RMSE','COR','MAE','Deviance'),collapse='     |     '), '\n')
+                 # else cat(paste('methods',paste(rep(' ',3),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , paste(c('RMSE','COR','MAE','Deviance'),collapse='     |     '), '\n')
+                 
+                 if (lb > 10) cat(paste('methods',paste(rep(' ',(lb/3+1)),collapse=''),' : ',paste(rep(' ',lb/3),collapse=''),sep='')  , .pasteCollapse(c('RMSE','COR','MAE','Deviance'),sep='|',space=11), '\n')
+                 else cat(paste('methods',paste(rep(' ',3),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , .pasteCollapse(c('RMSE','COR','MAE','Deviance'),sep='|',space=11), '\n')
                  cat('-------------------------------------------------------------------------\n')
                  for (i in seq_along(mo)) {
                    cat(paste(mo[i],paste(rep(' ',lb - length(unlist(strsplit(mo[i],'')))),collapse=''),' : ',paste(rep(' ',3),collapse=''),sep='')  , p(mo[i],spp,s1=c('RMSE','COR','MAE','Deviance'),s2=NULL), '\n')

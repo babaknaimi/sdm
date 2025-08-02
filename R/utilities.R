@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date of last update :  May 2024
-# Version 1.6
+# Date of last update :  August 2025
+# Version 1.7
 # Licence GPL v3
 
 #------
@@ -300,3 +300,52 @@
   paste(x,collapse='')
 }
 #-------
+
+# this is used in the show function. paste the items in .s1 considering total space 
+# and sep between items given the length of each item
+# e.g., "AUC   |   TSS   |   COR"
+.pasteCollapse <- function(.s1,sep='|',space=13) {
+  o <- .s1[1]
+  if (length(.s1) > 2) {
+    lb <- sapply(strsplit(.s1,''),length)
+    .add <- (space - lb[1]) / 2
+    if (.add > 0) {
+      if (.add != round(.add,0)) o <- paste(o,paste(rep(' ',.add+0.5),collapse = ''),collapse = '')
+      else o <- paste(o,paste(rep(' ',.add),collapse = ''),collapse = '')
+      
+    }
+    
+    for (i in 2:(length(.s1)-1)) {
+      .add <- (space - lb[i]) / 2
+      if (.add != round(.add,0)) {
+        o <- c(o,paste(paste(rep(' ',.add-0.5),collapse = ''),.s1[i],paste(rep(' ',.add+0.5),collapse = ''),collapse = ''))
+      } else o <- c(o,paste(paste(rep(' ',.add),collapse = ''),.s1[i],paste(rep(' ',.add),collapse = ''),collapse = ''))
+      
+    }
+    #---
+    .add <- (space - lb[length(.s1)]) / 2
+    if (.add > 0) {
+      if (.add != round(.add,0)) o <- c(o,paste(paste(rep(' ',.add-0.5),collapse = ''),.s1[length(.s1)]))
+      else o <- c(o,paste(paste(rep(' ',.add),collapse = ''),.s1[length(.s1)]))
+      
+    }
+  } else {
+    if (length(.s1) > 1) {
+      lb <- sapply(strsplit(.s1,''),length)
+      .add <- (space - lb[1]) / 2
+      if (.add > 0) {
+        if (.add != round(.add,0)) o <- paste(o,paste(rep(' ',.add+0.5),collapse = ''),collapse = '')
+        else o <- paste(o,paste(rep(' ',.add),collapse = ''),collapse = '')
+      }
+      #----
+      .add <- (space - lb[2]) / 2
+      if (.add > 0) {
+        if (.add != round(.add,0)) o <- c(o,paste(paste(rep(' ',.add-0.5),collapse = ''),.s1[2]))
+        else o <- c(o,paste(paste(rep(' ',.add),collapse = ''),.s1[2]))
+        
+      }
+    }
+  }
+  #------
+  paste(o,collapse = sep)
+}

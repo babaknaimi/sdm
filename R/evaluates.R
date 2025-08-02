@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  Jan. 2025
-# Version 2.6
+# Date (last update):  August 2025
+# Version 2.7
 # Licence GPL v3
 #--------
 
@@ -337,6 +337,7 @@
   e@predicted <- p
   e@statistics[['Prevalence']] <- round(length(which(o == 1)) / length(o),3)
   e@statistics[['AUC']] <- .auc(o,p)
+  e@statistics[['cBoyce']] <- .boyce(o,p)$CBI
   e@statistics[['COR']] <- .cor(o,p)
   e@statistics[['Deviance']] <- .deviance_binomial(o,p)
   e@threshold_based <- .threshold(o,p,stat = c(1:12,14:16))
@@ -402,7 +403,7 @@ setMethod('evaluates', signature(x='vector',p='vector'),
   
   
   if (.dist == 'binomial') {
-    s1 <- c('AUC','COR','Deviance','obs.prevalence')
+    s1 <- c('AUC','cBoyce','COR','Deviance','obs.prevalence')
     
     s2 <- c('threshold','sensitivity','specificity','TSS','MCC','F1','Kappa','NMI','phi','ppv','npv','ccr','mcr','ommission', 'commission', 'prevalence')
     
@@ -418,9 +419,9 @@ setMethod('evaluates', signature(x='vector',p='vector'),
   if (!is.null(stat)) {
     stat <- .pmatch(stat,c(s1,s2))
     stat <- stat[!is.na(stat)]
-    if (length(stat) == 0) stat <- c('AUC','COR','Deviance','TSS','MCC','F1')
+    if (length(stat) == 0) stat <- c('AUC','cBoyce','COR','Deviance','TSS','MCC','F1')
   } else {
-    if (.dist == 'binomial') stat <- c('AUC','COR','Deviance','TSS','MCC','F1')
+    if (.dist == 'binomial') stat <- c('AUC','cBoyce','COR','Deviance','TSS','MCC','F1')
     else stat <- c('RMSE','COR','MAE','Deviance')
   }
   
@@ -560,7 +561,7 @@ setMethod('getEvaluation', signature(x='sdmModels'),
             if (missing(id)) id <- NULL
             if (missing(wtest)) wtest <- NULL
             if (missing(stat)) {
-              if (.dist == 'binomial') stat <-c('AUC','COR','Deviance','TSS','MCC','F1')
+              if (.dist == 'binomial') stat <-c('AUC','cBoyce','COR','Deviance','TSS','MCC','F1')
               else stat <- c('RMSE','COR','MAE','Deviance')
             }
             if (missing(opt)) opt <- 2
