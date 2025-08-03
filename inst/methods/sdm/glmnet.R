@@ -28,7 +28,7 @@ methodInfo <- list(name=c('glmnet','GLMNET','glmelastic','glmlasso'),
                    predictSettings=list(type='response'),
                    predictFunction=function(object,formula,newx,type) {
                      newx <- .getData.sdmMatrix(formula,newx,normalize=TRUE)
-                     predict.glmnet(object,newx,type=type)[,1]
+                     predict(object,newx,type=type)[,1]
                    },
                    #------ metadata (optional):
                    title='GLM with lasso or elasticnet regularization',
