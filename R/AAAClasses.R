@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  May 2024
-# Version 7.0
+# Date (last update):  August 2025
+# Version 7.1
 # Licence GPL v3
 
 
@@ -846,7 +846,8 @@ setClass('.sdmVariables',
            features.numeric='characterORnull',
            features.factor='characterORnull',
            number.of.records='numeric',
-           n.presence='numericORnull'
+           n.presence='numericORnull',
+           varInfo='listORnull'
          )
 )
 #-------------------
@@ -900,7 +901,7 @@ setRefClass(".workload",
                   
                   .self$sdmVariables[[sp]] <- new('.sdmVariables',response=sp,variables=list(numeric=nf,factors=nFact),distribution=.self$setting@distribution[[sp]],features.numeric=.excludeVector(colnames(.self$train[[sp]]$sdmDataFrame),c(sp,nFact)),features.factor=nFact,
                                                   number.of.records=if (is.null(.self$test)) nrow(.self$train[[sp]]$sdmDataFrame) else c(train=nrow(.self$train[[sp]]$sdmDataFrame),test=nrow(.self$test[[sp]]$sdmDataFrame)),
-                                                  n.presence=if (.self$setting@distribution[[sp]] == 'binomial') length(which(.self$train[[sp]]$sdmDataFrame[,1] == 0)) else NULL)
+                                                  n.presence=if (.self$setting@distribution[[sp]] == 'binomial') length(which(.self$train[[sp]]$sdmDataFrame[,1] == 0)) else NULL,varInfo=list(numeric=.self$frame@numeric,categorical=.self$frame@categorical))
                   .self$sdmVariables[[sp]]
                 }
               },
@@ -911,6 +912,45 @@ setRefClass(".workload",
                 } else {
                   as.data.frame(.self$data,ind=id,sp=sp,grp=grp)
                 }
+              },
+              normalize=function(x,except=NULL,scale=FALSE) {
+                
+                .fr <- .self$frame@numeric
+                
+                w <- !.where(is.factor,x)
+                if (!is.null(except)) {
+                  w[except] <- FALSE
+                }
+                #---
+                if (any(w)) {
+                  if (all(names(w[w]) %in% .fr$names)) {
+                    .fr <- .fr[.fr$names %in% names(w[w]),]
+                  } else .fr <- NULL
+                  
+                  
+                  if (!is.null(.fr)) {
+                    if (scale) .sc <- .getScaleFunction(.fr,scl='minmax')
+                    else .sc <- .getScaleFunction(.fr,scl='center')
+                    #-------
+                    x <- .sc(x)
+                  } else {
+                    for (i in seq_along(w)) {
+                      if (w[i]) {
+                        if (scale) {
+                          .min <- min(x[,i],na.rm=TRUE)
+                          .max <- max(x[,i],na.rm=TRUE)
+                          x[,i] <- (x[,i] - .min) / (.max - .min)
+                        } else {
+                          .mean <- mean(x[,i],na.rm=TRUE)
+                          .sd <- sd(x[,i],na.rm=TRUE)
+                          x[,i] <- x[,i] - .mean
+                          if (.sd != 0) x[,i] <- x[,i] / .sd
+                        }
+                      }
+                    }
+                  }
+                }
+                x
               },
               generateParams=function(n,sp,train=TRUE,data=TRUE) {
                 # if data=FALSE, the type of data is returned rather than data object (i.e., sdmDataFrame)
@@ -944,13 +984,18 @@ setRefClass(".workload",
                     } #else 'sdmY'
                   } else if (n[[i]] == 'sdmX.norm') {
                     if (data) {
-                      if (train) n[[i]] <- .normalize(.self$train[[sp]]$sdmDataFrame[,colnames(.self$train[[sp]]$sdmDataFrame) != sp])
-                      else n[[i]] <- .normalize(.self$test[[sp]]$sdmDataFrame[,colnames(.self$test[[sp]]$sdmDataFrame) != sp])
+                      if (train) n[[i]] <- .self$normalize(.self$train[[sp]]$sdmDataFrame[,colnames(.self$train[[sp]]$sdmDataFrame) != sp,drop=FALSE])
+                      else n[[i]] <- .self$normalize(.self$test[[sp]]$sdmDataFrame[,colnames(.self$test[[sp]]$sdmDataFrame) != sp,drop=FALSE])
                     } #else 'sdmX.norm'
                   } else if (n[[i]] == 'sdmDataFrame.norm') {
                     if (data) {
-                      if (train) n[[i]] <- .normalize(.self$train[[sp]]$sdmDataFrame,except=sp)
-                      else n[[i]] <- .normalize(.self$test[[sp]]$sdmDataFrame,except=sp)
+                      if (train) n[[i]] <- .self$normalize(.self$train[[sp]]$sdmDataFrame,except=sp)
+                      else n[[i]] <- .self$normalize(.self$test[[sp]]$sdmDataFrame,except=sp)
+                    } #else 'sdmDataFrame.norm'
+                  }  else if (n[[i]] == 'sdmDataFrame.scaled') {
+                    if (data) {
+                      if (train) n[[i]] <- .self$normalize(.self$train[[sp]]$sdmDataFrame,except=sp,scale = TRUE)
+                      else n[[i]] <- .self$normalize(.self$test[[sp]]$sdmDataFrame,except=sp,scale = TRUE)
                     } #else 'sdmDataFrame.norm'
                   } else if (n[[i]] == 'sdmMatrix') {
                     if (data) {
@@ -961,11 +1006,19 @@ setRefClass(".workload",
                     if (data) {
                       if (train) {
                         #w <- .where(is.factor,.self$train[[sp]]$sdmDataFrame)
-                        n[[i]] <- model.matrix(.getFormula(colnames(.self$train[[sp]]$sdmDataFrame),env=parent.frame(2)),.normalize(.self$train[[sp]]$sdmDataFrame,except=sp))[,-1]
+                        n[[i]] <- model.matrix(.getFormula(colnames(.self$train[[sp]]$sdmDataFrame),env=parent.frame(2)),.self$normalize(.self$train[[sp]]$sdmDataFrame,except=sp))[,-1]
                       } else {
-                        n[[i]] <- model.matrix(.getFormula(colnames(.self$train[[sp]]$sdmDataFrame),env=parent.frame(2)),.normalize(.self$test[[sp]]$sdmDataFrame,except=sp))[,-1]
+                        n[[i]] <- model.matrix(.getFormula(colnames(.self$train[[sp]]$sdmDataFrame),env=parent.frame(2)),.self$normalize(.self$test[[sp]]$sdmDataFrame,except=sp))[,-1]
                       }
-                    } #else 'sdmMatrix.norm'
+                    }
+                  } else if (n[[i]] == 'sdmMatrix.scaled') {
+                    if (data) {
+                      if (train) {
+                        n[[i]] <- model.matrix(.getFormula(colnames(.self$train[[sp]]$sdmDataFrame),env=parent.frame(2)),.self$normalize(.self$train[[sp]]$sdmDataFrame,except=sp,scale = TRUE))[,-1]
+                      } else {
+                        n[[i]] <- model.matrix(.getFormula(colnames(.self$train[[sp]]$sdmDataFrame),env=parent.frame(2)),.self$normalize(.self$test[[sp]]$sdmDataFrame,except=sp,scale = TRUE))[,-1]
+                      }
+                    }
                   } else if (n[[i]] == 'sdmdata') {
                     if (data) n[[i]] <- .self$data
                   } else if (n[[i]] == 'sdmSetting') {
@@ -1003,7 +1056,7 @@ setRefClass(".workload",
                 } else .self$test[[sp]][[d]]
               },
               getReseved.names=function() {
-                c('sdmdata','data.frame','sdmDataFrame','sdmX','sdmY','sdmRaster','sdmVariables','standard.formula','gam.mgcv.furmula','sdmMatrix','sdmMatrix.norm','sdmDataFrame.norm','sdmX.norm','sdmNrRecords','sdmSetting')
+                c('sdmdata','data.frame','sdmDataFrame','sdmX','sdmY','sdmRaster','sdmVariables','standard.formula','gam.mgcv.furmula','sdmMatrix','sdmMatrix.norm','sdmMatrix.scaled','sdmDataFrame.norm','sdmDataFrame.scaled','sdmX.norm','sdmNrRecords','sdmSetting')
               },
               getFitArgs=function(sp,mo) {
                 o <- list()

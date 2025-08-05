@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date of last update :  August 2025
-# Version 1.7
+# Version 1.8
 # Licence GPL v3
 
 #------
@@ -51,22 +51,49 @@
 }
 #---------------
 
-.normalize <- function(x,except=NULL) {
+
+
+# frame specifies variable information (mean, min/max, sd):
+# if scale is TRUE -> it is re-scaled to 0-1:
+.normalize <- function(x,except=NULL,frame=NULL,scale=FALSE) {
+  
   w <- !.where(is.factor,x)
   if (!is.null(except)) {
     w[except] <- FALSE
   }
+  #---
   if (any(w)) {
-    xx <- x
-    for (i in seq_along(w)) {
-      if (w[i]) {
-        xx[,i] <- xx[,i] - mean(xx[,i],na.rm=TRUE)
-        if (sd(x[,i],na.rm=TRUE) != 0) xx[,i] <- xx[,i] / sd(x[,i],na.rm=TRUE)
+    
+    if (all(names(w[w]) %in% frame$names)) {
+      frame <- frame[frame$names %in% names(w[w]),]
+    } else frame <- NULL
+    
+    
+    if (!is.null(frame)) {
+      if (scale) .sc <- .getScaleFunction(frame,scl='minmax')
+      else .sc <- .getScaleFunction(frame,scl='center')
+      #-------
+      x <- .sc(x)
+    } else {
+      for (i in seq_along(w)) {
+        if (w[i]) {
+          if (scale) {
+            .min <- min(x[,i],na.rm=TRUE)
+            .max <- max(x[,i],na.rm=TRUE)
+            x[,i] <- (x[,i] - .min) / (.max - .min)
+          } else {
+            .mean <- mean(x[,i],na.rm=TRUE)
+            .sd <- sd(x[,i],na.rm=TRUE)
+            x[,i] <- x[,i] - .mean
+            if (.sd != 0) x[,i] <- x[,i] / .sd
+          }
+        }
       }
     }
   }
-  xx
+  x
 }
+
 #-----------
 # given a vector of colnames, their corresponding col numbers are returned
 .colNumber <- function(d,n) {

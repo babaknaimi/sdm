@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date (last update):  January 2024
-# Version 1.2
+# Date (last update):  August 2025
+# Version 1.3
 # Licence GPL v3
 #--------
 
@@ -61,11 +61,11 @@
   cbind(o1,o2)
 }
 #--------
-.getData.sdmMatrix <- function(formula,data,normalize=FALSE) {
+.getData.sdmMatrix <- function(formula,data,normalize=FALSE,frame=NULL,scale=FALSE) {
   if (normalize) {
     sp <- as.character(formula[[2]])
-    if (sp %in% colnames(data)) data <- .normalize(data,except=sp)
-    else data <- .normalize(data)
+    if (sp %in% colnames(data)) data <- .normalize(data,except=sp,frame=frame,scale=scale)
+    else data <- .normalize(data,frame=frame,scale=scale)
   }
   if (length(formula) == 3) formula <- as.formula(paste('~',deparse(formula[[3]])))
   model.matrix(formula,data)[,-1,drop=FALSE]

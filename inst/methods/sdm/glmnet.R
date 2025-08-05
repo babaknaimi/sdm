@@ -1,17 +1,17 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date :  March. 2016
-# last update: April 2018
-# Version 1.3
+# last update: August 2025
+# Version 1.4
 # Licence GPL v3
 
 #-------------
 methodInfo <- list(name=c('glmnet','GLMNET','glmelastic','glmlasso'),
                    packages='glmnet',
                    modelTypes = c('pa','pb','ab','n'),
-                   fitParams = list(formula='standard.formula',data='sdmDataFrame'),
+                   fitParams = list(formula='standard.formula',data='sdmDataFrame',v='sdmVariables'),
                    fitSettings = list(family='binomial',alpha=1),
-                   fitFunction = function(formula,data,family,...) {
-                     x <- .getData.sdmMatrix(formula,data,normalize=TRUE)
+                   fitFunction = function(formula,data,family,v,...) {
+                     x <- .getData.sdmMatrix(formula,data,normalize=TRUE,frame=v@varInfo$numeric)
                      y <- .getData.sdmY(formula,data)
                      if (family == 'binomial') m <- cv.glmnet(x,y,family="binomial",type.measure = 'auc')
                      else m <- cv.glmnet(x,y,family=family)
@@ -24,11 +24,11 @@ methodInfo <- list(name=c('glmnet','GLMNET','glmelastic','glmlasso'),
                      list(fitSettings=f)
                    },
                    tuneParams = NULL,
-                   predictParams=list(object='model',formula='standard.formula',newx='sdmDataFrame'),
+                   predictParams=list(object='model',formula='standard.formula',newx='sdmDataFrame',v='sdmVariables'),
                    predictSettings=list(type='response'),
-                   predictFunction=function(object,formula,newx,type) {
-                     newx <- .getData.sdmMatrix(formula,newx,normalize=TRUE)
-                     predict.glmnet(object,newx,type=type)[,1]
+                   predictFunction=function(object,formula,newx,type,v,...) {
+                     newx <- .getData.sdmMatrix(formula,newx,normalize=TRUE,frame=v@varInfo$numeric)
+                     predict(object,newx,type=type,...)[,1]
                    },
                    #------ metadata (optional):
                    title='GLM with lasso or elasticnet regularization',

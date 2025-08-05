@@ -1,18 +1,18 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  July 2017
-# Version 1.1
+# Date (last update):  August 2025
+# Version 1.2
 # Licence GPL v3
 
 #-------------
 methodInfo <- list(name=c('maxlike','MaxLike'),
                    packages=NULL,
                    modelTypes = c('pb'),
-                   fitParams = list(formula='standard.formula',data='sdmDataFrame'),
+                   fitParams = list(formula='standard.formula',data='sdmDataFrame',v='sdmVariables'),
                    fitSettings = list(link='logit',hessian=TRUE,normalize=TRUE),
                    fitFunction = '.maxlike',
                    settingRules = NULL,
                    tuneParams = NULL,
-                   predictParams=list(object='model',newdata='sdmDataFrame'),
+                   predictParams=list(object='model',newdata='sdmDataFrame',v='sdmVariables'),
                    predictSettings=NULL,
                    predictFunction='predict',
                    #------ metadata (optional):

@@ -1,11 +1,15 @@
 # Author: Babak Naimi, naimi.b@gmail.com
-# Date :  March. 2016
-# Version 1.0
+# Date (last update):  August 2025
+# Version 1.1
 # Licence GPL v3
 
 #-------------
-.maxlike <- function(formula,data,link='logit',starts,hessian=TRUE,fixed,normalize=TRUE,...) {
+.maxlike <- function(formula,data,link='logit',starts,hessian=TRUE,fixed,normalize=TRUE,v=NULL,...) {
   # adopted based on the function maxlike in the maxlike package by Richard Chandler and Andy Royle
+  
+  if (!is.null(v) && inherits(v,'.sdmVariables')) {
+    .fr <- v@varInfo$numeric
+  } else .fr <- NULL
   
   link <- .pmatch(link,c("logit","cloglog"))[1]
   if (is.na(link)) stop("link function should be either 'logit' or 'cloglog'")
@@ -13,7 +17,7 @@
   call <- match.call()
   
   nsp <- deparse(formula[[2]])
-  if (normalize) data <- .normalize(data,except=nsp)
+  if (normalize) data <- .normalize(data,except=nsp,frame=.fr)
   w <- data[,nsp] == 1
   X <- data[w,]
   Z <- data[-w,]
@@ -96,16 +100,22 @@
 
 # adopted based on the function predict.maxlikeFit in the maxlike package by Richard Chandler and Andy Royle
 setMethod('predict', signature(object='.maxlikeModel'), 
-          function(object, newdata,...) {
+          function(object, newdata,v=NULL,...) {
             if (missing(newdata)) stop('mewdata is missing...')
             e <- object@fit$Est[, "Est"]
+            
+            
+            if (!is.null(v) && inherits(v,'.sdmVariables')) {
+              .fr <- v@varInfo$numeric
+            } else .fr <- NULL
+            
             
             link <- object@fit$link
             npix <- nrow(newdata)
             formula <- .getRhsFromFormula(object@fit$call$formula)
             varnames <- all.vars(formula)
             if (!all(varnames %in% colnames(newdata))) stop("at least 1 covariate in the formula is not in rasters.")
-            if (object@fit$normalize) newdata <- .normalize(newdata[,varnames])
+            if (object@fit$normalize) newdata <- .normalize(newdata[,varnames],frame=.fr)
             Z <- model.frame(formula, newdata, na.action = "na.pass")
             Z.terms <- attr(Z, "terms")
             Z <- model.matrix(Z.terms, Z)
