@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date (last update):  August 2025
-# Version 3.9
+# Version 4.0
 # Licence GPL v3
 
 
@@ -154,7 +154,7 @@ if (!isGeneric("predict")) {
   
   m <- unique(as.character(mi[,3]))
   #----
-  w <- new('.workloadPredict',runTasks=mi,parallelSetting=parallelSetting)
+  w <- new('.workloadPredict',featFrame=x@setting@featureFrame,runTasks=mi,parallelSetting=parallelSetting)
   
   
   #w$newdata$raster <- NULL

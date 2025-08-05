@@ -1,6 +1,6 @@
 # Author: Babak Naimi, naimi.b@gmail.com
 # Date (last update):  August 2025
-# Version 7.1
+# Version 7.2
 # Licence GPL v3
 
 
@@ -1253,6 +1253,7 @@ setRefClass(".workload",
 setRefClass(".workloadPredict",
             fields=list(
               obj='list', # list of models (@models) from sdmModels
+              featFrame='.featureFrame',
               params='list',
               arguments='list',
               dataObject.names='character',
@@ -1278,6 +1279,21 @@ setRefClass(".workloadPredict",
                 options(warn=0)
                 m
               },
+              getSdmVariables=function(sp=NULL,nFact=NULL,nf=NULL) {
+                # need to be revised (in predict, we need featureFrame, so it needs to be adjusted!)
+                if (missing(nFact) || is.null(nFact)) {
+                  nFact <- names(.self$featFrame@categorical)
+                }
+                
+                if (missing(nf) || is.null(nFact)) {
+                  nf <- .self$featFrame@numeric$names
+                }
+                
+                new('.sdmVariables',response=sp,variables=list(numeric=nf,factors=nFact),distribution="binomial",features.numeric=nf,features.factor=nFact,
+                    number.of.records=0,
+                    n.presence=0,varInfo=list(numeric=.self$featFrame@numeric,categorical=.self$featFrame@categorical))
+                
+              },
               predictID=function(i,.frame) {
                 options(warn=-1)
                 i <- which(.self$runTasks$modelID == i)
@@ -1298,21 +1314,42 @@ setRefClass(".workloadPredict",
                   .frame
                 } else if (n == 'standard.formula') {
                   .getFormula(c(sp,colnames(.self$generateParams('sdmDataFrame',sp,.frame))),env=parent.frame(2))
-                } else if (n == 'sdmX') {
-                  #####
+                } else if (n == 'sdmVariables') {
+                  getSdmVariables(sp)
+                } else if (n[[i]] == 'sdmX') {
+                  .frame[,colnames(.frame) != sp,drop=FALSE]
+                } else if (n[[i]] == 'sdmY') {
+                  .frame[,colnames(.frame) == sp]
+                } else if (n[[i]] == 'sdmX.norm') {
                   
-                } else if (n == 'sdmY') {
-                  #####
+                  .normalize(.frame[,colnames(.frame) != sp,drop=FALSE],frame=.self$featFrame@numeric)
                   
-                } else if (n == 'sdmRaster') {
-                  #####
+                } else if (n[[i]] == 'sdmDataFrame.norm') {
+                  .normalize(.frame,except=sp,frame=.self$featFrame@numeric)
                   
+                }  else if (n[[i]] == 'sdmDataFrame.scaled') {
+                  .normalize(.frame,except=sp,frame=.self$featFrame@numeric,scale=TRUE)
+                } else if (n[[i]] == 'sdmMatrix') {
+                  .f <- .self$generateParams('standard.formula',sp,.frame)
+                  model.matrix(.f,.frame)[,-1]
+                  
+                } else if (n[[i]] == 'sdmMatrix.norm') {
+                  .f <- .self$generateParams('standard.formula',sp,.frame)
+                  model.matrix(.f,.self$generateParams('sdmDataFrame.norm',sp,.frame))[,-1]
+                  
+                } else if (n[[i]] == 'sdmMatrix.scaled') {
+                  .f <- .self$generateParams('standard.formula',sp,.frame)
+                  model.matrix(.f,.self$generateParams('sdmDataFrame.scaled',sp,.frame))[,-1]
+                  
+                } else if (n[[i]] == 'sdmdata') {
+                  .self$obj@data
                 } else if (n %in% names(.self$params)) {
                   do.call(.self$params[[n]],generateParams(.CharVector2List(names(formals(.self$params[[n]]))),sp)) 
                 }
               },
               getReseved.names=function() {
-                c('sdmDataFrame','sdmX','sdmY','sdmRaster','sdmVariables','standard.formula','gam.mgcv.furmula')
+                c('sdmDataFrame','sdmX','sdmY','sdmRaster','sdmVariables','standard.formula','gam.mgcv.furmula','sdmMatrix.scaled',
+                  'sdmMatrix.norm','sdmDataFrame.scaled','sdmDataFrame.norm')
               },
               getPredictArgs=function(sp,mo,.frame=NULL) {
                 # return a list in which the first element is reserved for 'model'
