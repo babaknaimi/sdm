@@ -32,6 +32,9 @@
     if (!is.null(d@species[[s]]@abundance)) {
       w <- match(ind,d@species[[s]]@abundance$rID)
       o[,s] <- d@species[[s]]@abundance$abundance[w]
+    } else if (!is.null(d@species[[s]]@numerical)) {
+      w <- match(ind,d@species[[s]]@numerical$rID)
+      o[,s] <- d@species[[s]]@numerical$value[w]
     } else if (!is.null(d@species[[s]]@Multinomial)) {
       w <- match(ind,d@species[[s]]@Multinomial$rID)
       o[,s] <- d@species[[s]]@Multinomial$name[w]

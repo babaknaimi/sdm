@@ -32,6 +32,7 @@
   o <- lapply(sp,function(x) {
     if (!is.null(x@presence)) return('binomial')
     else if (!is.null(x@abundance)) return('poisson')
+    else if (!is.null(x@numerical)) return('gaussian')
     else if (!is.null(x@Multinomial)) return('multinomial')
     else return(NA)
   })

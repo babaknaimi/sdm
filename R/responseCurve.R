@@ -267,7 +267,7 @@
   if (includeTest) dt <- as.data.frame(m@data,sp=sp)
   else dt <- as.data.frame(m@data,grp=c('train'),sp=sp)
   
-  .wPr <- which(dt[,sp] == 1)
+  .wPr <- which(dt[,sp] > 0)
   
   nf <- m@setting@featureFrame@predictors
   

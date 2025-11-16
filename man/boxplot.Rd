@@ -14,9 +14,9 @@ Make a box plot of model evaluation data, i.e., the model predictions for known 
 
 
 \arguments{
-  \item{x} Object of class \code{sdmEvaluate}
-  \item{names} Optional, a character vector with the x-axis label(s) for the group of data (e.g., 'Absence', 'Presence')
-  \item{...} Additional arguments that can be passed to \link[graphics]{boxplot}
+  \item{x}{Object of class \code{sdmEvaluate}}
+  \item{names}{Optional, a character vector with the x-axis label(s) for the group of data (e.g., 'Absence', 'Presence')}
+  \item{...}{Additional arguments that can be passed to \link[graphics]{boxplot}}
 }
 
 \references{

@@ -63,7 +63,8 @@
       vi[i] <- 1 - cr
       a2 <- .auc(obs,d2)
       a2 <- (a1-a2)*2
-      if (a2 > 1) a2 <- 1
+      if (is.na(a2)) a2 <- NA
+      else if (a2 > 1) a2 <- 1
       else if (a2 < 0) a2 <- 0
       vj[i] <- a2
     }
@@ -106,7 +107,8 @@
       vi[i] <- 1 - cr
       a2 <- .auc(obs,d2)
       a2 <- (a1-a2)*2
-      if (a2 > 1) a2 <- 1
+      if (is.na(a2)) a2 <- NA
+      else if (a2 > 1) a2 <- 1
       else if (a2 < 0) a2 <- 0
       vj[i] <- a2
     }

@@ -139,7 +139,15 @@
   id <- c()
   sp <- .getSpeciesNames(d,sp)
   for (i in seq_along(sp)) {
-    id <- c(id,d@species[[sp[i]]]@presence,d@species[[sp[i]]]@absence,d@species[[sp[i]]]@abundance[,1],d@species[[sp[i]]]@background,d@species[[sp[i]]]@Multinomial[,1])
+    id <- c(
+      id,
+      d@species[[sp[i]]]@presence,
+      d@species[[sp[i]]]@absence,
+      d@species[[sp[i]]]@abundance[,1],
+      d@species[[sp[i]]]@numerical[,1],
+      d@species[[sp[i]]]@background,
+      d@species[[sp[i]]]@Multinomial[,1]
+    )
   }
   sort(unique(id))
 }
@@ -674,7 +682,7 @@ setReplaceMethod('.addLog','sdmdata',
     train <- w[[1]]
     ww <- c()
     if (w[[2]][1] > 0) .addLog(d) <- paste(w[[2]][1],'records with NA from the train data are removed')
-    if (w[[2]][2] > 0) .addLog(d) <- paste(w[[2]][2],'duplicarted records from the train data are removed')
+    if (w[[2]][2] > 0) .addLog(d) <- paste(w[[2]][2],'duplicated records from the train data are removed')
   }
   
   train$rID <- 1:nrow(train)
@@ -704,7 +712,7 @@ setReplaceMethod('.addLog','sdmdata',
       bg <- w[[1]]
       ww <- c()
       if (w[[2]][1] > 0) .addLog(d) <- paste(w[[2]][1],'records with NA from the background data are removed')
-      if (w[[2]][2] > 0) .addLog(d) <- paste(w[[2]][2],'duplicarted records from the background data are removed')
+      if (w[[2]][2] > 0) .addLog(d) <- paste(w[[2]][2],'duplicated records from the background data are removed')
     }
     
     
@@ -729,7 +737,7 @@ setReplaceMethod('.addLog','sdmdata',
       test <- w[[1]]
       ww <- c()
       if (w[[2]][1] > 0) .addLog(d) <- paste(w[[2]][1],'records with NA from the test data are removed')
-      if (w[[2]][2] > 0) .addLog(d) <- paste(w[[2]][2],'duplicarted records from the test data are removed')
+      if (w[[2]][2] > 0) .addLog(d) <- paste(w[[2]][2],'duplicated records from the test data are removed')
     }
     
     test$rID <- (nrow(train)+1):(nrow(test)+nrow(train))

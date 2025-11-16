@@ -286,14 +286,14 @@ setMethod ('show' , '.varImportanceList',
                vp <- round(object@varImportanceMean$AUCtest$AUCtest[w]*100,1)
                
                if (length(.ns) >= 20) {
-                 xx <- c(.ns[1:20],': ',rep('*',v))
+                 xx <- c(.ns[1:20],': ',ifelse(is.na(v),'',rep('*',v)))
                  xx[21+ci1] <- '['
                  xx[21+ci2] <- ']'
                  if (any(is.na(xx))) xx[is.na(xx)] <- '-'
                  xx <- c(xx,' (',vp,' %)')
                  cat(paste(xx,collapse=''),'\n')
                } else {
-                 xx <- c(.ns,rep(' ',20 - length(.ns)), ': ',rep('*',v))
+                 xx <- c(.ns,rep(' ',20 - length(.ns)), ': ',ifelse(is.na(v),'',rep('*',v)))
                  xx[21+ci1] <- '['
                  xx[21+ci2] <- ']'
                  if (any(is.na(xx))) xx[is.na(xx)] <- '-'
